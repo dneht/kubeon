@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	DefaultKubeVersion = K8S_1_19_4
+	DefaultKubeVersion = K8S_1_20_1
 
 	AppBaseDir = onutil.BaseDir()
 
