@@ -23,7 +23,12 @@ var (
 		K8S_1_19_4.Full: K8S_1_19_4.Number,
 		K8S_1_19_5.Full: K8S_1_19_5.Number,
 		K8S_1_19_6.Full: K8S_1_19_6.Number,
+		K8S_1_19_7.Full: K8S_1_19_7.Number,
+		K8S_1_19_8.Full: K8S_1_19_8.Number,
 		K8S_1_20_1.Full: K8S_1_20_1.Number,
+		K8S_1_20_2.Full: K8S_1_20_2.Number,
+		K8S_1_20_3.Full: K8S_1_20_3.Number,
+		K8S_1_20_4.Full: K8S_1_20_4.Number,
 	}
 	supportProxyModes = map[string]bool{
 		IPVSProxy:     true,

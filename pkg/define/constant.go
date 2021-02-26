@@ -19,13 +19,13 @@ package define
 import "github.com/dneht/kubeon/pkg/onutil"
 
 const (
-	AppVersion = "0.7.5"
+	AppVersion = "0.7.6"
 
 	MirrorRegistry = "registry.cn-hangzhou.aliyuncs.com"
 )
 
 var (
-	DefaultKubeVersion = K8S_1_20_1
+	DefaultKubeVersion = K8S_1_20_4
 
 	AppBaseDir = onutil.BaseDir()
 

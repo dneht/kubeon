@@ -22,7 +22,12 @@ var (
 	K8S_1_19_4, _ = NewStdVersion("v1.19.4")
 	K8S_1_19_5, _ = NewStdVersion("v1.19.5")
 	K8S_1_19_6, _ = NewStdVersion("v1.19.6")
+	K8S_1_19_7, _ = NewStdVersion("v1.19.7")
+	K8S_1_19_8, _ = NewStdVersion("v1.19.8")
 	K8S_1_20_1, _ = NewStdVersion("v1.20.1")
+	K8S_1_20_2, _ = NewStdVersion("v1.20.2")
+	K8S_1_20_3, _ = NewStdVersion("v1.20.3")
+	K8S_1_20_4, _ = NewStdVersion("v1.20.4")
 	ETCD_3_4_0, _ = NewStdVersion("3.4.0")
 )
 
