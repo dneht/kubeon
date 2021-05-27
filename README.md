@@ -7,17 +7,9 @@
 > kubeon view support
 
 ```text
-v1.19.4
-v1.19.5
-v1.19.6
-v1.19.7
-v1.19.8
-v1.19.9
-v1.20.1
-v1.20.2
-v1.20.3
-v1.20.4
-v1.20.5
+v1.19.4-v1.19.11
+v1.19.7-v1.20.1
+v1.21.1
 ```
 
 ## Usage
@@ -31,12 +23,12 @@ v1.20.5
 ```shell
 # ssh node0
 vagrant ssh node0
-# use root with password 45678o@test
+# use root with password 4567890123
 su - root
-# download kubeon
+# install kubeon
 sh -c "$(wget https://dl.sre.pub/on/install.sh -q -O -)"
 # create cluster
-kubeon create -N test --version v1.19.4 \
+kubeon create -N test --version v1.21.1 \
     -m 172.20.0.21 \
     -m 172.20.0.22 \
     -m 172.20.0.23 \
@@ -44,8 +36,8 @@ kubeon create -N test --version v1.19.4 \
     --master-name test20 \
     --master-name test30 \
     -w 172.20.0.25 \
-    --worker-name test100 \
-    --default-passwd 45678o@test \
+    --worker-name test50 \
+    --default-passwd 4567890123 \
     --interface enp0s8 \
     --log-level debug
 ```
@@ -79,13 +71,13 @@ create one deployment on now cluster, and one service on each worker
 kubeon add -N test \
     -m 172.20.0.24 \
     --master-name test40 \
-    --default-passwd 45678o@test \
+    --default-passwd 4567890123 \
     --log-level debug
 # add one worker
 kubeon add -N test \
     -w 172.20.0.26 \
     --worker-name test110 \
-    --default-passwd 45678o@test \
+    --default-passwd 4567890123 \
     --log-level debug
 ```
 
@@ -105,7 +97,7 @@ kubeon del -N test \
 ### Upgrade cluster
 
 ```shell
-kubeon upgrade -N test --version v1.20.1 \
+kubeon upgrade -N test --version v1.21.1 \
     --log-level debug
 ```
 

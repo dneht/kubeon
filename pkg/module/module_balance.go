@@ -47,7 +47,7 @@ func InstallLoadBalance(nodes cluster.NodeList) (err error) {
 			return err
 		}
 		for _, node := range nodes {
-			err = action.HAProxyInitWait(current, node, 2*time.Minute)
+			err = action.HAProxyInitWait(current, node, 4*time.Minute)
 			if nil != err {
 				return err
 			}

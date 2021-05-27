@@ -61,3 +61,55 @@ func (v *StdVersion) GreaterThen(in *StdVersion) bool {
 func (v *StdVersion) LessThen(in *StdVersion) bool {
 	return v.Number < in.Number
 }
+
+func (v *StdVersion) String() string {
+	return v.Full
+}
+
+type RngVersion struct {
+	Start *StdVersion
+	End   *StdVersion
+}
+
+func NewRngVersion(start string, end string) (*RngVersion, error) {
+	if len(start) < 5 {
+		return nil, errors.Errorf("input version [%s] error", start)
+	}
+	startVersion, err := NewStdVersion(start)
+	if nil != err {
+		return nil, err
+	}
+	if len(end) < 5 {
+		end = start
+	}
+	endVersion, err := NewStdVersion(end)
+	if nil != err {
+		return nil, err
+	}
+	if endVersion.Number < startVersion.Number {
+		startVersion, endVersion = endVersion, startVersion
+	}
+	return &RngVersion{
+		Start: startVersion,
+		End:   endVersion,
+	}, nil
+}
+
+func (v *RngVersion) Contain(other string) bool {
+	input, err := NewStdVersion(other)
+	if nil != err {
+		return false
+	}
+	if input.Number <= v.End.Number && input.Number >= v.Start.Number {
+		return true
+	}
+	return false
+}
+
+func (v *RngVersion) String() string {
+	if v.Start.Number == v.End.Number {
+		return v.Start.Full
+	} else {
+		return v.Start.Full + "-" + v.End.Full
+	}
+}

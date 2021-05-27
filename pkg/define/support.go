@@ -16,21 +16,11 @@ limitations under the License.
 
 package define
 
-import "sort"
-
 var (
-	supportVersions = map[string]uint{
-		K8S_1_19_4.Full: K8S_1_19_4.Number,
-		K8S_1_19_5.Full: K8S_1_19_5.Number,
-		K8S_1_19_6.Full: K8S_1_19_6.Number,
-		K8S_1_19_7.Full: K8S_1_19_7.Number,
-		K8S_1_19_8.Full: K8S_1_19_8.Number,
-		K8S_1_19_9.Full: K8S_1_19_9.Number,
-		K8S_1_20_1.Full: K8S_1_20_1.Number,
-		K8S_1_20_2.Full: K8S_1_20_2.Number,
-		K8S_1_20_3.Full: K8S_1_20_3.Number,
-		K8S_1_20_4.Full: K8S_1_20_4.Number,
-		K8S_1_20_5.Full: K8S_1_20_5.Number,
+	supportVersions = []*RngVersion{
+		K8S_1_19_x,
+		K8S_1_20_x,
+		K8S_1_21_x,
 	}
 	supportProxyModes = map[string]bool{
 		IPVSProxy:     true,
@@ -51,25 +41,20 @@ var (
 )
 
 func SupportVersionList() []string {
-	versions := make(map[uint]string, len(supportVersions))
-	for k, v := range supportVersions {
-		versions[v] = k
-	}
-	keys := make([]int, 0, len(versions))
-	for key := range versions {
-		keys = append(keys, int(key))
-	}
-	sort.Ints(keys)
-	supports := make([]string, 0, len(keys))
-	for _, key := range keys {
-		supports = append(supports, versions[uint(key)])
+	supports := make([]string, 0, len(supportVersions))
+	for _, ver := range supportVersions {
+		supports = append(supports, ver.String())
 	}
 	return supports
 }
 
 func IsSupportVersion(version string) bool {
-	_, ok := supportVersions[version]
-	return ok
+	for _, ver := range supportVersions {
+		if ver.Contain(version) {
+			return true
+		}
+	}
+	return false
 }
 
 func SupportRuntimeList() []string {

@@ -1,5 +1,5 @@
 Vagrant.configure("2") do |config|
-	(0..6).each do |i|
+	(1..6).each do |i|
 		config.vm.define "node#{i}" do |node|
 		# 设置虚拟机的Box
 		node.vm.box = "ubuntu/focal64"
@@ -20,26 +20,7 @@ Vagrant.configure("2") do |config|
 			v.cpus = 2
 		end
 		# 使用shell脚本进行软件安装和配置
-		node.vm.provision "shell", inline: <<-SHELL
-sudo echo root:45678o@test | chpasswd
-sudo sed -i '/PermitRootLogin prohibit-password/d' /etc/ssh/sshd_config
-sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
-sudo echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
-sudo systemctl restart sshd
-sudo echo 'apt_preserve_sources_list: true' >> /etc/cloud/cloud.cfg
-sudo echo 'deb http://mirrors.aliyun.com/ubuntu/ focal main restricted' > /etc/apt/sources.list
-sudo echo 'deb http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted' >> /etc/apt/sources.list
-sudo echo 'deb http://mirrors.aliyun.com/ubuntu/ focal universe' >> /etc/apt/sources.list
-sudo echo 'deb http://mirrors.aliyun.com/ubuntu/ focal-updates universe' >> /etc/apt/sources.list
-sudo echo 'deb http://mirrors.aliyun.com/ubuntu/ focal multiverse' >> /etc/apt/sources.list
-sudo echo 'deb http://mirrors.aliyun.com/ubuntu/ focal-updates multiverse' >> /etc/apt/sources.list
-sudo echo 'deb http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse' >> /etc/apt/sources.list
-sudo echo 'deb http://mirrors.aliyun.com/ubuntu/ focal-security main restricted' >> /etc/apt/sources.list
-sudo echo 'deb http://mirrors.aliyun.com/ubuntu/ focal-security universe' >> /etc/apt/sources.list
-sudo apt-get update && sudo apt-get upgrade
-sudo apt-get install -y chrony
-sudo systemctl start chrony
-		SHELL
+		node.vm.provision "shell", path: "start.sh", args: i
 		end
 	end
 end
