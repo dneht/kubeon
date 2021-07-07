@@ -149,6 +149,7 @@ func ReinstallLocal(resource *ClusterResource) {
 	}
 	onutil.ChmodFile("/usr/local/bin/kubectl", 755)
 	onutil.RmDir(localTmpDir)
+	log.Infof("add kubectl on ")
 	AddLocalAutoCompletion()
 }
 

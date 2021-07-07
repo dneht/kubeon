@@ -120,7 +120,7 @@ func AfterBuildCluster() (*CreateConfig, error) {
 	}
 	err = runConfig.ChangeConfig()
 	if nil != err {
-		log.Error("save cluster config failed: " + err.Error())
+		log.Error("change cluster config failed: " + err.Error())
 	}
 	return current.CreateConfig, err
 }

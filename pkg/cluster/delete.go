@@ -17,7 +17,6 @@ limitations under the License.
 package cluster
 
 import (
-	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/dneht/kubeon/pkg/onutil/log"
 )
@@ -43,14 +42,11 @@ func DelCompleteCluster(delNodes NodeList) (err error) {
 	log.Infof("delete nodes complete, version is %s", current.Version.Full)
 	err = runConfig.WriteConfig()
 	if nil != err {
-		log.Error("save cluster config failed: " + err.Error())
+		log.Error("del & save cluster config failed: " + err.Error())
 	}
 	return nil
 }
 
 func deleteResource() {
-	if nil != current {
-		onutil.RmDir(define.AppBaseDir)
-		onutil.RmFile("/usr/local/bin/kubeon")
-	}
+	onutil.RmDir(onutil.K8sDir())
 }

@@ -60,7 +60,7 @@ func resetCluster() (err error) {
 }
 
 func doUninstall() (err error) {
-	err = module.AllUninstall(cluster.CurrentNodes())
+	err = module.AllUninstall(cluster.CurrentNodes(), true)
 	if nil != err {
 		return err
 	}

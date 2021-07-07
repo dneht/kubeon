@@ -79,6 +79,7 @@ func MvDir(src, dest string) error {
 }
 
 func LinkFile(src, dest string) error {
+	RmFile(dest)
 	return os.Symlink(src, dest)
 }
 

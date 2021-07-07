@@ -76,7 +76,7 @@ func preRemove(delNodes cluster.NodeList) (err error) {
 }
 
 func removeNodes(delNodes cluster.NodeList) (err error) {
-	err = module.AllUninstall(delNodes)
+	err = module.AllUninstall(delNodes, false)
 	if nil != err {
 		return err
 	}

@@ -52,7 +52,7 @@ func CreateCompleteCluster() (err error) {
 	log.Infof("now cluster is running, api server is %s:%d", current.LbDomain, current.LbPort)
 	err = runConfig.WriteConfig()
 	if nil != err {
-		log.Error("save cluster config failed: " + err.Error())
+		log.Error("create & save cluster config failed: " + err.Error())
 	}
 	return nil
 }
@@ -68,7 +68,7 @@ func UpgradeCompleteCluster() (err error) {
 	log.Infof("now cluster[%s] upgrade complete, version is %s", current.Name, current.Version.Full)
 	err = runConfig.WriteConfig()
 	if nil != err {
-		log.Error("save cluster config failed: " + err.Error())
+		log.Error("upgrade & s cluster config failed: " + err.Error())
 	}
 	return nil
 }
@@ -84,7 +84,7 @@ func AddCompleteCluster() (err error) {
 	log.Infof("add nodes complete, version is %s", current.Version.Full)
 	err = runConfig.WriteConfig()
 	if nil != err {
-		log.Error("save cluster config failed: " + err.Error())
+		log.Error("add & save cluster config failed: " + err.Error())
 	}
 	return nil
 }
