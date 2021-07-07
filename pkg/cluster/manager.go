@@ -26,7 +26,7 @@ import (
 	"strings"
 )
 
-func InitNewCluster(cluster *Cluster, lb string, base define.DefaultList, master define.MasterList, worker define.WorkerList) error {
+func InitNewCluster(cluster *Cluster, lb string, base define.DefaultList, master define.MasterList, worker define.WorkerList, dryRun bool) error {
 	current = cluster
 	if current.Status != StatusCreating && runConfig.Exist {
 		configRaw, err := runConfig.ReadConfig()
@@ -42,7 +42,7 @@ func InitNewCluster(cluster *Cluster, lb string, base define.DefaultList, master
 		return err
 	}
 	current.Name = runConfig.Name
-	masterNodes, workerNodes, isReady := newNodeList(base, master, worker)
+	masterNodes, workerNodes, isReady := newNodeList(base, master, worker, dryRun)
 	if !isReady {
 		return errors.New("init new cluster node error")
 	}
@@ -125,8 +125,8 @@ func AfterBuildCluster() (*CreateConfig, error) {
 	return current.CreateConfig, err
 }
 
-func InitAddNodes(base define.DefaultList, master define.MasterList, worker define.WorkerList) (NodeList, error) {
-	masterNodes, workerNodes, isReady := newNodeList(base, master, worker)
+func InitAddNodes(base define.DefaultList, master define.MasterList, worker define.WorkerList, dryRun bool) (NodeList, error) {
+	masterNodes, workerNodes, isReady := newNodeList(base, master, worker, dryRun)
 	if !isReady {
 		return nil, errors.New("init add cluster node error")
 	}
@@ -141,6 +141,7 @@ func InitAddNodes(base define.DefaultList, master define.MasterList, worker defi
 	if nil != current.CreateConfig {
 		current.CreateConfig.EtcdEndpoints = etcdEndpoints()
 	}
+	current.Status = StatusAddWaiting
 
 	initCurrent(current)
 	err = InitHost()
@@ -185,6 +186,7 @@ func InitDelNodes(selector string) (NodeList, error) {
 	if nil != current.CreateConfig {
 		current.CreateConfig.EtcdEndpoints = etcdEndpoints()
 	}
+	current.Status = StatusDelWaiting
 
 	initCurrent(current)
 	return delNodes, runConfig.WriteConfig()

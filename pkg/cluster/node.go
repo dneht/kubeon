@@ -33,6 +33,7 @@ type Node struct {
 	IPv6       string   `json:"ipv6"`
 	Port       uint     `json:"port"`
 	Hostname   string   `json:"hostname"`
+	Labels     []string `json:"labels"`
 	Home       string   `json:"home"`
 	Role       NodeRole `json:"role"`
 	User       string   `json:"user"`
@@ -41,6 +42,7 @@ type Node struct {
 	PkFile     string   `json:"pkFile"`
 	PkPassword string   `json:"pkPassword"`
 	Order      uint     `json:"order"`
+	Status     string   `json:"status"`
 	resource   *release.ClusterRemoteResource
 }
 

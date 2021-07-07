@@ -32,6 +32,7 @@ type flagpole struct {
 	define.DefaultList
 	define.MasterList
 	define.WorkerList
+	DryRun           bool
 	WithMirror       bool
 	WithOffline      bool
 	ClusterVersion   string
@@ -70,6 +71,10 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 	}
+	cmd.Flags().BoolVar(
+		&flags.DryRun, "dry-run",
+		false, "dry run",
+	)
 	cmd.Flags().BoolVar(
 		&flags.WithMirror, "with-mirror",
 		true, "download use mirror, if in cn please keep true",
@@ -201,6 +206,10 @@ func NewCommand() *cobra.Command {
 		[]string{}, "Multi master name, if using will go to set hostname, otherwise use hostname",
 	)
 	cmd.Flags().StringSliceVar(
+		&flags.MasterLabels, "master-labels",
+		[]string{}, "Multi master labels",
+	)
+	cmd.Flags().StringSliceVar(
 		&flags.MasterUsers, "master-user",
 		[]string{}, "Multi master username",
 	)
@@ -247,6 +256,10 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringSliceVarP(
 		&flags.WorkerNames, "worker-name", "W",
 		[]string{}, "Multi worker name, if using will go to set hostname, otherwise use hostname",
+	)
+	cmd.Flags().StringSliceVar(
+		&flags.MasterLabels, "worker-labels",
+		[]string{}, "Multi worker labels",
 	)
 	cmd.Flags().StringSliceVar(
 		&flags.WorkerUsers, "worker-user",
@@ -317,13 +330,16 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		CalicoMTU:     flags.CalicoMTU,
 		CertSANs:      flags.InputCertSANs,
 		Status:        cluster.StatusCreating,
-	}, flags.ExternalLBIP, flags.DefaultList, flags.MasterList, flags.WorkerList)
+	}, flags.ExternalLBIP, flags.DefaultList, flags.MasterList, flags.WorkerList, flags.DryRun)
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 	current := cluster.Current()
 	if nil == current {
 		return errors.New("cluster create error")
+	}
+	if flags.DryRun {
+		return nil
 	}
 
 	err = preInstall(current, flags.WithMirror)

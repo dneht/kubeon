@@ -72,9 +72,11 @@ type Cluster struct {
 type RunStatus string
 
 const (
-	StatusCreating  RunStatus = "creating"
-	StatusUpgrading RunStatus = "upgrading"
-	StatusRunning   RunStatus = "running"
+	StatusCreating   RunStatus = "creating"
+	StatusUpgrading  RunStatus = "upgrading"
+	StatusAddWaiting RunStatus = "addWaiting"
+	StatusDelWaiting RunStatus = "delWaiting"
+	StatusRunning    RunStatus = "running"
 )
 
 func SetDryRun() {

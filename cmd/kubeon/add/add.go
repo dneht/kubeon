@@ -28,6 +28,7 @@ type flagpole struct {
 	define.DefaultList
 	define.MasterList
 	define.WorkerList
+	DryRun      bool
 	WithMirror  bool
 	WithOffline bool
 }
@@ -44,6 +45,10 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 	}
+	cmd.Flags().BoolVar(
+		&flags.DryRun, "dry-run",
+		false, "dry run",
+	)
 	cmd.Flags().BoolVar(
 		&flags.WithMirror, "with-mirror",
 		true, "download use mirror, if in cn please keep true",
@@ -83,6 +88,10 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringSliceVarP(
 		&flags.MasterNames, "master-name", "M",
 		[]string{}, "Multi master name, if using will go to set hostname, otherwise use hostname",
+	)
+	cmd.Flags().StringSliceVar(
+		&flags.MasterLabels, "master-labels",
+		[]string{}, "Multi master labels",
 	)
 	cmd.Flags().StringSliceVar(
 		&flags.MasterUsers, "master-user",
@@ -133,6 +142,10 @@ func NewCommand() *cobra.Command {
 		[]string{}, "Multi worker name, if using will go to set hostname, otherwise use hostname",
 	)
 	cmd.Flags().StringSliceVar(
+		&flags.MasterLabels, "worker-labels",
+		[]string{}, "Multi worker labels",
+	)
+	cmd.Flags().StringSliceVar(
 		&flags.WorkerUsers, "worker-user",
 		[]string{}, "Multi worker username",
 	)
@@ -176,9 +189,12 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	if nil != err {
 		return err
 	}
-	newNodes, err := cluster.InitAddNodes(flags.DefaultList, flags.MasterList, flags.WorkerList)
+	newNodes, err := cluster.InitAddNodes(flags.DefaultList, flags.MasterList, flags.WorkerList, flags.DryRun)
 	if nil != err {
 		return err
+	}
+	if flags.DryRun {
+		return nil
 	}
 
 	err = preInstall(newNodes, flags.WithMirror)

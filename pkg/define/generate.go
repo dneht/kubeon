@@ -34,6 +34,7 @@ type MasterList struct {
 	MasterIPs               []net.IP
 	MasterPorts             []uint
 	MasterNames             []string
+	MasterLabels            []string
 	MasterUsers             []string
 	MasterPasswords         []string
 	MasterPkFiles           []string
@@ -65,6 +66,7 @@ type WorkerList struct {
 	WorkerIPs               []net.IP
 	WorkerPorts             []uint
 	WorkerNames             []string
+	WorkerLabels            []string
 	WorkerUsers             []string
 	WorkerPasswords         []string
 	WorkerPkFiles           []string

@@ -22,6 +22,7 @@ import (
 	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/pkg/errors"
 	"sort"
+	"strings"
 )
 
 type NodeList []*Node
@@ -51,7 +52,7 @@ func EmptyNodeList() NodeList {
 	return make(NodeList, 0)
 }
 
-func newNodeList(base define.DefaultList, master define.MasterList, worker define.WorkerList) (masterList NodeList, workerList NodeList, retResult bool) {
+func newNodeList(base define.DefaultList, master define.MasterList, worker define.WorkerList, dryRun bool) (masterList NodeList, workerList NodeList, retResult bool) {
 	startIdx := maxOrder() + 1
 	masterSize := len(master.MasterIPs)
 	masterList = make(NodeList, masterSize)
@@ -64,6 +65,7 @@ func newNodeList(base define.DefaultList, master define.MasterList, worker defin
 			Password:   mergeString(master.MasterPasswords, idx, master.MasterDefaultPassword, base.DefaultPassword),
 			PkFile:     mergeString(master.MasterPkFiles, idx, master.MasterDefaultPkFile, base.DefaultPkFile),
 			PkPassword: mergeString(master.MasterPkPasswords, idx, master.MasterDefaultPkPassword, base.DefaultPkPassword),
+			Labels:     splitLabels(master.MasterLabels, idx),
 			Order:      startIdx + uint(idx),
 		}
 		getHostname, result := mergeHostname(master.MasterNames, idx, node)
@@ -83,6 +85,7 @@ func newNodeList(base define.DefaultList, master define.MasterList, worker defin
 			Password:   mergeString(worker.WorkerPasswords, idx, worker.WorkerDefaultPassword, base.DefaultPassword),
 			PkFile:     mergeString(worker.WorkerPkFiles, idx, worker.WorkerDefaultPkFile, base.DefaultPkFile),
 			PkPassword: mergeString(worker.WorkerPkPasswords, idx, worker.WorkerDefaultPkPassword, base.DefaultPkPassword),
+			Labels:     splitLabels(worker.WorkerLabels, idx),
 			Order:      startIdx + uint(masterSize+idx),
 		}
 		getHostname, result := mergeHostname(worker.WorkerNames, idx, node)
@@ -171,6 +174,21 @@ func mergeString(arr []string, idx int, snd, fst string) string {
 		}
 	}
 	return arr[idx]
+}
+
+func splitLabels(arr []string, idx int) []string {
+	labels := make([]string, 0)
+	if nil == arr || len(arr) <= idx || "" == arr[idx] {
+		return labels
+	}
+	list := strings.Split(arr[idx], ",")
+	if len(list) == 1 {
+		return append(labels, list[0])
+	}
+	for _, one := range list {
+		labels = append(labels, one)
+	}
+	return labels
 }
 
 func mergeHostname(arr []string, idx int, n *Node) (string, bool) {

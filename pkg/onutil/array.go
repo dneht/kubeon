@@ -31,6 +31,9 @@ func IP2StringArr(ips []net.IP) []string {
 func IsDuplicateInStringArr(arr []string) bool {
 	hash := make(map[string]bool, len(arr)/2+1)
 	for _, one := range arr {
+		if one == "" {
+			continue
+		}
 		_, ok := hash[one]
 		if ok {
 			return true

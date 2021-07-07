@@ -19,9 +19,9 @@ package define
 var (
 	K8S_1_15_0, _ = NewStdVersion("v1.15.0")
 	K8S_1_19_0, _ = NewStdVersion("v1.19.0")
-	K8S_1_19_x, _ = NewRngVersion("v1.19.4", "v1.19.11")
-	K8S_1_20_x, _ = NewRngVersion("v1.20.1", "v1.19.7")
-	K8S_1_21_x, _ = NewRngVersion("v1.21.1", "v1.21.1")
+	K8S_1_19_x, _ = NewRngVersion("v1.19.4", "v1.19.12")
+	K8S_1_20_x, _ = NewRngVersion("v1.20.1", "v1.20.8")
+	K8S_1_21_x, _ = NewRngVersion("v1.21.1", "v1.21.2")
 	ETCD_3_4_0, _ = NewStdVersion("3.4.0")
 )
 

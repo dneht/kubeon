@@ -38,7 +38,13 @@ func DelCompleteCluster(delNodes NodeList) (err error) {
 		log.Errorf("delete node host error: %s", err.Error())
 		return err
 	}
+
+	current.Status = StatusRunning
 	log.Infof("delete nodes complete, version is %s", current.Version.Full)
+	err = runConfig.WriteConfig()
+	if nil != err {
+		log.Error("save cluster config failed: " + err.Error())
+	}
 	return nil
 }
 
