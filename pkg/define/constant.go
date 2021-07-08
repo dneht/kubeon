@@ -19,7 +19,7 @@ package define
 import "github.com/dneht/kubeon/pkg/onutil"
 
 const (
-	AppVersion = "0.7.6"
+	AppVersion = "0.7.7"
 
 	MirrorRegistry = "registry.cn-hangzhou.aliyuncs.com"
 )

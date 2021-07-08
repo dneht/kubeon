@@ -31,7 +31,7 @@ func KubeadmInitStart(boot *cluster.Node, uploadCerts, usePatch bool, ignorePref
 		return errors.New("--patches can't be used with kubeadm older than v1.19")
 	}
 	err = kubeadmInit(boot, uploadCerts, usePatch, ignorePreflightErrors)
-	if err != nil {
+	if nil != err {
 		return err
 	}
 	return nil
@@ -42,6 +42,10 @@ func KubeadmInitWait(wait time.Duration) (err error) {
 	err = initAfterConfig(boot)
 	if nil != err {
 		return err
+	}
+	current := cluster.Current()
+	if current.Version.GreaterEqual(define.K8S_1_21_0) {
+		return KubectlPatchCorednsRole()
 	}
 	return waitNewControlPlaneNodeReady(cluster.Current(), boot, wait)
 }

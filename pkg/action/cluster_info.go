@@ -19,6 +19,7 @@ package action
 import (
 	"fmt"
 	"github.com/dneht/kubeon/pkg/cluster"
+	"github.com/dneht/kubeon/pkg/define"
 )
 
 // list of pods, pods images, etcd members
@@ -27,10 +28,18 @@ func ClusterInfo() error {
 	boot := cluster.BootstrapNode()
 	// commands are executed on the bootstrap control-plane
 	fmt.Println("====================cert info====================")
-	if err := boot.Command(
-		"kubeadm", "alpha", "certs", "check-expiration",
-	).RunWithEcho(); err != nil {
-		return err
+	if current.Version.GreaterEqual(define.K8S_1_21_0) {
+		if err := boot.Command(
+			"kubeadm", "certs", "check-expiration",
+		).RunWithEcho(); err != nil {
+			return err
+		}
+	} else {
+		if err := boot.Command(
+			"kubeadm", "alpha", "certs", "check-expiration",
+		).RunWithEcho(); err != nil {
+			return err
+		}
 	}
 
 	fmt.Println("====================node info====================")

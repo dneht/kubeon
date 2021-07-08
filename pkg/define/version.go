@@ -58,8 +58,16 @@ func (v *StdVersion) GreaterThen(in *StdVersion) bool {
 	return v.Number > in.Number
 }
 
+func (v *StdVersion) GreaterEqual(in *StdVersion) bool {
+	return v.Number >= in.Number
+}
+
 func (v *StdVersion) LessThen(in *StdVersion) bool {
 	return v.Number < in.Number
+}
+
+func (v *StdVersion) LessEqual(in *StdVersion) bool {
+	return v.Number <= in.Number
 }
 
 func (v *StdVersion) String() string {

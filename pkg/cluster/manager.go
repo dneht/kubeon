@@ -87,7 +87,7 @@ func InitExistCluster() (*RunConfig, error) {
 }
 
 func InitUpgradeCluster(version *define.StdVersion) error {
-	if current.Status != StatusUpgrading && version.LessThen(current.Version) {
+	if current.Status != StatusUpgrading && version.LessEqual(current.Version) {
 		return errors.Errorf("upgrade version [%s] is less than now version [%s]", version.Full, current.Version.Full)
 	}
 
