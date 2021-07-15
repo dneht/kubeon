@@ -77,7 +77,6 @@ type ClusterRemoteResource struct {
 	NetworkPath    string
 	OfflinePath    string
 	ClusterConf    *ClusterRemoteConfResource
-	ClusterTool    *ClusterRemoteToolResource
 }
 
 type ClusterRemoteConfResource struct {

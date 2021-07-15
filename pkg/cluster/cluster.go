@@ -58,6 +58,8 @@ type Cluster struct {
 	NetworkMode     string                   `json:"networkMode"`
 	CalicoMode      string                   `json:"calicoMode"`
 	CalicoMTU       string                   `json:"calicoMTU"`
+	IngressMode     string                   `json:"ingressMode"`
+	EnvoyAdmin      string                   `json:"envoyAdmin"`
 	ControlPlanes   NodeList                 `json:"controlPlanes"`
 	Workers         NodeList                 `json:"workers"`
 	IsExternalLb    bool                     `json:"isExternalLb"`

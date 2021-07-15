@@ -25,22 +25,6 @@ import (
 	"text/template"
 )
 
-type CorednsTemplate struct {
-	ClusterDnsIP string
-}
-
-type CalicoTemplate struct {
-	IsSetInterface   bool
-	DefaultInterface string
-	EtcdKeyBase64    string
-	EtcdCertBase64   string
-	EtcdCABase64     string
-	EtcdEndpoints    string
-	CalicoMTU        string
-	IPIPMode         string
-	VXLanMode        string
-}
-
 type KubeletTemplate struct {
 	ClusterDnsIP     string
 	ClusterDnsDomain string
@@ -85,6 +69,26 @@ type KubeadmJoinTemplate struct {
 	CertificateKey   string
 }
 
+type CorednsTemplate struct {
+	ClusterDnsIP string
+}
+
+type CalicoTemplate struct {
+	IsSetInterface   bool
+	DefaultInterface string
+	EtcdKeyBase64    string
+	EtcdCertBase64   string
+	EtcdCABase64     string
+	EtcdEndpoints    string
+	CalicoMTU        string
+	IPIPMode         string
+	VXLanMode        string
+}
+
+type ContourTemplate struct {
+	EnvoyAdminAddress string
+}
+
 type BalanceHaproxyTemplate struct {
 	MasterHosts []string
 	ImageUrl    string
@@ -108,6 +112,10 @@ func RenderCorednsTemplate(input *CorednsTemplate) ([]byte, error) {
 
 func RenderCalicoTemplate(input *CalicoTemplate) ([]byte, error) {
 	return parseFile("/calico.yaml.tpl", input)
+}
+
+func RenderContourTemplate(input *ContourTemplate) ([]byte, error) {
+	return parseFile("/contour.yaml.tpl", input)
 }
 
 func parseFile(path string, input interface{}) ([]byte, error) {

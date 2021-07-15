@@ -16,6 +16,8 @@ limitations under the License.
 
 package define
 
+const LoopbackAddress = "127.0.0.1"
+
 const (
 	IPVSProxy = "ipvs"
 
@@ -29,7 +31,10 @@ const (
 const (
 	NetworkPlugin = "cni"
 
-	NoneNetwork = "none"
-	// CalicoNetwork refers to the calico
+	NoneNetwork   = "none"
 	CalicoNetwork = "calico"
+	CiliumNetwork = "cilium"
+
+	NoneIngress    = "none"
+	ContourIngress = "contour"
 )

@@ -56,10 +56,6 @@ func initResource(clusterVersion, runtimeMode string, isBinary, isOffline bool) 
 			CorednsTemplatePath: define.AppTplDir + "/" + define.CorednsPart + ".yaml.tpl",
 			CalicoTemplatePath:  define.AppTplDir + "/" + define.CalicoNetwork + ".yaml.tpl",
 		},
-		ClusterTool: &ClusterToolResource{
-			HelmPath: distPath + "/" + define.HelmTool + ".tar",
-			HelmSum:  onutil.GetRemoteSum(clusterVersion, define.HelmTool),
-		},
 		ClusterOffline: nil,
 	}
 	if isBinary {
@@ -103,9 +99,6 @@ func remoteResource(basePath, runtimeMode string) *ClusterRemoteResource {
 			HaproxyStaticPath:  "/etc/kubernetes/manifests/local-haproxy.yaml",
 			StartupServicePath: "/etc/systemd/system/apiserver-startup.service",
 			StartupScriptPath:  "/opt/kubeon/apiserver-startup.sh",
-		},
-		ClusterTool: &ClusterRemoteToolResource{
-			HelmPath: distPath + "/" + define.HelmTool + ".tar",
 		},
 	}
 }

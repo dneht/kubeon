@@ -38,6 +38,11 @@ func checkSupport(flags *flagpole, clusterVersion string) bool {
 		log.Errorf("input cni[%s] not support", flags.InputCNIMode)
 		return false
 	}
+	isSupport = define.IsSupportIngress(flags.InputICMode)
+	if !isSupport {
+		log.Errorf("input ic[%s] not support", flags.InputICMode)
+		return false
+	}
 	isSupport = define.IsSupportProxyMode(flags.InputProxyMode)
 	if !isSupport {
 		log.Errorf("input proxy mode[%s] not support", flags.InputProxyMode)

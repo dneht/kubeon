@@ -19,7 +19,7 @@ package define
 import "github.com/dneht/kubeon/pkg/onutil"
 
 const (
-	AppVersion = "0.7.7"
+	AppVersion = "0.7.8"
 
 	MirrorRegistry = "registry.cn-hangzhou.aliyuncs.com"
 )
@@ -76,6 +76,8 @@ const (
 	DefaultCalicoMode = CalicoIPIP
 
 	DefaultCalicoMTU = "1440"
+
+	DefaultIngressMode = NoneIngress
 
 	KubeadmIgnorePreflightErrors = "SystemVerification,FileContent--proc-sys-net-bridge-bridge-nf-call-iptables"
 

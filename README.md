@@ -64,6 +64,11 @@ default is `haproxy`, will be created a static pod `local-haproxy` on each worke
 ##### updater
 create one deployment on now cluster, and one service on each worker
 
+#### --ic
+default ingress is `none`, you can also use `contour`
+
+only support 1.21.x or later
+
 ### Add node
 
 ```shell

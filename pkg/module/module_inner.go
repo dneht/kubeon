@@ -103,6 +103,15 @@ func ShowInner(moduleName string) ([]byte, error) {
 			IPIPMode:         ipipMode,
 			VXLanMode:        vxlanMode,
 		})
+	case define.ContourIngress:
+		log.Debugf("get module %s config", define.ContourIngress)
+		envoyAdmin := define.LoopbackAddress
+		if "" != current.EnvoyAdmin {
+			envoyAdmin = current.EnvoyAdmin
+		}
+		return release.RenderContourTemplate(&release.ContourTemplate{
+			EnvoyAdminAddress: envoyAdmin,
+		})
 	case define.HealthzReader:
 		log.Debugf("get module %s config", define.HealthzReader)
 		return release.RenderHealthzTemplate(current.Version.Full), nil

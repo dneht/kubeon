@@ -28,7 +28,7 @@ func ClusterInfo() error {
 	boot := cluster.BootstrapNode()
 	// commands are executed on the bootstrap control-plane
 	fmt.Println("====================cert info====================")
-	if current.Version.GreaterEqual(define.K8S_1_21_0) {
+	if current.Version.GreaterThen(define.K8S_1_20_0) {
 		if err := boot.Command(
 			"kubeadm", "certs", "check-expiration",
 		).RunWithEcho(); err != nil {

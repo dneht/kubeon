@@ -34,6 +34,10 @@ var (
 		NoneNetwork:   true,
 		CalicoNetwork: true,
 	}
+	supportIngresses = map[string]bool{
+		NoneIngress:    true,
+		ContourIngress: true,
+	}
 	supportCalicoModes = map[string]bool{
 		CalicoIPIP:  true,
 		CalicoVXLan: true,
@@ -72,6 +76,11 @@ func SupportNetworkList() []string {
 
 func IsSupportNetwork(cni string) bool {
 	_, ok := supportNetworks[cni]
+	return ok
+}
+
+func IsSupportIngress(ic string) bool {
+	_, ok := supportIngresses[ic]
 	return ok
 }
 

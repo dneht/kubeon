@@ -40,10 +40,6 @@ func InstallSelect(moduleName, nodeSelector string) (err error) {
 		localPath = currentResource.NetworkPath
 		localSum = currentResource.NetworkSum
 		break
-	case define.HelmTool:
-		localPath = currentResource.ClusterTool.HelmPath
-		localSum = currentResource.ClusterTool.HelmSum
-		break
 	default:
 		log.Warnf("not support module[%s]", moduleName)
 		return nil
@@ -62,9 +58,6 @@ func InstallSelect(moduleName, nodeSelector string) (err error) {
 			break
 		case define.NetworkPlugin:
 			remotePath = remoteResource.NetworkPath
-			break
-		case define.HelmTool:
-			remotePath = remoteResource.ClusterTool.HelmPath
 			break
 		}
 		err = copyToNode(node, remotePath, localPath, localSum)

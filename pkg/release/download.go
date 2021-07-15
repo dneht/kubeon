@@ -95,7 +95,7 @@ func ProcessDownload(resource *ClusterResource, version, runtime string, mirror,
 }
 
 func downloadCRI(localRes *ClusterResource, runtime, version string, mirror bool) (err error) {
-	if "" == runtime {
+	if "" == runtime || define.DockerRuntime == runtime {
 		if !onutil.PathExists(localRes.ContainerdPath) || execute.FileSum(localRes.ContainerdPath) != localRes.ContainerdSum {
 			IsUpdateCRI = true
 			err = processImage(mirror, version, ContainerdResource, define.ContainerdRuntime)
@@ -106,22 +106,14 @@ func downloadCRI(localRes *ClusterResource, runtime, version string, mirror bool
 		if !onutil.PathExists(localRes.DockerPath) || execute.FileSum(localRes.DockerPath) != localRes.DockerSum {
 			IsUpdateCRI = true
 			err = processImage(mirror, version, DockerResource, define.DockerRuntime)
-			if nil != err {
-				return err
-			}
-		}
-	} else if runtime == define.ContainerdRuntime {
-		if !onutil.PathExists(localRes.ContainerdPath) || execute.FileSum(localRes.ContainerdPath) != localRes.ContainerdSum {
-			IsUpdateCRI = true
-			err = processImage(mirror, version, ContainerdResource, define.ContainerdRuntime)
 			if nil != err {
 				return err
 			}
 		}
 	} else {
-		if !onutil.PathExists(localRes.DockerPath) || execute.FileSum(localRes.DockerPath) != localRes.DockerSum {
+		if !onutil.PathExists(localRes.ContainerdPath) || execute.FileSum(localRes.ContainerdPath) != localRes.ContainerdSum {
 			IsUpdateCRI = true
-			err = processImage(mirror, version, DockerResource, define.DockerRuntime)
+			err = processImage(mirror, version, ContainerdResource, define.ContainerdRuntime)
 			if nil != err {
 				return err
 			}
