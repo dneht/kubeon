@@ -222,7 +222,7 @@ func preInstall(newNodes cluster.NodeList, mirror bool) (err error) {
 }
 
 func joinNodes(newNodes cluster.NodeList) (err error) {
-	err = module.SetupAddKubeadm(newNodes)
+	err = module.SetupAddsKubeadm(newNodes)
 	if nil != err {
 		return err
 	}

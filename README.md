@@ -7,12 +7,14 @@
 > kubeon view support
 
 ```text
-v1.19.4-v1.19.12
-v1.20.1-v1.20.8
-v1.21.1-v1.21.2
+v1.19.4-v1.19.15
+v1.20.1-v1.20.11
+v1.21.1-v1.21.5
+v1.22.1-v1.22.2
 ```
 
 ## Usage
+> k8s_ver=v1.22.2
 
 ### Vagrant test
 
@@ -28,7 +30,7 @@ su - root
 # install kubeon
 sh -c "$(wget https://dl.sre.pub/on/install.sh -q -O -)"
 # create cluster
-kubeon create -N test --version v1.21.1 \
+kubeon create -N test --version ${k8s_ver} \
     -m 172.20.0.21 \
     -m 172.20.0.22 \
     -m 172.20.0.23 \
@@ -102,7 +104,7 @@ kubeon del -N test \
 ### Upgrade cluster
 
 ```shell
-kubeon upgrade -N test --version v1.21.1 \
+kubeon upgrade -N test --version ${k8s_ver} \
     --log-level debug
 ```
 

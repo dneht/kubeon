@@ -21,8 +21,8 @@ import (
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/execute"
 	"github.com/dneht/kubeon/pkg/onutil"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/dneht/kubeon/pkg/release"
+	"github.com/pkg/errors"
 	"strconv"
 )
 
@@ -59,7 +59,6 @@ type Cluster struct {
 	CalicoMode      string                   `json:"calicoMode"`
 	CalicoMTU       string                   `json:"calicoMTU"`
 	IngressMode     string                   `json:"ingressMode"`
-	EnvoyAdmin      string                   `json:"envoyAdmin"`
 	ControlPlanes   NodeList                 `json:"controlPlanes"`
 	Workers         NodeList                 `json:"workers"`
 	IsExternalLb    bool                     `json:"isExternalLb"`
@@ -168,14 +167,19 @@ func (c *Cluster) HasPureWorker() bool {
 	return len(c.Workers) > 0
 }
 
-func (c *Cluster) GetCertHash() string {
-	if nil == c || nil == c.CreateConfig {
-		return ""
+func (c *Cluster) GetCertHash() (string, error) {
+	if nil == c {
+		return "", errors.New("cluster not found")
+	}
+	if nil == c.CreateConfig {
+		loadCreateConfig()
+	}
+	if nil == c.CreateConfig {
+		return "", errors.New("cluster create config get error")
 	}
 	caData, err := base64.StdEncoding.DecodeString(c.CreateConfig.CACertBase64)
 	if nil != err {
-		log.Error("decode ca cert failed: " + err.Error())
-		return ""
+		return "", err
 	}
-	return "sha256:" + onutil.CertSHA256(caData)
+	return "sha256:" + onutil.CertSHA256(caData), nil
 }

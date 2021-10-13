@@ -66,7 +66,7 @@ func SetupUpgradeKubeadm() (err error) {
 	return sendNeedKubeadm(currentNodes)
 }
 
-func SetupAddKubeadm(nodes cluster.NodeList) (err error) {
+func SetupAddsKubeadm(nodes cluster.NodeList) (err error) {
 	current := cluster.Current()
 	err = generateNodeKubeadm(current, cluster.CurrentNodes(), true)
 	if nil != err {
@@ -167,12 +167,16 @@ func writeKubeadmConfig(current *cluster.Cluster, node *cluster.Node, token, sec
 			lbPort = define.DefaultClusterAPIPort
 		}
 		kubeadmTemplate.ClusterLbPort = lbPort
+		certHash, err := current.GetCertHash()
+		if nil != err {
+			return err
+		}
 		err = release.WriteKubeadmJoinTemplate(kubeletTemplate, kubeadmTemplate,
 			&release.KubeadmJoinTemplate{
 				Token:            token,
 				ClusterLbDomain:  current.LbDomain,
 				ClusterLbPort:    lbPort,
-				CaCertHash:       current.GetCertHash(),
+				CaCertHash:       certHash,
 				IsControlPlane:   node.IsControlPlane(),
 				NodeName:         node.Hostname,
 				AdvertiseAddress: node.IPv4,

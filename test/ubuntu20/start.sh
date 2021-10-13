@@ -1,6 +1,6 @@
 num=$1
-ver=v1.19.11
-pwd=4567890123
+ver=v1.21.1
+pwd=123456
 echo "start node ${num} with password: ${pwd}"
 sudo echo root:${pwd} | chpasswd
 sudo sed -i "/PermitRootLogin prohibit-password/d" /etc/ssh/sshd_config
@@ -35,6 +35,7 @@ if [ $num = 6 ]; then
       --worker-name test40 \
       --worker-name test50 \
       --default-passwd ${pwd} \
+      --ic contour \
       --interface enp0s8 \
       --log-level debug
   kubeon view cluster-info -N test

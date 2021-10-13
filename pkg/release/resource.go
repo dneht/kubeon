@@ -17,76 +17,66 @@ limitations under the License.
 package release
 
 type ClusterResource struct {
-	ImagesPath     string
-	ImagesSum      string
-	BinaryPath     string
-	BinarySum      string
-	KubeletPath    string
-	KubeletSum     string
-	RuntimeType    string
-	DockerPath     string
-	DockerSum      string
-	ContainerdPath string
-	ContainerdSum  string
-	NetworkPath    string
-	NetworkSum     string
-	ClusterConf    *ClusterConfResource
-	ClusterTpl     *ClusterTplResource
-	ClusterTool    *ClusterToolResource
-	ClusterOffline *ClusterOffResource
+	ImagesPath     string               `json:"imagesPath"`
+	ImagesSum      string               `json:"imagesSum"`
+	BinaryPath     string               `json:"binaryPath"`
+	BinarySum      string               `json:"binarySum"`
+	KubeletPath    string               `json:"kubeletPath"`
+	KubeletSum     string               `json:"kubeletSum"`
+	RuntimeType    string               `json:"runtimeType"`
+	DockerPath     string               `json:"dockerPath"`
+	DockerSum      string               `json:"dockerSum"`
+	ContainerdPath string               `json:"containerdPath"`
+	ContainerdSum  string               `json:"containerdSum"`
+	NetworkPath    string               `json:"networkPath"`
+	NetworkSum     string               `json:"networkSum"`
+	ClusterConf    *ClusterConfResource `json:"clusterConf"`
+	ClusterTpl     *ClusterTplResource  `json:"clusterTpl"`
+	ClusterOffline *ClusterOffResource  `json:"clusterOffline"`
 }
 
 type ClusterConfResource struct {
-	KubeadmInitDir     string
-	KubeletServicePath string
-	KubeadmConfPath    string
-	HaproxyStaticPath  string
-	StartupServicePath string
-	StartupScriptPath  string
+	KubeadmInitDir     string `json:"kubeadmInitDir"`
+	KubeletServicePath string `json:"kubeletServicePath"`
+	KubeadmConfPath    string `json:"kubeadmConfPath"`
+	HaproxyStaticPath  string `json:"haproxyStaticPath"`
+	StartupServicePath string `json:"startupServicePath"`
+	StartupScriptPath  string `json:"startupScriptPath"`
 }
 
 type ClusterTplResource struct {
-	CorednsTemplatePath string
-	CalicoTemplatePath  string
+	CorednsTemplatePath string `json:"corednsTemplatePath"`
+	CalicoTemplatePath  string `json:"calicoTemplatePath"`
 }
 
 type ClusterOffResource struct {
-	OfflinePath string
-	OfflineSum  string
-}
-
-type ClusterToolResource struct {
-	HelmPath string
-	HelmSum  string
+	OfflinePath string `json:"offlinePath"`
+	OfflineSum  string `json:"offlineSum"`
 }
 
 type ClusterRemoteResource struct {
-	BaseDir        string
-	ConfDir        string
-	TplDir         string
-	ScriptDir      string
-	PatchDir       string
-	DistDir        string
-	TmpDir         string
-	ImagesPath     string
-	BinaryPath     string
-	KubeletPath    string
-	RuntimeType    string
-	DockerPath     string
-	ContainerdPath string
-	NetworkPath    string
-	OfflinePath    string
-	ClusterConf    *ClusterRemoteConfResource
+	BaseDir        string                     `json:"baseDir"`
+	ConfDir        string                     `json:"confDir"`
+	TplDir         string                     `json:"tplDir"`
+	ScriptDir      string                     `json:"scriptDir"`
+	PatchDir       string                     `json:"patchDir"`
+	DistDir        string                     `json:"distDir"`
+	TmpDir         string                     `json:"tmpDir"`
+	ImagesPath     string                     `json:"imagesPath"`
+	BinaryPath     string                     `json:"binaryPath"`
+	KubeletPath    string                     `json:"kubeletPath"`
+	RuntimeType    string                     `json:"runtimeType"`
+	DockerPath     string                     `json:"dockerPath"`
+	ContainerdPath string                     `json:"containerdPath"`
+	NetworkPath    string                     `json:"networkPath"`
+	OfflinePath    string                     `json:"offlinePath"`
+	ClusterConf    *ClusterRemoteConfResource `json:"clusterConf"`
 }
 
 type ClusterRemoteConfResource struct {
-	KubeletInitPath    string
-	KubeadmInitPath    string
-	HaproxyStaticPath  string
-	StartupServicePath string
-	StartupScriptPath  string
-}
-
-type ClusterRemoteToolResource struct {
-	HelmPath string
+	KubeletInitPath    string `json:"kubeletInitPath"`
+	KubeadmInitPath    string `json:"kubeadmInitPath"`
+	HaproxyStaticPath  string `json:"haproxyStaticPath"`
+	StartupServicePath string `json:"startupServicePath"`
+	StartupScriptPath  string `json:"startupScriptPath"`
 }

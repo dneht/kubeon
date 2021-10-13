@@ -105,16 +105,7 @@ func InitUpgradeCluster(version *define.StdVersion) error {
 
 func AfterBuildCluster() (*CreateConfig, error) {
 	var err error
-	adminConfigBase64 := bootBase64(define.KubernetesEtcPath + "/admin.conf")
-	current.CreateConfig = &CreateConfig{
-		CACertBase64:      bootBase64(define.KubernetesPkiPath + "/ca.crt"),
-		EtcdKeyBase64:     bootBase64(define.KubernetesPkiPath + "/apiserver-etcd-client.key"),
-		EtcdCertBase64:    bootBase64(define.KubernetesPkiPath + "/apiserver-etcd-client.crt"),
-		EtcdCABase64:      bootBase64(define.KubernetesPkiEtcdPath + "/ca.crt"),
-		EtcdEndpoints:     etcdEndpoints(),
-		AdminConfigBase64: adminConfigBase64,
-	}
-	err = writeKubeConfig(adminConfigBase64)
+	err = writeKubeConfig(loadCreateConfig())
 	if err != nil {
 		return nil, err
 	}

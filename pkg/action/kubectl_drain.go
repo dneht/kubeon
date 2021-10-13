@@ -18,21 +18,30 @@ package action
 
 import (
 	"github.com/dneht/kubeon/pkg/cluster"
+	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/execute"
 )
 
-func KubectlDrainNode(name string) (err error) {
-	return execute.NewLocalCmd("kubectl",
-		"drain", name,
-		"--kubeconfig="+cluster.Current().AdminConfigPath,
-		"--ignore-daemonsets", "--delete-local-data").RunWithEcho()
+func deleteLocalFlag(version *define.StdVersion) string {
+	if version.GreaterEqual(define.K8S_1_20_0) {
+		return "--delete-emptydir-data"
+	} else {
+		return "--delete-local-data"
+	}
 }
 
-func KubectlDrainNodeForce(name string) (err error) {
+func KubectlDrainNode(name string, version *define.StdVersion) (err error) {
 	return execute.NewLocalCmd("kubectl",
 		"drain", name,
 		"--kubeconfig="+cluster.Current().AdminConfigPath,
-		"--force", "--ignore-daemonsets", "--delete-local-data").RunWithEcho()
+		"--ignore-daemonsets", deleteLocalFlag(version)).RunWithEcho()
+}
+
+func KubectlDrainNodeForce(name string, version *define.StdVersion) (err error) {
+	return execute.NewLocalCmd("kubectl",
+		"drain", name,
+		"--kubeconfig="+cluster.Current().AdminConfigPath,
+		"--force", "--ignore-daemonsets", deleteLocalFlag(version)).RunWithEcho()
 }
 
 func KubectlUncordonNode(name string) (err error) {

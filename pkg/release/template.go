@@ -86,7 +86,6 @@ type CalicoTemplate struct {
 }
 
 type ContourTemplate struct {
-	EnvoyAdminAddress string
 }
 
 type BalanceHaproxyTemplate struct {

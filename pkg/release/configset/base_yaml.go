@@ -114,14 +114,14 @@ scheduler:
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
-mode: "{{.KubeProxyMode}}"
+mode: {{.KubeProxyMode}}
 ipvs:
   minSyncPeriod: 0s
-  scheduler: "{{.KubeIPVSScheduler}}"
+  scheduler: {{.KubeIPVSScheduler}}
   syncPeriod: 15s
   {{- if .IsExternalLB}}
   excludeCIDRs: 
-  - "{{.ClusterLbIP}}/32"
+  - {{.ClusterLbIP}}/32
   {{- end}}
 iptables:
   masqueradeAll: true
@@ -149,7 +149,7 @@ const kubeadmJoinYaml = `apiVersion: kubeadm.k8s.io/v1beta2
 kind: JoinConfiguration
 discovery:
   bootstrapToken:
-    token: {{.Token}}
+    token: "{{.Token}}"
     apiServerEndpoint: "{{.ClusterLbDomain}}:{{.ClusterLbPort}}"
     caCertHashes: 
     - {{.CaCertHash}}
@@ -188,6 +188,10 @@ kind: ClusterRole
 metadata:
   name: healthz-reader
 rules:
-- nonResourceURLs: ["/healthz", "/healthz/*"] # '*' in a nonResourceURL is a suffix glob match
-  verbs: ["get", "post"]
+- nonResourceURLs:
+  - /healthz
+  - /healthz/*
+  verbs:
+  - get
+  - post
 `

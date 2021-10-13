@@ -18,6 +18,7 @@ package cluster
 
 import (
 	"encoding/base64"
+	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/dneht/kubeon/pkg/release"
 	"github.com/pkg/errors"
@@ -68,7 +69,7 @@ func UpgradeCompleteCluster() (err error) {
 	log.Infof("now cluster[%s] upgrade complete, version is %s", current.Name, current.Version.Full)
 	err = runConfig.WriteConfig()
 	if nil != err {
-		log.Error("upgrade & s cluster config failed: " + err.Error())
+		log.Error("upgrade & save cluster config failed: " + err.Error())
 	}
 	return nil
 }
@@ -97,6 +98,19 @@ func bootBase64(path string) string {
 		return ""
 	}
 	return strings.TrimSpace(result)
+}
+
+func loadCreateConfig() string {
+	adminConfigBase64 := bootBase64(define.KubernetesEtcPath + "/admin.conf")
+	current.CreateConfig = &CreateConfig{
+		CACertBase64:      bootBase64(define.KubernetesPkiPath + "/ca.crt"),
+		EtcdKeyBase64:     bootBase64(define.KubernetesPkiPath + "/apiserver-etcd-client.key"),
+		EtcdCertBase64:    bootBase64(define.KubernetesPkiPath + "/apiserver-etcd-client.crt"),
+		EtcdCABase64:      bootBase64(define.KubernetesPkiEtcdPath + "/ca.crt"),
+		EtcdEndpoints:     etcdEndpoints(),
+		AdminConfigBase64: adminConfigBase64,
+	}
+	return adminConfigBase64
 }
 
 func writeKubeConfig(caCert string) error {

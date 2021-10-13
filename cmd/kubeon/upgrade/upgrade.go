@@ -107,7 +107,7 @@ func upgradeCluster(current *cluster.Cluster) (err error) {
 	//	return err
 	//}
 	for _, node := range cluster.CurrentNodes() {
-		err = action.KubectlDrainNode(node.Hostname)
+		err = action.KubectlDrainNode(node.Hostname, current.Version)
 		if nil != err {
 			return err
 		}

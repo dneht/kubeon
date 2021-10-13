@@ -62,7 +62,7 @@ func runE(cmd *cobra.Command, args []string) error {
 
 func preRemove(delNodes cluster.NodeList) (err error) {
 	for _, node := range delNodes {
-		err = action.KubectlDrainNodeForce(node.Hostname)
+		err = action.KubectlDrainNodeForce(node.Hostname, cluster.Current().Version)
 		if nil != err {
 			log.Warnf("drain node[%s] error: %s", node.Addr(), err)
 		}

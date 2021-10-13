@@ -212,5 +212,5 @@ func (n *Node) GetResource() *release.ClusterRemoteResource {
 }
 
 func (n *Node) LocalConfigPath() string {
-	return current.LocalResource.ClusterConf.KubeadmInitDir + "/" + n.Hostname + ".yaml"
+	return current.LocalResource.ClusterConf.KubeadmInitDir + n.Hostname + ".yaml"
 }

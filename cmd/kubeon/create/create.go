@@ -53,7 +53,6 @@ type flagpole struct {
 	CalicoMode       string
 	CalicoMTU        string
 	InputICMode      string
-	EnvoyAdmin       string
 	InputCertSANs    []string
 }
 
@@ -174,11 +173,6 @@ func NewCommand() *cobra.Command {
 		&flags.InputICMode, "ic",
 		define.DefaultIngressMode,
 		"Ingress controller, only none or contour",
-	)
-	cmd.Flags().StringVar(
-		&flags.EnvoyAdmin, "envoy-admin",
-		define.LoopbackAddress,
-		"Envoy admin address, default is 127.0.0.1, can be 0.0.0.0",
 	)
 	cmd.Flags().StringSliceVar(
 		&flags.InputCertSANs, "cert-san",
@@ -341,7 +335,6 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		CalicoMode:    flags.CalicoMode,
 		CalicoMTU:     flags.CalicoMTU,
 		IngressMode:   flags.InputICMode,
-		EnvoyAdmin:    flags.EnvoyAdmin,
 		CertSANs:      flags.InputCertSANs,
 		Status:        cluster.StatusCreating,
 	}, flags.ExternalLBIP, flags.DefaultList, flags.MasterList, flags.WorkerList, flags.DryRun)

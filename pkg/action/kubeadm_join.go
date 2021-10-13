@@ -41,13 +41,13 @@ func KubeadmJoinNode(nodes cluster.NodeList, usePatch bool, ignorePreflightError
 			}
 		}
 		if len(masterList) > 0 {
-			err = KubeadmJoinControlPlane(masterList, usePatch, ignorePreflightErrors, wait)
+			_, err = KubeadmJoinControlPlane(masterList, usePatch, ignorePreflightErrors, wait)
 			if nil != err {
 				return err
 			}
 		}
 		if len(workerList) > 0 {
-			err = KubeadmJoinWorker(workerList, ignorePreflightErrors, wait)
+			_, err = KubeadmJoinWorker(workerList, ignorePreflightErrors, wait)
 			if nil != err {
 				return err
 			}
@@ -56,27 +56,27 @@ func KubeadmJoinNode(nodes cluster.NodeList, usePatch bool, ignorePreflightError
 	return nil
 }
 
-func KubeadmJoinControlPlane(nodes cluster.NodeList, usePatch bool, ignorePreflightErrors string, wait time.Duration) (err error) {
+func KubeadmJoinControlPlane(nodes cluster.NodeList, usePatch bool, ignorePreflightErrors string, wait time.Duration) (del *cluster.Node, err error) {
 	current := cluster.Current()
 	if usePatch && current.Version.LessThen(define.K8S_1_19_0) {
-		return errors.New("--patches can't be used with kubeadm older than v1.19")
+		return nil, errors.New("--patches can't be used with kubeadm older than v1.19")
 	}
 	for _, node := range nodes {
 		err = kubeadmJoinControlPlane(node, usePatch, ignorePreflightErrors)
 		if err != nil {
-			return err
+			return node, err
 		}
 
 		err = waitNewControlPlaneNodeReady(current, node, wait)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		err = joinControlPlaneAfterConfig(node)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func kubeadmJoinControlPlane(node *cluster.Node, usePatch bool, ignorePreflightErrors string) (err error) {
@@ -96,24 +96,24 @@ func joinControlPlaneAfterConfig(node *cluster.Node) error {
 	return initAfterConfig(node)
 }
 
-func KubeadmJoinWorker(nodes cluster.NodeList, ignorePreflightErrors string, wait time.Duration) (err error) {
+func KubeadmJoinWorker(nodes cluster.NodeList, ignorePreflightErrors string, wait time.Duration) (del *cluster.Node, err error) {
 	current := cluster.Current()
 	for _, worker := range nodes {
 		err = kubeadmJoinWorker(worker, ignorePreflightErrors)
 		if err != nil {
-			return err
+			return worker, err
 		}
 
 		err = waitNewWorkerNodeReady(current, worker, wait)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		err = joinWorkerAfterConfig(worker)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func kubeadmJoinWorker(node *cluster.Node, ignorePreflightErrors string) (err error) {

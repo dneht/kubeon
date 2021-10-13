@@ -155,6 +155,9 @@ func processImage(mirror bool, version, image, module string) error {
 	onutil.RmFile(down)
 	onutil.MkDir(temp)
 
+	if !strings.HasPrefix(version, "v") {
+		return errors.New("version format is error, like v1.x.x")
+	}
 	hash, err := DownloadImage(version, image, down, mirror)
 	if nil != err {
 		return err

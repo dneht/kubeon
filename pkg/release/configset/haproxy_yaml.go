@@ -39,7 +39,7 @@ spec:
       httpGet:
         host: 127.0.0.1
         path: /healthz
-        port: 10842
+        port: 8842
         scheme: HTTP
       initialDelaySeconds: 10
       periodSeconds: 10
@@ -49,7 +49,7 @@ spec:
       httpGet:
         host: 127.0.0.1
         path: /healthz
-        port: 10842
+        port: 8842
         scheme: HTTP
       initialDelaySeconds: 10
       periodSeconds: 10
