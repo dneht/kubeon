@@ -25,24 +25,25 @@ v1.22.1-v1.22.4
 ```shell
 # ssh node0
 vagrant ssh node0
-# use root with password 4567890123
+# use root with password 123456
 su - root
 # install kubeon
 sh -c "$(wget https://dl.sre.pub/on/install.sh -q -O -)"
 # create cluster
 # cluster name is "test"
 kubeon create test ${k8s_ver} \
-    -m 172.20.0.21 \
-    -m 172.20.0.22 \
-    -m 172.20.0.23 \
-    --master-name test10 \
-    --master-name test20 \
-    --master-name test30 \
-    -w 172.20.0.25 \
-    --worker-name test50 \
-    --default-passwd 4567890123 \
-    --interface enp0s8 \
-    --log-level debug
+  -m 192.168.60.21 \
+  -m 192.168.60.22 \
+  -m 192.168.60.23 \
+  --master-name test10 \
+  --master-name test20 \
+  --master-name test30 \
+  -w 192.168.60.25 \
+  --worker-name test50 \
+  --default-passwd 123456 \
+  --ic contour \
+  --interface enp0s8 \
+  --log-level debug
 ```
 Please use `source /etc/profile` for autocompletion
 
@@ -73,28 +74,28 @@ only support 1.21.x or later
 
 ```shell
 # add one master
-kubeon addon test \
-    -m 172.20.0.24 \
-    --master-name test40 \
-    --default-passwd 4567890123 \
-    --log-level debug
+kubeon add test \
+  -m 192.168.60.26 \
+  --master-name test60 \
+  --default-passwd 123456 \
+  --log-level debug
 # add one worker
-kubeon addon test \
-    -w 172.20.0.26 \
-    --worker-name test110 \
-    --default-passwd 4567890123 \
-    --log-level debug
+kubeon add test \
+  -w 192.168.60.25 \
+  --worker-name test50 \
+  --default-passwd 123456 \
+  --log-level debug
 ```
 
 ### Del node
 
 ```shell
 # delon one node
-kubeon delon test \
+kubeon del test \
     ip=172.20.0.24 \
     --log-level debug
 # or use hostname
-kubeon delon test \
+kubeon del test \
     name=test40 \
     --log-level debug
 ```

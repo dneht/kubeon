@@ -21,6 +21,7 @@ import (
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/module"
+	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"net"
@@ -344,11 +345,13 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 
 	err = preInstall(current, flags.WithMirror)
 	if nil != err {
-		return err
+		log.Warnf("prepare input nodes failed, please check: %v", err)
+		return nil
 	}
 	err = initCluster(current)
 	if nil != err {
-		return err
+		log.Errorf("create cluster failed, reset nodes: %v", err)
+		action.KubeadmResetList(cluster.CurrentNodes())
 	}
 	return nil
 }
@@ -370,7 +373,6 @@ func initCluster(current *cluster.Cluster) (err error) {
 	bootNode := cluster.BootstrapNode()
 	err = module.SetupBootKubeadm(bootNode)
 	if nil != err {
-		action.KubeadmResetOne(bootNode)
 		return err
 	}
 	err = module.InstallInner(define.HealthzReader)
@@ -387,14 +389,12 @@ func initCluster(current *cluster.Cluster) (err error) {
 	}
 	err = action.KubeadmInitWait(4 * time.Minute)
 	if nil != err {
-		action.KubeadmResetOne(bootNode)
 		return err
 	}
 
 	joinNodes := cluster.JoinsNode()
 	err = module.SetupJoinsKubeadm(joinNodes)
 	if nil != err {
-		action.KubeadmResetList(joinNodes)
 		return err
 	}
 	err = module.InstallLoadBalance(current.Workers)

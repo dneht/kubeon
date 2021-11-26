@@ -53,11 +53,12 @@ func runE(cmd *cobra.Command, args []string) error {
 
 	err = preRemove(delNodes)
 	if nil != err {
-		return err
+		log.Warnf("prepare remove nodes failed, please check: %v", err)
+		return nil
 	}
 	err = removeNodes(delNodes)
 	if nil != err {
-		return err
+		log.Errorf("remove nodes failed, clean manually: %v", err)
 	}
 	return nil
 }
@@ -89,7 +90,7 @@ func removeNodes(delNodes cluster.NodeList) (err error) {
 			cluster.DelResetLocalHost(node)
 			err = action.EtcdMemberRemove(node.Hostname)
 			if nil != err {
-				return err
+				log.Warnf("remove etcd member failed %v", err)
 			}
 		}
 		err = module.InstallNetwork()

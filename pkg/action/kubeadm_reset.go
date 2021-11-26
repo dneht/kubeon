@@ -19,6 +19,7 @@ package action
 import (
 	"fmt"
 	"github.com/dneht/kubeon/pkg/cluster"
+	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/onutil/log"
 )
 
@@ -27,10 +28,37 @@ func KubeadmResetOne(node *cluster.Node) {
 	if nil != err {
 		log.Warnf("kubeadm reset failed: %v", err)
 	}
+	err = node.Rm("/etc/cni/net.d")
+	if nil != err {
+		log.Warnf("remove cni config failed: %v", err)
+	}
+	if cluster.Current().ProxyMode == define.IPVSProxy {
+		err = node.RunCmd("ipvsadm", "--clear")
+		if nil != err {
+			log.Warnf("clean ipvs rules failed: %v", err)
+		}
+	} else if cluster.Current().ProxyMode == define.IPTablesProxy {
+		log.Warnf("please clean the iptables rules yourself")
+	}
 }
 
 func KubeadmResetList(list cluster.NodeList) {
 	for _, node := range list {
-		KubeadmResetOne(node)
+		if node.IsWorker() {
+			KubeadmResetOne(node)
+		}
+	}
+	var boot *cluster.Node = nil
+	for _, node := range list {
+		if node.IsBootstrap() {
+			boot = node
+			continue
+		}
+		if node.IsControlPlane() {
+			KubeadmResetOne(node)
+		}
+	}
+	if nil != boot {
+		KubeadmResetOne(boot)
 	}
 }

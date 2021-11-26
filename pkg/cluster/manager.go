@@ -140,7 +140,7 @@ func InitAddNodes(base define.DefaultList, master define.MasterList, worker defi
 		log.Errorf("init node host error: %v", err)
 		return nil, err
 	}
-	return newNodes, runConfig.WriteConfig()
+	return newNodes, nil
 }
 
 func InitDelNodes(selector string) (NodeList, error) {
@@ -180,7 +180,7 @@ func InitDelNodes(selector string) (NodeList, error) {
 	current.Status = StatusDelWaiting
 
 	initCurrent(current)
-	return delNodes, runConfig.WriteConfig()
+	return delNodes, nil
 }
 
 func initCurrent(cluster *Cluster) {

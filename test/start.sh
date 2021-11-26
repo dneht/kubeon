@@ -1,5 +1,5 @@
 num=$1
-ver=v1.21.1
+ver=v1.22.1
 pwd=123456
 echo "start node ${num} with password: ${pwd}"
 sudo echo root:${pwd} | chpasswd

@@ -25,7 +25,7 @@ import (
 )
 
 func HAProxyInitWait(current *cluster.Cluster, node *cluster.Node, wait time.Duration) error {
-	log.Infof("waiting for local-haproxy Pod to become ready (timeout %s)", wait)
+	log.Infof("waiting for local-haproxy pod to become ready (timeout %s)", wait)
 	if pass := waitFor(current, node, wait,
 		staticPodIsReady("local-haproxy"),
 	); !pass {

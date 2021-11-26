@@ -196,11 +196,13 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 
 	err = preInstall(newNodes, flags.WithMirror)
 	if nil != err {
-		return err
+		log.Warnf("prepare input nodes failed, please check: %v", err)
+		return nil
 	}
 	err = joinNodes(newNodes)
 	if nil != err {
-		return err
+		log.Errorf("create nodes failed, reset nodes: %v", err)
+		action.KubeadmResetList(newNodes)
 	}
 	return nil
 }
@@ -221,7 +223,6 @@ func preInstall(newNodes cluster.NodeList, mirror bool) (err error) {
 func joinNodes(newNodes cluster.NodeList) (err error) {
 	err = module.SetupAddsKubeadm(newNodes)
 	if nil != err {
-		action.KubeadmResetList(newNodes)
 		return err
 	}
 	newMasters := cluster.GetMasterFromList(newNodes)

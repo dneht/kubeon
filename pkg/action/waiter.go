@@ -29,7 +29,7 @@ import (
 
 // waitNewControlPlaneNodeReady waits for a new control plane node reaching the target state after init/join
 func waitNewControlPlaneNodeReady(current *cluster.Cluster, node *cluster.Node, wait time.Duration) error {
-	log.Infof("waiting for control-plane Pods to become ready (timeout %s)", wait)
+	log.Infof("waiting for control-plane pods to become ready (timeout %s)", wait)
 	if pass := waitFor(current, node, wait,
 		nodeIsReady,
 		staticPodIsReady("kube-apiserver"),
@@ -54,7 +54,7 @@ func waitForPodsRunning(current *cluster.Cluster, node *cluster.Node, wait time.
 
 // waitForNodePort waits for a nodePort to become ready
 func waitForNodePort(current *cluster.Cluster, node *cluster.Node, wait time.Duration, nodePort string) error {
-	log.Infof("waiting for NodePort %q to become ready (timeout %s)", nodePort, wait)
+	log.Infof("waiting for node port %q to become ready (timeout %s)", nodePort, wait)
 	if pass := waitFor(current, node, wait,
 		nodePortIsReady(nodePort),
 	); !pass {
@@ -66,11 +66,11 @@ func waitForNodePort(current *cluster.Cluster, node *cluster.Node, wait time.Dur
 
 // waitNewWorkerNodeReady waits for a new control plane node reaching the target state after join
 func waitNewWorkerNodeReady(current *cluster.Cluster, node *cluster.Node, wait time.Duration) error {
-	log.Infof("waiting for Node to become Ready (timeout %s)", wait)
+	log.Infof("waiting for node to become ready (timeout %s)", wait)
 	if pass := waitFor(current, node, wait,
 		nodeIsReady,
 	); !pass {
-		return errors.New("timeout: Node did not reach target state")
+		return errors.New("timeout: node did not reach target state")
 	}
 	fmt.Println()
 	return nil
@@ -80,7 +80,7 @@ func waitNewWorkerNodeReady(current *cluster.Cluster, node *cluster.Node, wait t
 func waitControlPlaneUpgraded(current *cluster.Cluster, node *cluster.Node, upgradeVersion *define.StdVersion, wait time.Duration) error {
 	version := upgradeVersion.Full
 
-	log.Infof("waiting for control-plane Pods to restart with the new version (timeout %s)", wait)
+	log.Infof("waiting for control-plane pods to restart with the new version (timeout %s)", wait)
 	if pass := waitFor(current, node, wait,
 		staticPodHasVersion("kube-apiserver", version),
 		staticPodHasVersion("kube-controller-manager", version),

@@ -52,5 +52,6 @@ func DelCompleteCluster(delNodes NodeList) (err error) {
 }
 
 func deleteResource() {
+	DelConfig()
 	onutil.RmDir(onutil.K8sDir())
 }

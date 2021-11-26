@@ -20,6 +20,7 @@ import (
 	"github.com/dneht/kubeon/pkg/action"
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/module"
+	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/spf13/cobra"
 )
 
@@ -49,11 +50,11 @@ func runE(cmd *cobra.Command, args []string) error {
 
 	err = resetCluster()
 	if nil != err {
-		return err
+		log.Warnf("reset cluster failed, continue uninstall: %v", err)
 	}
 	err = doUninstall()
 	if nil != err {
-		return err
+		log.Warnf("uninstall module failed, please check: %v", err)
 	}
 	return nil
 }

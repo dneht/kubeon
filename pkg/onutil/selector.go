@@ -26,5 +26,9 @@ func NodeSelector(name string) (string, string, error) {
 	if idx <= 0 {
 		return "", "", errors.New("selector format error")
 	}
-	return name[0:idx], name[idx:], nil
+	if strings.Contains(name[idx:], "=") {
+		return name[0:idx], name[idx+1:], nil
+	} else {
+		return name[0:idx], name[idx:], nil
+	}
 }

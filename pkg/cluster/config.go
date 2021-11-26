@@ -38,6 +38,10 @@ func GetConfig() *RunConfig {
 	return runConfig
 }
 
+func DelConfig() {
+	onutil.RmFile(runConfig.Path)
+}
+
 func InitConfig(name string) *RunConfig {
 	if nil == runConfig {
 		path := define.AppBaseDir + "/" + name + ".json"
