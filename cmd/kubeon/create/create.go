@@ -32,10 +32,9 @@ type flagpole struct {
 	define.DefaultList
 	define.MasterList
 	define.WorkerList
-	DryRun           bool
+	OnlyCreate       bool
 	WithMirror       bool
 	WithOffline      bool
-	ClusterVersion   string
 	ClusterLBDomain  string
 	ClusterDNSDomain string
 	ClusterMaxPods   uint32
@@ -59,22 +58,21 @@ type flagpole struct {
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args:    cobra.NoArgs,
-		Use:     "create [flags]\n",
-		Aliases: []string{"c"},
+		Args:    cobra.ExactArgs(2),
+		Use:     "create CLUSTER_NAME CLUSTER_VERSION [flags]\n",
+		Aliases: []string{"c", "new"},
 		Short:   "Create a new cluster",
-		Long:    "",
-		Example: "",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			cluster.InitConfig(args[0])
 			return preRunE(flags, cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd, args)
 		},
 	}
-	cmd.Flags().BoolVar(
-		&flags.DryRun, "dry-run",
-		false, "dry run",
+	cmd.Flags().BoolVarP(
+		&flags.OnlyCreate, "only-create", "C",
+		false, "create  config¬ only",
 	)
 	cmd.Flags().BoolVar(
 		&flags.WithMirror, "with-mirror",
@@ -83,11 +81,6 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().BoolVar(
 		&flags.WithOffline, "with-offline",
 		false, "install use offline system package",
-	)
-	cmd.Flags().StringVar(
-		&flags.ClusterVersion, "version",
-		define.DefaultKubeVersion.Full,
-		"create with select version",
 	)
 	cmd.Flags().StringVar(
 		&flags.ClusterLBDomain, "lb-domain",
@@ -307,7 +300,7 @@ func NewCommand() *cobra.Command {
 }
 
 func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	inputVersion, err := define.NewStdVersion(flags.ClusterVersion)
+	inputVersion, err := define.NewStdVersion(args[1])
 	if nil != err {
 		return err
 	}
@@ -337,7 +330,7 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		IngressMode:   flags.InputICMode,
 		CertSANs:      flags.InputCertSANs,
 		Status:        cluster.StatusCreating,
-	}, flags.ExternalLBIP, flags.DefaultList, flags.MasterList, flags.WorkerList, flags.DryRun)
+	}, flags.ExternalLBIP, flags.DefaultList, flags.MasterList, flags.WorkerList)
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
@@ -345,7 +338,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 	if nil == current {
 		return errors.New("cluster create error")
 	}
-	if flags.DryRun {
+	if flags.OnlyCreate {
 		return nil
 	}
 
@@ -377,32 +370,31 @@ func initCluster(current *cluster.Cluster) (err error) {
 	bootNode := cluster.BootstrapNode()
 	err = module.SetupBootKubeadm(bootNode)
 	if nil != err {
+		action.KubeadmResetOne(bootNode)
 		return err
 	}
 	err = module.InstallInner(define.HealthzReader)
 	if nil != err {
 		return err
 	}
-	if current.NetworkMode == define.CalicoNetwork {
-		err = module.InstallInner(define.CalicoNetwork)
-		if nil != err {
-			return err
-		}
+	err = module.InstallNetwork()
+	if nil != err {
+		return err
 	}
-	if current.IngressMode == define.ContourIngress {
-		err = module.InstallInner(define.ContourIngress)
-		if nil != err {
-			return err
-		}
+	err = module.InstallIngress()
+	if nil != err {
+		return err
 	}
 	err = action.KubeadmInitWait(4 * time.Minute)
 	if nil != err {
+		action.KubeadmResetOne(bootNode)
 		return err
 	}
 
 	joinNodes := cluster.JoinsNode()
 	err = module.SetupJoinsKubeadm(joinNodes)
 	if nil != err {
+		action.KubeadmResetList(joinNodes)
 		return err
 	}
 	err = module.InstallLoadBalance(current.Workers)

@@ -38,7 +38,7 @@ func GetConfig() *RunConfig {
 	return runConfig
 }
 
-func NewConfig(name string) *RunConfig {
+func InitConfig(name string) *RunConfig {
 	if nil == runConfig {
 		path := define.AppBaseDir + "/" + name + ".json"
 		runConfig = &RunConfig{

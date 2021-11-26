@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package change
+package use
 
 import (
 	"github.com/dneht/kubeon/pkg/cluster"
@@ -23,10 +23,13 @@ import (
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "change CLUSTER_NAME",
+		Args:  cobra.ExactArgs(1),
+		Use:   "use CLUSTER_NAME",
 		Short: "Change default kubeconfig",
-		Long:  "Change default kubeconfig",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			cluster.InitConfig(args[0])
+			return nil
+		},
 		RunE:  runE,
 	}
 	return cmd

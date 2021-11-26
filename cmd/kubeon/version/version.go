@@ -27,7 +27,6 @@ func NewCommand() *cobra.Command {
 		Args:  cobra.NoArgs,
 		Use:   "version",
 		Short: "Prints the kubeon version",
-		Long:  "Prints the kubeon version",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Printf("kubeon version: %s\n", define.AppVersion)
 			return nil

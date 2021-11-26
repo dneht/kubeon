@@ -21,26 +21,25 @@ import (
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/module"
+	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"time"
 )
 
 type flagpole struct {
-	WithMirror     bool
-	ClusterVersion string
+	WithMirror bool
 }
 
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args:    cobra.NoArgs,
-		Use:     "upgrade [flags]\n",
-		Aliases: []string{"u"},
+		Args:    cobra.ExactArgs(2),
+		Use:     "upgrade CLUSTER_NAME CLUSTER_VERSION [flags]\n",
+		Aliases: []string{"u", "up"},
 		Short:   "Upgrade an exist cluster",
-		Long:    "",
-		Example: "",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			cluster.InitConfig(args[0])
 			return preRunE(flags, cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -51,16 +50,11 @@ func NewCommand() *cobra.Command {
 		&flags.WithMirror, "with-mirror",
 		true, "download use mirror, if in cn please keep true",
 	)
-	cmd.Flags().StringVar(
-		&flags.ClusterVersion, "version",
-		define.DefaultKubeVersion.Full,
-		"upgrade with select version",
-	)
 	return cmd
 }
 
 func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	inputVersion, err := define.NewStdVersion(flags.ClusterVersion)
+	inputVersion, err := define.NewStdVersion(args[1])
 	if nil != err {
 		return err
 	}
@@ -128,9 +122,13 @@ func upgradeCluster(current *cluster.Cluster) (err error) {
 			return err
 		}
 	}
-	err = module.InstallInner(define.CalicoNetwork)
+	err = module.InstallNetwork()
 	if nil != err {
-		return err
+		log.Warnf("reinstall network failed %v", err)
+	}
+	err = module.InstallIngress()
+	if nil != err {
+		log.Warnf("reinstall ingress failed %v", err)
 	}
 	err = module.UpgradeLoadBalance()
 	if nil != err {

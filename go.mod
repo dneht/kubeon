@@ -1,6 +1,6 @@
 module github.com/dneht/kubeon
 
-go 1.15
+go 1.16
 
 require (
 	github.com/google/go-containerregistry v0.2.1

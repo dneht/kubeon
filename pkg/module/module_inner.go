@@ -26,6 +26,20 @@ import (
 	"strings"
 )
 
+func InstallNetwork() (err error) {
+	if cluster.Current().NetworkMode == define.CalicoNetwork {
+		return InstallInner(define.CalicoNetwork)
+	}
+	return nil
+}
+
+func InstallIngress() (err error) {
+	if cluster.Current().IngressMode == define.ContourIngress {
+		return InstallInner(define.ContourIngress)
+	}
+	return nil
+}
+
 func InstallInner(moduleName string) (err error) {
 	bytes, err := ShowInner(moduleName)
 	if nil != err {
@@ -105,8 +119,7 @@ func ShowInner(moduleName string) ([]byte, error) {
 		})
 	case define.ContourIngress:
 		log.Debugf("get module %s config", define.ContourIngress)
-		return release.RenderContourTemplate(&release.ContourTemplate{
-		})
+		return release.RenderContourTemplate(&release.ContourTemplate{})
 	case define.HealthzReader:
 		log.Debugf("get module %s config", define.HealthzReader)
 		return release.RenderHealthzTemplate(current.Version.Full), nil

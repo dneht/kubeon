@@ -24,10 +24,13 @@ import (
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "cluster-info",
+		Args:  cobra.ExactArgs(1),
+		Use:   "info CLUSTER_NAME",
 		Short: "Prints cluster info",
-		Long:  "Prints cluster info",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			cluster.InitConfig(args[0])
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(cmd, args)
 		},

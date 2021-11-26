@@ -18,6 +18,7 @@ package exec
 
 import (
 	"github.com/dneht/kubeon/pkg/cluster"
+	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/spf13/cobra"
 )
@@ -31,20 +32,18 @@ func NewCommand() *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
 		Args: cobra.ExactArgs(2),
-		Use: "exec [flags] NODE_SELECTOR COMMAND\n" +
+		Use: "exec NODE_SELECTOR COMMAND [flags]\n" +
 			"Args:\n" +
 			"  NODE_SELECTOR can be one of:\n" +
-			"    @all 			all the control-plane and worker nodes \n" +
-			"    @cp* 			all the control-plane nodes \n" +
-			"    @cp1 			the bootstrap-control plane node \n" +
-			"    @cpN 			the secondary master nodes \n" +
-			"    @w* 			all the worker nodes\n" +
-			"    @lb 			the external load balancer\n" +
-			"    @etcd 			the external etcd\n" +
-			"    @name=name 	the node hostname\n" +
-			"    @ip=ip 		the node ip",
+			"    cluter@all			all the control-plane and worker nodes \n" +
+			"    cluter@cp*			all the control-plane nodes \n" +
+			"    cluter@cp1			the bootstrap-control plane node \n" +
+			"    cluter@cpN			the secondary master nodes \n" +
+			"    cluter@w*			all the worker nodes\n" +
+			"    cluter@name=name		the node hostname\n" +
+			"    cluter@ip=ip		the node ip",
 		Short: "Execute command on remote node",
-		Long:  "kubeon cp is used sftp",
+
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd, args)
 		},
@@ -63,16 +62,19 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	_, err := cluster.InitExistCluster()
+	clusterName, nodeSelector, err := onutil.NodeSelector(args[0])
 	if nil != err {
 		return err
 	}
-	return doExec(flags, cmd, args)
+	cluster.InitConfig(clusterName)
+	_, err = cluster.InitExistCluster()
+	if nil != err {
+		return err
+	}
+	return doExec(flags, nodeSelector, args[1])
 }
 
-func doExec(flags *flagpole, cmd *cobra.Command, args []string) error {
-	nodeSelector := args[0]
-	command := args[1]
+func doExec(flags *flagpole, nodeSelector, command string) error {
 	nodes, err := cluster.SelectNodes(nodeSelector)
 	if nil != err {
 		return err

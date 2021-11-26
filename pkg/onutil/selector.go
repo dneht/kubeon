@@ -14,24 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package view
+package onutil
 
 import (
-	"github.com/dneht/kubeon/cmd/kubeon/view/clusterinfo"
-	"github.com/dneht/kubeon/cmd/kubeon/view/viewconfig"
-	"github.com/dneht/kubeon/cmd/kubeon/view/viewsupport"
-	"github.com/spf13/cobra"
+	"github.com/pkg/errors"
+	"strings"
 )
 
-func NewCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Args:    cobra.NoArgs,
-		Use:     "view VIEW_NAME",
-		Aliases: []string{"v"},
-		Short:   "View some info",
+func NodeSelector(name string) (string, string, error) {
+	idx := strings.Index(name, "@")
+	if idx <= 0 {
+		return "", "", errors.New("selector format error")
 	}
-	cmd.AddCommand(viewconfig.NewCommand())
-	cmd.AddCommand(viewsupport.NewCommand())
-	cmd.AddCommand(clusterinfo.NewCommand())
-	return cmd
+	return name[0:idx], name[idx:], nil
 }

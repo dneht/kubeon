@@ -21,6 +21,7 @@ Description=Change host when worker startup
 ConditionPathExists=/opt/kubeon/apiserver-startup.sh
 Wants=network-online.target
 After=network-online.target
+Before=kubelet.target
 
 [Service]
 Type=forking

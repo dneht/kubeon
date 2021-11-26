@@ -38,7 +38,7 @@ func RestartDaemonSetForce(label string) {
 		"--selector=k8s-app="+label,
 		"--kubeconfig="+cluster.Current().AdminConfigPath).RunAndCapture()
 	if nil != err {
-		log.Warnf("get %s pods error: %s", label, err)
+		log.Warnf("get %s pods failed: %v", label, err)
 		return
 	}
 	for _, one := range lines {
@@ -49,7 +49,7 @@ func RestartDaemonSetForce(label string) {
 				"--namespace=kube-system",
 				"--kubeconfig="+cluster.Current().AdminConfigPath).RunWithEcho()
 			if nil != err {
-				log.Warnf("delete %s pod[%s] error: %s", label, one, err)
+				log.Warnf("delete %s pod[%s] failed: %v", label, one, err)
 			}
 		}
 	}

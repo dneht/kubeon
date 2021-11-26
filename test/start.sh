@@ -23,33 +23,33 @@ sudo apt-get install -y chrony
 sudo systemctl start chrony
 sudo sh -c "$(wget https://dl.sre.pub/on/install.sh -q -O -)"
 if [ $num = 6 ]; then
-  kubeon create -N test --version ${ver} \
-      -m 172.20.0.21 \
-      -m 172.20.0.22 \
-      -m 172.20.0.23 \
+  kubeon create test ${ver} \
+      -m 192.168.60.21 \
+      -m 192.168.60.22 \
+      -m 192.168.60.23 \
       --master-name test10 \
       --master-name test20 \
       --master-name test30 \
-      -w 172.20.0.24 \
-      -w 172.20.0.25 \
+      -w 192.168.60.24 \
+      -w 192.168.60.25 \
       --worker-name test40 \
       --worker-name test50 \
       --default-passwd ${pwd} \
       --ic contour \
       --interface enp0s8 \
       --log-level debug
-  kubeon view cluster-info -N test
+  kubeon view info test
   sleep 2s
-  kubeon add -N test \
-      -m 172.20.0.26 \
+  kubeon add test \
+      -m 192.168.60.26 \
       --master-name test60 \
       --default-passwd ${pwd} \
       --log-level debug
-  kubeon view cluster-info -N test
+  kubeon view info test
   sleep 2s
-  kubeon del -N test \
-      ip=172.20.0.25 \
+  kubeon del test \
+      ip=192.168.60.25 \
       --log-level debug
-  kubeon view cluster-info -N test
+  kubeon view info test
   sleep 2s
 fi

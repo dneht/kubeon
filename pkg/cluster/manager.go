@@ -26,7 +26,7 @@ import (
 	"strings"
 )
 
-func InitNewCluster(cluster *Cluster, lb string, base define.DefaultList, master define.MasterList, worker define.WorkerList, dryRun bool) error {
+func InitNewCluster(cluster *Cluster, lb string, base define.DefaultList, master define.MasterList, worker define.WorkerList) error {
 	current = cluster
 	if current.Status != StatusCreating && runConfig.Exist {
 		configRaw, err := runConfig.ReadConfig()
@@ -42,7 +42,7 @@ func InitNewCluster(cluster *Cluster, lb string, base define.DefaultList, master
 		return err
 	}
 	current.Name = runConfig.Name
-	masterNodes, workerNodes, isReady := newNodeList(base, master, worker, dryRun)
+	masterNodes, workerNodes, isReady := newNodeList(base, master, worker)
 	if !isReady {
 		return errors.New("init new cluster node error")
 	}
@@ -72,7 +72,7 @@ func InitNewCluster(cluster *Cluster, lb string, base define.DefaultList, master
 
 func InitExistCluster() (*RunConfig, error) {
 	if nil == runConfig || !runConfig.Exist {
-		return nil, errors.Errorf("config[%s] not exist, please create", runConfig.Name)
+		return nil, errors.Errorf("cluster[%s] not exist, please create", runConfig.Name)
 	} else {
 		cluster, err := runConfig.ParseConfig()
 		if nil != err {
@@ -116,8 +116,8 @@ func AfterBuildCluster() (*CreateConfig, error) {
 	return current.CreateConfig, err
 }
 
-func InitAddNodes(base define.DefaultList, master define.MasterList, worker define.WorkerList, dryRun bool) (NodeList, error) {
-	masterNodes, workerNodes, isReady := newNodeList(base, master, worker, dryRun)
+func InitAddNodes(base define.DefaultList, master define.MasterList, worker define.WorkerList) (NodeList, error) {
+	masterNodes, workerNodes, isReady := newNodeList(base, master, worker)
 	if !isReady {
 		return nil, errors.New("init add cluster node error")
 	}

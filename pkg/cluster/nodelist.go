@@ -52,7 +52,7 @@ func EmptyNodeList() NodeList {
 	return make(NodeList, 0)
 }
 
-func newNodeList(base define.DefaultList, master define.MasterList, worker define.WorkerList, dryRun bool) (masterList NodeList, workerList NodeList, retResult bool) {
+func newNodeList(base define.DefaultList, master define.MasterList, worker define.WorkerList) (masterList NodeList, workerList NodeList, retResult bool) {
 	startIdx := maxOrder() + 1
 	masterSize := len(master.MasterIPs)
 	masterList = make(NodeList, masterSize)

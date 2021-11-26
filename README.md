@@ -7,18 +7,18 @@
 > kubeon view support
 
 ```text
-v1.19.4-v1.19.15
-v1.20.1-v1.20.11
-v1.21.1-v1.21.5
-v1.22.1-v1.22.2
+v1.19.4-v1.19.16
+v1.20.1-v1.20.13
+v1.21.1-v1.21.7
+v1.22.1-v1.22.4
 ```
 
 ## Usage
-> k8s_ver=v1.22.2
+> k8s_ver=v1.22.4
 
 ### Vagrant test
 
-> cd test/ubuntu20 && vagrant up
+> cd test && vagrant up
 
 ### Create cluster
 
@@ -30,7 +30,8 @@ su - root
 # install kubeon
 sh -c "$(wget https://dl.sre.pub/on/install.sh -q -O -)"
 # create cluster
-kubeon create -N test --version ${k8s_ver} \
+# cluster name is "test"
+kubeon create test ${k8s_ver} \
     -m 172.20.0.21 \
     -m 172.20.0.22 \
     -m 172.20.0.23 \
@@ -43,13 +44,10 @@ kubeon create -N test --version ${k8s_ver} \
     --interface enp0s8 \
     --log-level debug
 ```
-Please use `source /etc/profile` for auto completion
-
-### -N
-cluster name
+Please use `source /etc/profile` for autocompletion
 
 #### --cri
-default is `ontainerd`, you can also use `docker`
+default is `containerd`, you can also use `docker`
 
 #### --cni
 default is `calico`, you can also use `none` and install cni later
@@ -75,13 +73,13 @@ only support 1.21.x or later
 
 ```shell
 # add one master
-kubeon add -N test \
+kubeon addon test \
     -m 172.20.0.24 \
     --master-name test40 \
     --default-passwd 4567890123 \
     --log-level debug
 # add one worker
-kubeon add -N test \
+kubeon addon test \
     -w 172.20.0.26 \
     --worker-name test110 \
     --default-passwd 4567890123 \
@@ -91,12 +89,12 @@ kubeon add -N test \
 ### Del node
 
 ```shell
-# del one node
-kubeon del -N test \
+# delon one node
+kubeon delon test \
     ip=172.20.0.24 \
     --log-level debug
 # or use hostname
-kubeon del -N test \
+kubeon delon test \
     name=test40 \
     --log-level debug
 ```
@@ -104,14 +102,14 @@ kubeon del -N test \
 ### Upgrade cluster
 
 ```shell
-kubeon upgrade -N test --version ${k8s_ver} \
+kubeon upgrade test ${k8s_ver} \
     --log-level debug
 ```
 
 ### Destroy cluster
 
 ```shell
-kubeon destroy -N test \
+kubeon destroy test \
     --log-level debug
 ```
 
@@ -119,7 +117,7 @@ kubeon destroy -N test \
 
 ```shell
 # cluster info
-kubeon view cluster-info -N test
+kubeon view info test
 # all node ipvs rule
-kubeon exec @all "ipvsadm -ln" -N test -R
+kubeon exec test@all "ipvsadm -ln" -R
 ```

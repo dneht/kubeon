@@ -25,10 +25,14 @@ import (
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "destroy [flags]\n",
-		Short: "Destroy an exist cluster",
-		Long:  "",
+		Args:    cobra.ExactArgs(1),
+		Use:     "destroy CLUSTER_NAME [flags]\n",
+		Aliases: []string{"stop"},
+		Short:   "Destroy an exist cluster",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			cluster.InitConfig(args[0])
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(cmd, args)
 		},
@@ -55,7 +59,7 @@ func runE(cmd *cobra.Command, args []string) error {
 }
 
 func resetCluster() (err error) {
-	action.KubeadmResetForce(cluster.CurrentNodes())
+	action.KubeadmResetList(cluster.CurrentNodes())
 	return nil
 }
 

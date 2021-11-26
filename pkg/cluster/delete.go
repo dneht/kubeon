@@ -31,6 +31,10 @@ func DestroyCompleteCluster() (err error) {
 	return nil
 }
 
+func DelResetLocalHost(delNode *Node) {
+	resetLocalHost(delNode)
+}
+
 func DelCompleteCluster(delNodes NodeList) (err error) {
 	err = DeleteHost(delNodes)
 	if nil != err {

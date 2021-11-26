@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package add
+package addon
 
 import (
+	"github.com/dneht/kubeon/pkg/action"
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/module"
+	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/spf13/cobra"
 	"net"
 )
@@ -28,7 +30,6 @@ type flagpole struct {
 	define.DefaultList
 	define.MasterList
 	define.WorkerList
-	DryRun      bool
 	WithMirror  bool
 	WithOffline bool
 }
@@ -36,19 +37,18 @@ type flagpole struct {
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args:    cobra.NoArgs,
-		Use:     "add [flags]\n",
+		Args:    cobra.ExactArgs(1),
+		Use:     "addon CLUSTER_NAME [flags]\n",
+		Aliases: []string{"add"},
 		Short:   "Add a new node",
-		Long:    "",
-		Example: "",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			cluster.InitConfig(args[0])
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd, args)
 		},
 	}
-	cmd.Flags().BoolVar(
-		&flags.DryRun, "dry-run",
-		false, "dry run",
-	)
 	cmd.Flags().BoolVar(
 		&flags.WithMirror, "with-mirror",
 		true, "download use mirror, if in cn please keep true",
@@ -189,12 +189,9 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	if nil != err {
 		return err
 	}
-	newNodes, err := cluster.InitAddNodes(flags.DefaultList, flags.MasterList, flags.WorkerList, flags.DryRun)
+	newNodes, err := cluster.InitAddNodes(flags.DefaultList, flags.MasterList, flags.WorkerList)
 	if nil != err {
 		return err
-	}
-	if flags.DryRun {
-		return nil
 	}
 
 	err = preInstall(newNodes, flags.WithMirror)
@@ -224,14 +221,19 @@ func preInstall(newNodes cluster.NodeList, mirror bool) (err error) {
 func joinNodes(newNodes cluster.NodeList) (err error) {
 	err = module.SetupAddsKubeadm(newNodes)
 	if nil != err {
+		action.KubeadmResetList(newNodes)
 		return err
 	}
 	newMasters := cluster.GetMasterFromList(newNodes)
 	isNewMaster := len(newMasters) > 0
 	if isNewMaster {
-		err = module.InstallInner(define.CalicoNetwork)
+		err = module.InstallNetwork()
 		if nil != err {
-			return err
+			log.Warnf("reinstall network failed %v", err)
+		}
+		err = module.InstallIngress()
+		if nil != err {
+			log.Warnf("reinstall ingress failed %v", err)
 		}
 	}
 	err = module.ChangeLoadBalance(isNewMaster, newNodes)

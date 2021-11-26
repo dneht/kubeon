@@ -25,10 +25,13 @@ import (
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args:  cobra.ExactArgs(1),
-		Use:   "config CONFIG_TYPE",
+		Args:  cobra.ExactArgs(2),
+		Use:   "config CLUSTER_NAME CONFIG_TYPE",
 		Short: "Prints select config",
-		Long:  "Prints select config",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			cluster.InitConfig(args[0])
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(cmd, args)
 		},
@@ -42,7 +45,7 @@ func runE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	moduleName := args[0]
+	moduleName := args[1]
 	bytes, err :=module.ShowInner(moduleName)
 	if nil != err {
 		return err

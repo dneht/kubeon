@@ -84,16 +84,7 @@ func DeleteHost(delNodes NodeList) (err error) {
 	return setLocalHost()
 }
 
-func setLocalHost() (err error) {
-	if !onutil.IsLocalInCluster(current.AllIPs()) {
-		return execute.NewLocalCmd("sh", "-c",
-			fmt.Sprintf("sed -i -E '/^[0-9a-f.:]+\\s+%s.*$'/d /etc/hosts && echo '%s  %s' >> /etc/hosts",
-				current.LbDomain, BootstrapNode().IPv4, current.LbDomain)).Run()
-	}
-	return nil
-}
-
-func getAddHosts(hosts map[string]string) (res string) {
+func getAddHosts(hosts map[string]string) (run string) {
 	var sb strings.Builder
 	keys := make([]string, 0, len(hosts))
 	for key := range hosts {
@@ -112,11 +103,11 @@ func getAddHosts(hosts map[string]string) (res string) {
 		sb.WriteString("' >>/etc/hosts")
 		sb.WriteString(" && ")
 	}
-	run := sb.String()
+	run = sb.String()
 	return run[0 : len(run)-4]
 }
 
-func getDelHosts(hosts map[string]string) (res string) {
+func getDelHosts(hosts map[string]string) (run string) {
 	var sb strings.Builder
 	for key, _ := range hosts {
 		sb.WriteString("sed -i -E '/^[0-9a-f.:]+\\s+")
@@ -124,6 +115,29 @@ func getDelHosts(hosts map[string]string) (res string) {
 		sb.WriteString(".*$'/d /etc/hosts")
 		sb.WriteString(" && ")
 	}
-	run := sb.String()
+	run = sb.String()
 	return run[0 : len(run)-4]
+}
+
+func setLocalHost() (err error) {
+	if !onutil.IsLocalIPv4InCluster(current.AllIPs()) {
+		err = execute.NewLocalCmd("sh", "-c",
+			fmt.Sprintf("sed -i -E '/^[0-9a-f.:]+\\s+%s.*$'/d /etc/hosts && echo '%s  %s' >> /etc/hosts",
+				current.LbDomain, BootstrapNode().IPv4, current.LbDomain)).Run()
+		if nil != err {
+			log.Warnf("set local lb domain ip failed: %v", err)
+		}
+	}
+	return nil
+}
+
+func resetLocalHost(node *Node) {
+	if onutil.IsLocalIPv4(node.IPv4) {
+		err := execute.NewLocalCmd("sh", "-c",
+			fmt.Sprintf("sed -i -E '/^[0-9a-f.:]+\\s+%s.*$'/d /etc/hosts && echo '%s  %s' >> /etc/hosts",
+				current.LbDomain, BootstrapNode().IPv4, current.LbDomain)).Run()
+		if nil != err {
+			log.Warnf("reset local lb domain ip failed: %v", err)
+		}
+	}
 }

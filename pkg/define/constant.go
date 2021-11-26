@@ -25,8 +25,6 @@ const (
 )
 
 var (
-	DefaultKubeVersion = K8S_1_22_x.End
-
 	AppBaseDir = onutil.BaseDir()
 
 	AppConfDir = AppBaseDir + "/conf"
@@ -41,9 +39,6 @@ var (
 )
 
 const (
-	// DefaultClusterName is the default cluster name
-	DefaultClusterName = "kubeon"
-
 	DefaultClusterAPIDomain = "apiserver.cluster.local"
 
 	DefaultClusterAPIPort = int32(6443)

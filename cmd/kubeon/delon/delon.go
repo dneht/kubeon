@@ -14,12 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package del
+package delon
 
 import (
 	"github.com/dneht/kubeon/pkg/action"
 	"github.com/dneht/kubeon/pkg/cluster"
-	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/module"
 	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/spf13/cobra"
@@ -27,11 +26,14 @@ import (
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args:    cobra.ExactArgs(1),
-		Use:     "del [flags] NODE_SELECTOR\n",
+		Args:    cobra.ExactArgs(2),
+		Use:     "delon CLUSTER_NAME NODE_SELECTOR [flags]\n",
+		Aliases: []string{"del", "rm"},
 		Short:   "Del an exit node",
-		Long:    "",
-		Example: "",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			cluster.InitConfig(args[0])
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(cmd, args)
 		},
@@ -44,7 +46,7 @@ func runE(cmd *cobra.Command, args []string) error {
 	if nil != err {
 		return err
 	}
-	delNodes, err := cluster.InitDelNodes(args[0])
+	delNodes, err := cluster.InitDelNodes(args[1])
 	if nil != err {
 		return err
 	}
@@ -64,14 +66,14 @@ func preRemove(delNodes cluster.NodeList) (err error) {
 	for _, node := range delNodes {
 		err = action.KubectlDrainNodeForce(node.Hostname, cluster.Current().Version)
 		if nil != err {
-			log.Warnf("drain node[%s] error: %s", node.Addr(), err)
+			log.Warnf("drain node[%s] failed: %v", node.Addr(), err)
 		}
 		err = action.KubectlDeleteNode(node.Hostname)
 		if nil != err {
-			log.Warnf("delete node[%s] error: %s", node.Addr(), err)
+			log.Warnf("delete node[%s] failed: %v", node.Addr(), err)
 		}
 	}
-	action.KubeadmResetForce(delNodes)
+	action.KubeadmResetList(delNodes)
 	return nil
 }
 
@@ -84,14 +86,15 @@ func removeNodes(delNodes cluster.NodeList) (err error) {
 	isDelMaster := len(delMasters) > 0
 	if isDelMaster {
 		for _, node := range delMasters {
+			cluster.DelResetLocalHost(node)
 			err = action.EtcdMemberRemove(node.Hostname)
 			if nil != err {
 				return err
 			}
 		}
-		err = module.InstallInner(define.CalicoNetwork)
+		err = module.InstallNetwork()
 		if nil != err {
-			return err
+			log.Warnf("reinstall network failed %v", err)
 		}
 	}
 	err = module.ChangeLoadBalance(isDelMaster, cluster.EmptyNodeList())

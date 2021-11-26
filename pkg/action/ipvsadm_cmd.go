@@ -26,7 +26,7 @@ func IPVSAdmClear(nodes cluster.NodeList) {
 	for _, node := range nodes {
 		err = node.RunCmd("ipvsadm", "-C")
 		if nil != err {
-			log.Warnf("clear ipvs rule error: %s", err)
+			log.Warnf("clear ipvs rule failed: %v", err)
 		}
 	}
 }

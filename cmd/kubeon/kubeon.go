@@ -17,18 +17,17 @@ limitations under the License.
 package kubeon
 
 import (
-	"github.com/dneht/kubeon/cmd/kubeon/add"
-	"github.com/dneht/kubeon/cmd/kubeon/change"
-	"github.com/dneht/kubeon/cmd/kubeon/cp"
+	"github.com/dneht/kubeon/cmd/kubeon/addon"
+	"github.com/dneht/kubeon/cmd/kubeon/copy"
 	"github.com/dneht/kubeon/cmd/kubeon/create"
-	"github.com/dneht/kubeon/cmd/kubeon/del"
+	"github.com/dneht/kubeon/cmd/kubeon/delon"
 	"github.com/dneht/kubeon/cmd/kubeon/destroy"
 	"github.com/dneht/kubeon/cmd/kubeon/exec"
 	"github.com/dneht/kubeon/cmd/kubeon/module"
 	"github.com/dneht/kubeon/cmd/kubeon/upgrade"
+	"github.com/dneht/kubeon/cmd/kubeon/use"
 	"github.com/dneht/kubeon/cmd/kubeon/version"
 	"github.com/dneht/kubeon/cmd/kubeon/view"
-	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/onutil/log"
 	"os"
@@ -37,8 +36,7 @@ import (
 )
 
 type flagpole struct {
-	ClusterName string
-	LogLevel    string
+	LogLevel string
 }
 
 func NewCommand() *cobra.Command {
@@ -54,41 +52,33 @@ func NewCommand() *cobra.Command {
 			"  |_|\\_\\\\__,_|_.__/ \\___|\\___/|_| |_|\n\n" +
 			"kubeon is still a work in progress. Test It, Break It, Send feedback!",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, cmd, args)
+			return preRunE(flags, cmd, args)
 		},
 		SilenceUsage: true,
 		Version:      define.AppVersion,
 	}
-	cmd.PersistentFlags().StringVarP(
-		&flags.ClusterName,
-		"name", "N",
-		define.DefaultClusterName,
-		"cluster name",
-	)
 	cmd.PersistentFlags().StringVar(
 		&flags.LogLevel,
-		"log-level",
-		"",
+		"log-level", "",
 		"log level, default(info)",
 	)
 	// add kubeon commands
-	cmd.AddCommand(cp.NewCommand())
+	cmd.AddCommand(copy.NewCommand())
 	cmd.AddCommand(exec.NewCommand())
 	cmd.AddCommand(module.NewCommand())
 	cmd.AddCommand(create.NewCommand())
 	cmd.AddCommand(upgrade.NewCommand())
 	cmd.AddCommand(destroy.NewCommand())
-	cmd.AddCommand(add.NewCommand())
-	cmd.AddCommand(del.NewCommand())
-	cmd.AddCommand(change.NewCommand())
+	cmd.AddCommand(addon.NewCommand())
+	cmd.AddCommand(delon.NewCommand())
+	cmd.AddCommand(use.NewCommand())
 	cmd.AddCommand(view.NewCommand())
 	cmd.AddCommand(version.NewCommand())
 	return cmd
 }
 
-func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	log.Init(flags.LogLevel)
-	cluster.NewConfig(flags.ClusterName)
 	return nil
 }
 

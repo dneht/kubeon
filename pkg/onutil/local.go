@@ -37,7 +37,7 @@ func IsLocalIPv4(ipv4 string) bool {
 	return ok
 }
 
-func IsLocalInCluster(allIPs []string) bool {
+func IsLocalIPv4InCluster(allIPs []string) bool {
 	for _, ip := range allIPs {
 		_, ok := localAddresses[ip]
 		if ok {

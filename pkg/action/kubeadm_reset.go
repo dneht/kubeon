@@ -22,12 +22,15 @@ import (
 	"github.com/dneht/kubeon/pkg/onutil/log"
 )
 
-func KubeadmResetForce(node cluster.NodeList) {
-	var err error
-	for _, n := range node {
-		err = n.RunCmd("kubeadm", "reset", "--force", fmt.Sprintf("--v=%d", log.Level()))
-		if nil != err {
-			log.Warnf("kubeadm reset error: %s", err)
-		}
+func KubeadmResetOne(node *cluster.Node) {
+	err := node.RunCmd("kubeadm", "reset", "--force", fmt.Sprintf("--v=%d", log.Level()))
+	if nil != err {
+		log.Warnf("kubeadm reset failed: %v", err)
+	}
+}
+
+func KubeadmResetList(list cluster.NodeList) {
+	for _, node := range list {
+		KubeadmResetOne(node)
 	}
 }
