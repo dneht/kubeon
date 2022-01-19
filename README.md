@@ -8,13 +8,14 @@
 
 ```text
 v1.19.4-v1.19.16
-v1.20.1-v1.20.13
-v1.21.1-v1.21.7
-v1.22.1-v1.22.4
+v1.20.1-v1.20.14
+v1.21.1-v1.21.8
+v1.22.1-v1.22.5
+v1.23.1
 ```
 
 ## Usage
-> k8s_ver=v1.22.4
+> k8s_ver=v1.23.1
 
 ### Vagrant test
 
@@ -81,8 +82,8 @@ kubeon add test \
   --log-level debug
 # add one worker
 kubeon add test \
-  -w 192.168.60.25 \
-  --worker-name test50 \
+  -w 192.168.60.24 \
+  --worker-name test40 \
   --default-passwd 123456 \
   --log-level debug
 ```
@@ -92,7 +93,7 @@ kubeon add test \
 ```shell
 # delon one node
 kubeon del test \
-    ip=172.20.0.24 \
+    ip=192.168.60.24 \
     --log-level debug
 # or use hostname
 kubeon del test \
