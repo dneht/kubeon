@@ -21,8 +21,8 @@ import (
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/module"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 	"net"
 )
 
@@ -30,8 +30,6 @@ type flagpole struct {
 	define.DefaultList
 	define.MasterList
 	define.WorkerList
-	WithMirror  bool
-	WithOffline bool
 }
 
 func NewCommand() *cobra.Command {
@@ -49,14 +47,6 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 	}
-	cmd.Flags().BoolVar(
-		&flags.WithMirror, "with-mirror",
-		true, "download use mirror, if in cn please keep true",
-	)
-	cmd.Flags().BoolVar(
-		&flags.WithOffline, "with-offline",
-		false, "install use offline system package",
-	)
 	cmd.Flags().UintVar(
 		&flags.DefaultPort, "default-port",
 		22, "All node default port",
@@ -194,20 +184,21 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = preInstall(newNodes, flags.WithMirror)
+	current := cluster.Current()
+	err = preInstall(newNodes, current.Mirror)
 	if nil != err {
-		log.Warnf("prepare input nodes failed, please check: %v", err)
+		klog.Warningf("Prepare input nodes failed, please check: %v", err)
 		return nil
 	}
 	err = joinNodes(newNodes)
 	if nil != err {
-		log.Errorf("create nodes failed, reset nodes: %v", err)
-		action.KubeadmResetList(newNodes)
+		klog.Errorf("Create nodes failed, reset nodes: %v", err)
+		action.KubeadmResetList(newNodes, false)
 	}
 	return nil
 }
 
-func preInstall(newNodes cluster.NodeList, mirror bool) (err error) {
+func preInstall(newNodes cluster.NodeList, mirror string) (err error) {
 	err = cluster.CreateResource(mirror)
 	if nil != err {
 		return err
@@ -230,16 +221,17 @@ func joinNodes(newNodes cluster.NodeList) (err error) {
 	if isNewMaster {
 		err = module.InstallNetwork()
 		if nil != err {
-			log.Warnf("reinstall network failed %v", err)
+			klog.Warningf("reinstall network failed %v", err)
 		}
-		err = module.InstallIngress()
+		err = module.InstallExtend()
 		if nil != err {
-			log.Warnf("reinstall ingress failed %v", err)
+			klog.Warningf("reinstall ingress failed %v", err)
 		}
 	}
 	err = module.ChangeLoadBalance(isNewMaster, newNodes)
 	if nil != err {
 		return err
 	}
+	module.LabelDevice()
 	return cluster.AddCompleteCluster()
 }

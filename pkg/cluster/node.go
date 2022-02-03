@@ -22,6 +22,7 @@ import (
 	"github.com/dneht/kubeon/pkg/execute/connect"
 	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/dneht/kubeon/pkg/release"
+	"k8s.io/klog/v2"
 	"os"
 	"strconv"
 	"strings"
@@ -43,6 +44,7 @@ type Node struct {
 	PkPassword string   `json:"pkPassword"`
 	Order      uint     `json:"order"`
 	Status     string   `json:"status"`
+	HasNvidia  bool     `json:"hasNvidia"`
 	resource   *release.ClusterRemoteResource
 }
 
@@ -66,6 +68,7 @@ func (n *Node) Addr() string {
 }
 
 func (n *Node) IsBootstrap() bool {
+	currentNodes := CurrentNodes()
 	return n.Order == currentNodes[0].Order
 }
 
@@ -124,28 +127,42 @@ func (n *Node) FileExist(path string) bool {
 
 func testIsExist(n *Node, path, flag string) bool {
 	result, err := n.Command("if", "test",
-		flag, path, ";then", "echo", "true;", "else", "echo", "false;", "fi").RunAndResult()
-	if nil != err || "false" == result {
-		return false
-	} else {
+		flag, path, ";then", "echo", "yes;", "fi").RunAndResult()
+	if nil == err && "yes" == result {
 		return true
+	} else {
+		return false
 	}
 }
 
 func (n *Node) FileSum(path string) string {
 	result, err := n.Command("if", "test",
-		"-f", path, ";then", "cksum", path, ";", "else", "echo", "none;", "fi").RunAndResult()
-	if nil != err || "none" == result {
-		return ""
-	} else {
+		"-f", path, ";then", "cksum", path, ";", "fi").RunAndResult()
+	if nil == err && len(result) >= 4 {
 		return strings.TrimSpace(strings.Split(result, " ")[0])
+	} else {
+		return ""
+	}
+}
+
+func (n *Node) CheckNvidia() bool {
+	return checkDevice(n, "nvidia")
+}
+
+func checkDevice(n *Node, device string) bool {
+	result, err := n.Command("for", "name", "in", "/dev/"+device+"*;", "do", "if", "test",
+		"-c", "${name}", ";then", "echo", "yes;", "break;", "fi", "done").RunAndResult()
+	if nil == err && "yes" == result {
+		return true
+	} else {
+		return false
 	}
 }
 
 func (n *Node) RemoteHostname() (string, error) {
 	result, err := n.Command("hostname").RunAndResult()
 	if nil != err {
-		log.Warnf("get remote[%s] hostname error: %s", n.Addr(), err)
+		klog.Warningf("Get remote[%s] hostname error: %s", n.Addr(), err)
 		return "", err
 	}
 	return result, nil
@@ -156,7 +173,7 @@ func (n *Node) ModifyHostname(hostname string) error {
 		"--pretty", "--static", "--transient",
 		"set-hostname", hostname).Run()
 	if nil != err {
-		log.Warnf("set remote[%s] hostname error: %s", n.Addr(), err)
+		klog.Warningf("Set remote[%s] hostname error: %s", n.Addr(), err)
 		return err
 	}
 	return nil
@@ -165,7 +182,7 @@ func (n *Node) ModifyHostname(hostname string) error {
 func (n *Node) KubeVersion() string {
 	result, err := n.Command("cat", define.AppBaseDir+"/version/k8s").RunAndResult()
 	if nil != err {
-		log.Warnf("get k8s version error: %s", err)
+		klog.Warningf("Get k8s version error: %s", err)
 		return ""
 	}
 	return result
@@ -174,7 +191,7 @@ func (n *Node) KubeVersion() string {
 func (n *Node) CRIVersion() string {
 	result, err := n.Command("cat", define.AppBaseDir+"/version/cri").RunAndResult()
 	if nil != err {
-		log.Warnf("get cri version error: %s", err)
+		klog.Warningf("Get cri version error: %s", err)
 		return ""
 	}
 	return result
@@ -183,7 +200,7 @@ func (n *Node) CRIVersion() string {
 func (n *Node) CNIVersion() string {
 	result, err := n.Command("cat", define.AppBaseDir+"/version/cni").RunAndResult()
 	if nil != err {
-		log.Warnf("get cni version error: %s", err)
+		klog.Warningf("Get cni version error: %s", err)
 		return ""
 	}
 	return result
@@ -199,7 +216,7 @@ func (n *Node) SetConnect() {
 		PkPassword: n.PkPassword,
 	})
 	if nil != err {
-		log.Errorf("get[%s]:[%s] ssh connect failed", n.IPv4, n.Port)
+		klog.Errorf("Get[%s]:[%s] ssh connect failed", n.IPv4, n.Port)
 		os.Exit(1)
 	}
 }

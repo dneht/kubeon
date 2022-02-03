@@ -22,14 +22,14 @@ import (
 )
 
 func KubectlLabelNodeRoleMaster(name string) error {
-	return kubectlLabelRole(name, "node-role.kubernetes.io/master=")
+	return KubectlLabelRole(name, "node-role.kubernetes.io/master=")
 }
 
 func KubectlLabelNodeRoleWorker(name string) error {
-	return kubectlLabelRole(name, "node-role.kubernetes.io/worker=")
+	return KubectlLabelRole(name, "node-role.kubernetes.io/worker=")
 }
 
-func kubectlLabelRole(name, label string) error {
+func KubectlLabelRole(name, label string) error {
 	labelArgs := []string{
 		"label", "nodes", name, label,
 		"--kubeconfig=" + cluster.Current().AdminConfigPath,

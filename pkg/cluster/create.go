@@ -19,10 +19,10 @@ package cluster
 import (
 	"encoding/base64"
 	"github.com/dneht/kubeon/pkg/define"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/dneht/kubeon/pkg/release"
 	"github.com/pkg/errors"
 	"io/ioutil"
+	"k8s.io/klog/v2"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,23 +37,25 @@ type CreateConfig struct {
 	AdminConfigBase64 string `json:"adminConfig"`
 }
 
-func CreateResource(mirror bool) (err error) {
-	return release.ProcessDownload(current.LocalResource, current.Version.Full, current.RuntimeMode,
-		mirror, current.IsBinary, current.IsOffline)
+func CreateResource(mirror string) (err error) {
+	return release.ProcessDownload(current.LocalResource, current.Version.Full, current.RuntimeMode, mirror,
+		current.IsRealLocal(), current.IsBinary, current.IsOffline,
+		current.UseNvidia && current.HasNvidia, current.UseKata,
+		current.IngressMode)
 }
 
 func CreateCompleteCluster() (err error) {
 	err = UpdateHost()
 	if nil != err {
-		log.Errorf("update node host error: %s", err.Error())
+		klog.Errorf("Update node host error: %s", err.Error())
 		return err
 	}
 
 	current.Status = StatusRunning
-	log.Infof("now cluster is running, api server is %s:%d", current.LbDomain, current.LbPort)
+	klog.V(1).Infof("Now cluster is running, api server is %s:%d", current.LbDomain, current.LbPort)
 	err = runConfig.WriteConfig()
 	if nil != err {
-		log.Error("create & save cluster config failed: " + err.Error())
+		klog.Error("Create & Save cluster config failed: " + err.Error())
 	}
 	return nil
 }
@@ -61,15 +63,15 @@ func CreateCompleteCluster() (err error) {
 func UpgradeCompleteCluster() (err error) {
 	err = UpdateHost()
 	if nil != err {
-		log.Errorf("update node host error: %s", err.Error())
+		klog.Errorf("Update node host error: %s", err.Error())
 		return err
 	}
 
 	current.Status = StatusRunning
-	log.Infof("now cluster[%s] upgrade complete, version is %s", current.Name, current.Version.Full)
+	klog.V(1).Infof("Now cluster[%s] upgrade complete, version is %s", current.Name, current.Version.Full)
 	err = runConfig.WriteConfig()
 	if nil != err {
-		log.Error("upgrade & save cluster config failed: " + err.Error())
+		klog.Error("Upgrade & save cluster config failed: " + err.Error())
 	}
 	return nil
 }
@@ -77,15 +79,15 @@ func UpgradeCompleteCluster() (err error) {
 func AddCompleteCluster() (err error) {
 	err = UpdateHost()
 	if nil != err {
-		log.Errorf("update node host error: %s", err.Error())
+		klog.Errorf("Update node host error: %s", err.Error())
 		return err
 	}
 
 	current.Status = StatusRunning
-	log.Infof("add nodes complete, version is %s", current.Version.Full)
+	klog.V(1).Infof("Add nodes complete, version is %s", current.Version.Full)
 	err = runConfig.WriteConfig()
 	if nil != err {
-		log.Error("add & save cluster config failed: " + err.Error())
+		klog.Error("Add & Save cluster config failed: " + err.Error())
 	}
 	return nil
 }
@@ -94,7 +96,7 @@ func bootBase64(path string) string {
 	boot := BootstrapNode()
 	result, err := boot.Command("cat", path, "|", "base64", "-w", "0").RunAndResult()
 	if nil != err {
-		log.Warnf("get remote[%s] config failed: %s, result: %s", boot.Addr(), err, result)
+		klog.Warningf("Get remote[%s] config failed: %s, result: %s", boot.Addr(), err, result)
 		return ""
 	}
 	return strings.TrimSpace(result)

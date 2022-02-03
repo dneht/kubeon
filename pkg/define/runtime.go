@@ -19,6 +19,11 @@ package define
 const (
 	// DockerRuntime refers to the docker container runtime
 	DockerRuntime = "docker"
+
 	// ContainerdRuntime refers to the containerd container runtime
 	ContainerdRuntime = "containerd"
+
+	NvidiaRuntime = "nvidia"
+
+	KataRuntime = "kata"
 )

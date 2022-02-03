@@ -24,6 +24,8 @@ import (
 type flagpole struct {
 	WithMirror  bool
 	WithBinary  bool
+	WithNvidia  bool
+	WithKata    bool
 	WithOffline bool
 }
 
@@ -50,6 +52,14 @@ func NewCommand() *cobra.Command {
 		&flags.WithBinary, "with-binary",
 		false, "download binary package",
 	)
+	cmd.Flags().BoolVar(
+		&flags.WithBinary, "with-nvidia",
+		false, "download nvidia package",
+	)
+	cmd.Flags().BoolVar(
+		&flags.WithBinary, "with-kata",
+		false, "download kata image",
+	)
 	cmd.Flags().BoolVarP(
 		&flags.WithOffline, "with-offline", "O",
 		false, "download offline system package",
@@ -60,6 +70,7 @@ func NewCommand() *cobra.Command {
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	clusterVersion := args[0]
 	runtimeMode := ""
-	return release.ProcessDownload(release.InitResource(clusterVersion, runtimeMode, flags.WithBinary, flags.WithOffline),
+	return release.ProcessDownload(release.InitResource(clusterVersion, runtimeMode,
+		flags.WithBinary, flags.WithOffline, flags.WithNvidia, flags.WithKata),
 		clusterVersion, runtimeMode, flags.WithMirror, flags.WithBinary, flags.WithOffline)
 }

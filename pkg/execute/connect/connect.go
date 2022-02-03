@@ -18,12 +18,13 @@ package connect
 
 import (
 	"github.com/dneht/kubeon/pkg/onutil"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
+	"k8s.io/klog/v2"
 	"net"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -43,7 +44,7 @@ type sshValue struct {
 	createdAt *time.Time
 }
 
-var sshCache = make(map[string]*sshValue)
+var sshCache = sync.Map{}
 
 func SSHConnect(addr string) (*ssh.Session, error) {
 	client, err := sshClient(addr)
@@ -80,12 +81,13 @@ func SFTPConnect(addr string) (*sftp.Client, error) {
 }
 
 func sshClient(addr string) (*ssh.Client, error) {
-	getValue, ok := sshCache[addr]
+	get, ok := sshCache.Load(addr)
 	if ok {
-		if getValue.createdAt.Add(clientTimeout).Before(time.Now()) {
-			return getValue.client, nil
+		val := get.(*sshValue)
+		if val.createdAt.Add(clientTimeout).Before(time.Now()) {
+			return val.client, nil
 		}
-		delete(sshCache, addr)
+		sshCache.Delete(addr)
 	}
 
 	config := GetAuthConfig(addr)
@@ -106,10 +108,10 @@ func sshClient(addr string) (*ssh.Client, error) {
 		return nil, err
 	}
 	createdAt := time.Now().Add(-10 * time.Second)
-	sshCache[addr] = &sshValue{
+	sshCache.Store(addr, &sshValue{
 		client:    client,
 		createdAt: &createdAt,
-	}
+	})
 	return client, nil
 }
 
@@ -138,7 +140,7 @@ func sshAuthMethod(passwd, pkFile, pkPasswd string) (auth []ssh.AuthMethod) {
 func sshPrivateKeyMethod(pkFile, pkPassword string) (am ssh.AuthMethod, err error) {
 	pkData, err := ioutil.ReadFile(pkFile)
 	if err != nil {
-		log.Errorf("[remote] read %s file err is : %s", pkFile, err)
+		klog.Errorf("[remote] Read %s file err is : %s", pkFile, err)
 		os.Exit(1)
 	}
 	var pk ssh.Signer

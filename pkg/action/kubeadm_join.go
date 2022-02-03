@@ -19,7 +19,6 @@ package action
 import (
 	"fmt"
 	"github.com/dneht/kubeon/pkg/cluster"
-	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/pkg/errors"
 	"time"
@@ -27,7 +26,7 @@ import (
 
 func KubeadmJoinNode(nodes cluster.NodeList, usePatch bool, ignorePreflightErrors string, wait time.Duration) (err error) {
 	current := cluster.Current()
-	if usePatch && current.Version.LessThen(define.K8S_1_19_0) {
+	if usePatch && !current.Version.IsSupportPatch() {
 		return errors.New("--patches can't be used with kubeadm older than v1.19")
 	}
 	if len(nodes) > 0 {
@@ -58,7 +57,7 @@ func KubeadmJoinNode(nodes cluster.NodeList, usePatch bool, ignorePreflightError
 
 func KubeadmJoinControlPlane(nodes cluster.NodeList, usePatch bool, ignorePreflightErrors string, wait time.Duration) (del *cluster.Node, err error) {
 	current := cluster.Current()
-	if usePatch && current.Version.LessThen(define.K8S_1_19_0) {
+	if usePatch && !current.Version.IsSupportPatch() {
 		return nil, errors.New("--patches can't be used with kubeadm older than v1.19")
 	}
 	for _, node := range nodes {

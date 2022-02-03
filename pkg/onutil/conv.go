@@ -14,24 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package view
+package onutil
 
 import (
-	"github.com/dneht/kubeon/cmd/kubeon/view/viewcomponent"
-	"github.com/dneht/kubeon/cmd/kubeon/view/viewconfig"
-	"github.com/dneht/kubeon/cmd/kubeon/view/viewsupport"
-	"github.com/spf13/cobra"
+	"strings"
 )
 
-func NewCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Args:    cobra.NoArgs,
-		Use:     "view VIEW_NAME",
-		Aliases: []string{"v"},
-		Short:   "View some info",
+func ConvMirror(input, define string) string {
+	if len(input) == 0 || strings.EqualFold(input, "no") || strings.EqualFold(input, "false") {
+		return "no"
+	} else if strings.EqualFold(input, "yes") || strings.EqualFold(input, "true") {
+		return define
+	} else {
+		return input
 	}
-	cmd.AddCommand(viewconfig.NewCommand())
-	cmd.AddCommand(viewsupport.NewCommand())
-	cmd.AddCommand(viewcomponent.NewCommand())
-	return cmd
+}
+
+func ConvBool(res bool) string {
+	if res {
+		return "yes"
+	} else {
+		return "no"
+	}
 }

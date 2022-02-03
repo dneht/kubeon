@@ -19,8 +19,8 @@ package copy
 import (
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/onutil"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 )
 
 func NewCommand() *cobra.Command {
@@ -65,12 +65,12 @@ func doCopy(nodeSelector, srcPath, destPath string) error {
 		return err
 	}
 	for _, node := range nodes {
-		log.Infof("[%s] start copy file", node.Addr())
+		klog.V(1).Infof("[%s] start copy file", node.Addr())
 		err = node.CopyTo(srcPath, destPath)
 		if nil != err {
 			return err
 		}
-		log.Infof("[%s] copy file[%s] complete", node.Addr(), destPath)
+		klog.V(1).Infof("[%s] copy file[%s] complete", node.Addr(), destPath)
 	}
 	return nil
 }

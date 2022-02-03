@@ -32,7 +32,7 @@ type StdVersion struct {
 
 func NewStdVersion(version string) (*StdVersion, error) {
 	if len(version) < 5 {
-		return nil, errors.Errorf("input version [%s] error", version)
+		return nil, errors.Errorf("Input version [%s] error", version)
 	}
 	k8sVersion := &StdVersion{
 		Full:   version,
@@ -45,7 +45,7 @@ func NewStdVersion(version string) (*StdVersion, error) {
 		arr = strings.Split(version, ".")
 	}
 	if len(arr) != 3 {
-		return nil, errors.Errorf("input version [%s] error", version)
+		return nil, errors.Errorf("Input version [%s] error", version)
 	}
 	k8sVersion.Major = onutil.ParseUintOverZero(arr[0])
 	k8sVersion.Minor = onutil.ParseUintOverZero(arr[1])
@@ -81,7 +81,7 @@ type RngVersion struct {
 
 func NewRngVersion(start string, end string) (*RngVersion, error) {
 	if len(start) < 5 {
-		return nil, errors.Errorf("input version [%s] error", start)
+		return nil, errors.Errorf("Input version [%s] error", start)
 	}
 	startVersion, err := NewStdVersion(start)
 	if nil != err {

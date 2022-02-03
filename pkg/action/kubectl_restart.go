@@ -19,7 +19,7 @@ package action
 import (
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/execute"
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"k8s.io/klog/v2"
 	"strings"
 )
 
@@ -38,7 +38,7 @@ func RestartDaemonSetForce(label string) {
 		"--selector=k8s-app="+label,
 		"--kubeconfig="+cluster.Current().AdminConfigPath).RunAndCapture()
 	if nil != err {
-		log.Warnf("get %s pods failed: %v", label, err)
+		klog.Warningf("Get %s pods failed: %v", label, err)
 		return
 	}
 	for _, one := range lines {
@@ -49,7 +49,7 @@ func RestartDaemonSetForce(label string) {
 				"--namespace=kube-system",
 				"--kubeconfig="+cluster.Current().AdminConfigPath).RunWithEcho()
 			if nil != err {
-				log.Warnf("delete %s pod[%s] failed: %v", label, one, err)
+				klog.Warningf("Delete %s pod[%s] failed: %v", label, one, err)
 			}
 		}
 	}

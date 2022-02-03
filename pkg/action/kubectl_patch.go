@@ -19,7 +19,7 @@ package action
 import (
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/execute"
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"k8s.io/klog/v2"
 )
 
 const patchCorednsJson = "[{\"op\":\"add\",\"path\":\"/rules/-\",\"value\":{\"apiGroups\":[\"discovery.k8s.io\"],\"resources\":[\"endpointslices\"],\"verbs\":[\"list\",\"watch\"]}}]"
@@ -40,7 +40,7 @@ func KubectlPatchCorednsRole() error {
 			"--kubeconfig="+cluster.Current().AdminConfigPath,
 		).RunWithEcho()
 		if nil != err {
-			log.Warnf("patch coredns failed: %v", err)
+			klog.Warningf("Patch coredns failed: %v", err)
 		}
 	}
 	return nil

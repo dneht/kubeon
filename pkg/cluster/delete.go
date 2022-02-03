@@ -18,7 +18,7 @@ package cluster
 
 import (
 	"github.com/dneht/kubeon/pkg/onutil"
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"k8s.io/klog/v2"
 )
 
 func DestroyCompleteCluster() (err error) {
@@ -27,7 +27,7 @@ func DestroyCompleteCluster() (err error) {
 	}
 
 	deleteResource()
-	log.Infof("destroy cluster[%s] complete, version is %s", current.Name, current.Version.Full)
+	klog.V(1).Infof("Destroy cluster[%s] complete, version is %s", current.Name, current.Version.Full)
 	return nil
 }
 
@@ -38,15 +38,15 @@ func DelResetLocalHost(delNode *Node) {
 func DelCompleteCluster(delNodes NodeList) (err error) {
 	err = DeleteHost(delNodes)
 	if nil != err {
-		log.Errorf("delete node host error: %s", err.Error())
+		klog.Errorf("Delete node host error: %s", err.Error())
 		return err
 	}
 
 	current.Status = StatusRunning
-	log.Infof("delete nodes complete, version is %s", current.Version.Full)
+	klog.V(1).Infof("Delete nodes complete, version is %s", current.Version.Full)
 	err = runConfig.WriteConfig()
 	if nil != err {
-		log.Error("del & save cluster config failed: " + err.Error())
+		klog.Error("Delete & Save cluster config failed: " + err.Error())
 	}
 	return nil
 }

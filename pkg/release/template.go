@@ -26,12 +26,15 @@ import (
 )
 
 type KubeletTemplate struct {
+	APIVersion       string
 	ClusterDnsIP     string
 	ClusterDnsDomain string
 	ClusterMaxPods   uint32
 }
 
 type KubeadmTemplate struct {
+	APIVersion        string
+	ImageRepository   string
 	ClusterName       string
 	ClusterVersion    string
 	ClusterPortRange  string
@@ -50,20 +53,24 @@ type KubeadmTemplate struct {
 }
 
 type KubeadmInitTemplate struct {
+	APIVersion       string
 	Token            string
 	NodeName         string
+	ImagePullPolicy  string
 	AdvertiseAddress string
 	BindPort         int32
 	CertificateKey   string
 }
 
 type KubeadmJoinTemplate struct {
+	APIVersion       string
 	Token            string
 	ClusterLbDomain  string
 	ClusterLbPort    int32
 	CaCertHash       string
 	IsControlPlane   bool
 	NodeName         string
+	ImagePullPolicy  string
 	AdvertiseAddress string
 	BindPort         int32
 	CertificateKey   string
@@ -83,6 +90,12 @@ type CalicoTemplate struct {
 	CalicoMTU        string
 	IPIPMode         string
 	VXLanMode        string
+}
+
+type NvidiaTemplate struct {
+}
+
+type KataTemplate struct {
 }
 
 type ContourTemplate struct {
@@ -105,22 +118,50 @@ type ApiserverUpdaterTemplate struct {
 	ImageUrl    string
 }
 
-func RenderCorednsTemplate(input *CorednsTemplate) ([]byte, error) {
-	return parseFile("/coredns.yaml.tpl", input)
+func RenderCorednsTemplate(input *CorednsTemplate, local bool) ([]byte, error) {
+	if local {
+		return parseFile("/coredns.yaml.tpl", input)
+	} else {
+		return parseFile("/coredns.m.yaml.tpl", input)
+	}
 }
 
-func RenderCalicoTemplate(input *CalicoTemplate) ([]byte, error) {
-	return parseFile("/calico.yaml.tpl", input)
+func RenderCalicoTemplate(input *CalicoTemplate, local bool) ([]byte, error) {
+	if local {
+		return parseFile("/calico.yaml.tpl", input)
+	} else {
+		return parseFile("/calico.m.yaml.tpl", input)
+	}
 }
 
-func RenderContourTemplate(input *ContourTemplate) ([]byte, error) {
-	return parseFile("/contour.yaml.tpl", input)
+func RenderNvidiaTemplate(input *NvidiaTemplate, local bool) ([]byte, error) {
+	if local {
+		return parseFile("/nvidia.yaml.tpl", input)
+	} else {
+		return parseFile("/nvidia.m.yaml.tpl", input)
+	}
+}
+
+func RenderKataTemplate(input *KataTemplate, local bool) ([]byte, error) {
+	if local {
+		return parseFile("/kata.yaml.tpl", input)
+	} else {
+		return parseFile("/kata.m.yaml.tpl", input)
+	}
+}
+
+func RenderContourTemplate(input *ContourTemplate, local bool) ([]byte, error) {
+	if local {
+		return parseFile("/contour.yaml.tpl", input)
+	} else {
+		return parseFile("/contour.m.yaml.tpl", input)
+	}
 }
 
 func parseFile(path string, input interface{}) ([]byte, error) {
 	tplPath := define.AppTplDir + path
 	if !onutil.PathExists(tplPath) {
-		return nil, errors.Errorf("can not found template[%s]", tplPath)
+		return nil, errors.Errorf("Can not found template[%s]", tplPath)
 	}
 	tmpl, err := template.ParseFiles(tplPath)
 	if nil != err {

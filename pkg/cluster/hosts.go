@@ -20,38 +20,40 @@ import (
 	"fmt"
 	"github.com/dneht/kubeon/pkg/execute"
 	"github.com/dneht/kubeon/pkg/onutil"
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"k8s.io/klog/v2"
 	"sort"
 	"strings"
 )
 
 func InitHost() (err error) {
-	kv := make(map[string]string, len(currentNodes)+1)
+	all := CurrentNodes()
+	kv := make(map[string]string, len(all)+1)
 	boot := BootstrapNode()
 	kv[current.LbDomain] = boot.IPv4
-	for _, node := range currentNodes {
+	for _, node := range all {
 		kv[node.Hostname] = node.IPv4
 	}
 	hosts := getAddHosts(kv)
-	for _, node := range currentNodes {
+	for _, node := range all {
 		err = node.RunCmd(hosts)
 		if nil != err {
-			log.Warnf("init hosts error on[%s]: %s", node.Addr(), err)
+			klog.Warningf("Init hosts error on[%s]: %s", node.Addr(), err)
 		}
 	}
 	return setLocalHost()
 }
 
 func UpdateHost() (err error) {
+	all := CurrentNodes()
 	kv := make(map[string]string, 1)
 	boot := BootstrapNode()
-	for _, node := range currentNodes {
+	for _, node := range all {
 		if node.IsControlPlane() {
 			kv[current.LbDomain] = node.IPv4
 			hosts := getAddHosts(kv)
 			err = node.RunCmd(hosts)
 			if nil != err {
-				log.Warnf("init hosts error on[%s]: %s", node.Addr(), err)
+				klog.Warningf("Init hosts error on[%s]: %s", node.Addr(), err)
 			}
 		} else if node.IsWorker() {
 			if current.IsMultiMaster() {
@@ -62,7 +64,7 @@ func UpdateHost() (err error) {
 			hosts := getAddHosts(kv)
 			err = node.RunCmd(hosts)
 			if nil != err {
-				log.Warnf("update hosts error on[%s]: %s", node.Addr(), err)
+				klog.Warningf("Update hosts error on[%s]: %s", node.Addr(), err)
 			}
 		}
 	}
@@ -70,15 +72,16 @@ func UpdateHost() (err error) {
 }
 
 func DeleteHost(delNodes NodeList) (err error) {
+	all := CurrentNodes()
 	kv := make(map[string]string, len(delNodes))
 	for _, node := range delNodes {
 		kv[node.Hostname] = node.IPv4
 	}
 	hosts := getDelHosts(kv)
-	for _, node := range currentNodes {
+	for _, node := range all {
 		err = node.RunCmd(hosts)
 		if nil != err {
-			log.Warnf("delete hosts error on[%s]: %s", node.Addr(), err)
+			klog.Warningf("Delete hosts error on[%s]: %s", node.Addr(), err)
 		}
 	}
 	return setLocalHost()
@@ -125,7 +128,7 @@ func setLocalHost() (err error) {
 			fmt.Sprintf("sed -i -E '/^[0-9a-f.:]+\\s+%s.*$'/d /etc/hosts && echo '%s  %s' >> /etc/hosts",
 				current.LbDomain, BootstrapNode().IPv4, current.LbDomain)).Run()
 		if nil != err {
-			log.Warnf("set local lb domain ip failed: %v", err)
+			klog.Warningf("Set local lb domain ip failed: %v", err)
 		}
 	}
 	return nil
@@ -137,7 +140,7 @@ func resetLocalHost(node *Node) {
 			fmt.Sprintf("sed -i -E '/^[0-9a-f.:]+\\s+%s.*$'/d /etc/hosts && echo '%s  %s' >> /etc/hosts",
 				current.LbDomain, BootstrapNode().IPv4, current.LbDomain)).Run()
 		if nil != err {
-			log.Warnf("reset local lb domain ip failed: %v", err)
+			klog.Warningf("Reset local lb domain ip failed: %v", err)
 		}
 	}
 }

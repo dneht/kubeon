@@ -17,9 +17,11 @@ limitations under the License.
 package module
 
 import (
-	"github.com/dneht/kubeon/pkg/cluster"
+	cluster "github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"github.com/dneht/kubeon/pkg/execute"
+	"github.com/dneht/kubeon/pkg/onutil"
+	"k8s.io/klog/v2"
 	"os"
 )
 
@@ -41,8 +43,13 @@ func InstallSelect(moduleName, nodeSelector string) (err error) {
 		localSum = currentResource.NetworkSum
 		break
 	default:
-		log.Warnf("not support module[%s]", moduleName)
-		return nil
+		localPath = define.AppDistDir + "/" + moduleName + ".tar"
+		if onutil.PathExists(localPath) {
+			localSum = execute.FileSum(localPath)
+		} else {
+			klog.Warningf("Not support module[%s]", moduleName)
+			return nil
+		}
 	}
 
 	getNodes := selectNodes(nodeSelector)
@@ -59,14 +66,23 @@ func InstallSelect(moduleName, nodeSelector string) (err error) {
 		case define.NetworkPlugin:
 			remotePath = remoteResource.NetworkPath
 			break
+		default:
+			remotePath = remoteResource.DistDir + "/" + moduleName + ".tar"
 		}
 		err = copyToNode(node, remotePath, localPath, localSum)
 		if nil != err {
 			return err
 		}
-		err = installOnNode(node, moduleName, remotePath)
+		var sd bool
+		sd, err = installOnNode(node, moduleName, remotePath)
 		if nil != err {
 			return err
+		}
+		if sd {
+			err = enableModuleOneNow(node, moduleName)
+			if nil != err {
+				klog.Warningf("Enable systemd failed: %v", err)
+			}
 		}
 	}
 	return nil
@@ -74,7 +90,7 @@ func InstallSelect(moduleName, nodeSelector string) (err error) {
 
 func copyToNode(node *cluster.Node, remotePath, localPath, localSum string) (err error) {
 	remoteSum := node.FileSum(remotePath)
-	log.Debugf("get local[%s] sum %s, remote[%s] sum %s", localPath, localSum, remotePath, remoteSum)
+	klog.V(4).Infof("Get local[%s] sum %s, remote[%s] sum %s", localPath, localSum, remotePath, remoteSum)
 	if localSum != remoteSum {
 		err = node.CopyToWithSum(localPath, remotePath, localSum)
 		if nil != err {
@@ -84,15 +100,54 @@ func copyToNode(node *cluster.Node, remotePath, localPath, localSum string) (err
 	return nil
 }
 
-func installOnNode(node *cluster.Node, moduleName, remotePath string) (err error) {
+func unzipOnNode(node *cluster.Node, moduleName, remotePath string) (err error) {
 	remoteResource := node.GetResource()
 	remoteTmpDir := remoteResource.TmpDir + "/" + moduleName
-	err = node.RunCmd("mkdir", "-p", remoteTmpDir,
-		"&&", "tar", "xf", remotePath, "-C", remoteTmpDir,
-		"&&", "bash", remoteTmpDir+"/install.sh")
+	err = node.RunCmd("mkdir", "-p", remoteTmpDir, "&&", "tar", "xf", remotePath, "-C", remoteTmpDir)
 	if nil != err {
 		return err
 	}
+	return nil
+}
+
+func installOnNode(node *cluster.Node, moduleName, remotePath string) (sd bool, err error) {
+	remoteResource := node.GetResource()
+	scriptDir := remoteResource.ScriptDir
+	remoteTmpDir := remoteResource.TmpDir + "/" + moduleName
+	err = unzipOnNode(node, moduleName, remotePath)
+	if nil != err {
+		return false, err
+	}
+	sd = false
+	result, err := node.Command("if", "test", "-f", remoteTmpDir+"/"+moduleName+".service", ";then",
+		"echo", "yes;", "fi").RunAndResult()
+	if nil == err && "yes" == result {
+		sd = true
+	}
+	current := cluster.Current()
+	err = node.RunCmd("bash", remoteTmpDir+"/install.sh", current.Version.String(), current.RuntimeMode)
+	if nil != err {
+		return sd, err
+	}
+	err = node.RunCmd("if", "test", "-f", remoteTmpDir+"/uninstall.sh", ";then",
+		"mv", "-f", remoteTmpDir+"/uninstall.sh", scriptDir+"/uninstall_"+moduleName+".sh", ";fi")
+	if nil != err {
+		_ = node.RunCmd("bash", scriptDir+"/uninstall_"+moduleName+".sh")
+		return sd, err
+	}
+	_ = node.RunCmd("rm", "-rf", remoteTmpDir)
+	return sd, nil
+}
+
+func importOnNode(node *cluster.Node, moduleName, remotePath string) (err error) {
+	remoteResource := node.GetResource()
+	remoteTmpDir := remoteResource.TmpDir + "/" + moduleName
+	err = unzipOnNode(node, moduleName, remotePath)
+	if nil != err {
+		return err
+	}
+	err = importImage(node, remoteTmpDir+"/image.tar")
+	_ = node.RunCmd("rm", "-rf", remoteTmpDir)
 	return nil
 }
 
@@ -109,7 +164,9 @@ func UninstallSelect(moduleName, nodeSelector string) error {
 }
 
 func uninstallOnNode(node *cluster.Node, moduleName string) (err error) {
-	unScript := node.GetResource().ScriptDir + "/uninstall_" + moduleName + ".sh"
+	remoteResource := node.GetResource()
+	scriptDir := remoteResource.ScriptDir
+	unScript := scriptDir + "/uninstall_" + moduleName + ".sh"
 	exist := node.FileExist(unScript)
 	if exist {
 		err = node.RunCmd("bash", unScript)
@@ -122,17 +179,17 @@ func uninstallOnNode(node *cluster.Node, moduleName string) (err error) {
 
 func selectNodes(nodeSelector string) cluster.NodeList {
 	if nil == cluster.Current() {
-		log.Error("cluster not exist, please check context")
+		klog.Error("Cluster not exist, please check context")
 		os.Exit(1)
 	}
 
 	getNodes, err := cluster.SelectNodes(nodeSelector)
 	if nil != err {
-		log.Errorf("cluster node select[%s] failed, please check context", nodeSelector)
+		klog.Errorf("Cluster node select[%s] failed, please check context", nodeSelector)
 		os.Exit(1)
 	}
 	if len(getNodes) == 0 {
-		log.Warnf("cluster node select[%s] is empty, do noting", nodeSelector)
+		klog.Warningf("Cluster node select[%s] is empty, do noting", nodeSelector)
 	}
 	return getNodes
 }

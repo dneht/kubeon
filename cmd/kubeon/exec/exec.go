@@ -19,8 +19,8 @@ package exec
 import (
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/onutil"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 )
 
 type flagpole struct {
@@ -92,7 +92,7 @@ func doExec(flags *flagpole, nodeSelector, command string) error {
 				return err
 			}
 		}
-		log.Infof("[%s] exec command[%s] complete", node.Addr(), command)
+		klog.V(1).Infof("[%s] exec command[%s] complete", node.Addr(), command)
 	}
 	return nil
 }

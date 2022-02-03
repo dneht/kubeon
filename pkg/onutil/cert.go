@@ -21,7 +21,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"k8s.io/klog/v2"
 	"strconv"
 	"time"
 )
@@ -37,7 +37,7 @@ func CertSHA256(data []byte) string {
 	block, _ := pem.Decode(data)
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		log.Error("failed to parse certificate: " + err.Error())
+		klog.Error("Failed to parse certificate: " + err.Error())
 		return ""
 	}
 	pubData, err := x509.MarshalPKIXPublicKey(cert.PublicKey)

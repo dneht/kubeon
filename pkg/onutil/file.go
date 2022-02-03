@@ -17,8 +17,8 @@ limitations under the License.
 package onutil
 
 import (
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"io/ioutil"
+	"k8s.io/klog/v2"
 	"os"
 )
 
@@ -56,7 +56,7 @@ func LsDir(path string) []os.FileInfo {
 				}
 			}
 		} else {
-			log.Warnf("read path[%s] error")
+			klog.Warningf("Read path[%s] error")
 		}
 	}
 	return list
@@ -100,7 +100,7 @@ func IsEmptyDir(path string) bool {
 		return true
 	}
 	if !PathIsDir(path) {
-		log.Warnf("input path[%s] is not dir")
+		klog.Warningf("Input path[%s] is not dir")
 		return false
 	}
 

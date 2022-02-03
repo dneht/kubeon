@@ -22,6 +22,8 @@ import (
 	"github.com/dneht/kubeon/cmd/kubeon/create"
 	"github.com/dneht/kubeon/cmd/kubeon/delon"
 	"github.com/dneht/kubeon/cmd/kubeon/destroy"
+	"github.com/dneht/kubeon/cmd/kubeon/display"
+	"github.com/dneht/kubeon/cmd/kubeon/etcd"
 	"github.com/dneht/kubeon/cmd/kubeon/exec"
 	"github.com/dneht/kubeon/cmd/kubeon/module"
 	"github.com/dneht/kubeon/cmd/kubeon/upgrade"
@@ -36,7 +38,7 @@ import (
 )
 
 type flagpole struct {
-	LogLevel string
+	LogLevel int
 }
 
 func NewCommand() *cobra.Command {
@@ -57,10 +59,10 @@ func NewCommand() *cobra.Command {
 		SilenceUsage: true,
 		Version:      define.AppVersion,
 	}
-	cmd.PersistentFlags().StringVar(
+	cmd.PersistentFlags().IntVarP(
 		&flags.LogLevel,
-		"log-level", "",
-		"log level, default(info)",
+		"v", "v", 1,
+		"log level, like kubectl",
 	)
 	// add kubeon commands
 	cmd.AddCommand(copy.NewCommand())
@@ -72,7 +74,9 @@ func NewCommand() *cobra.Command {
 	cmd.AddCommand(addon.NewCommand())
 	cmd.AddCommand(delon.NewCommand())
 	cmd.AddCommand(use.NewCommand())
+	cmd.AddCommand(display.NewCommand())
 	cmd.AddCommand(view.NewCommand())
+	cmd.AddCommand(etcd.NewCommand())
 	cmd.AddCommand(version.NewCommand())
 	return cmd
 }

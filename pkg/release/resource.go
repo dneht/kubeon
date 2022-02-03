@@ -19,20 +19,27 @@ package release
 type ClusterResource struct {
 	ImagesPath     string               `json:"imagesPath"`
 	ImagesSum      string               `json:"imagesSum"`
-	BinaryPath     string               `json:"binaryPath"`
-	BinarySum      string               `json:"binarySum"`
-	KubeletPath    string               `json:"kubeletPath"`
-	KubeletSum     string               `json:"kubeletSum"`
-	RuntimeType    string               `json:"runtimeType"`
-	DockerPath     string               `json:"dockerPath"`
-	DockerSum      string               `json:"dockerSum"`
-	ContainerdPath string               `json:"containerdPath"`
-	ContainerdSum  string               `json:"containerdSum"`
-	NetworkPath    string               `json:"networkPath"`
-	NetworkSum     string               `json:"networkSum"`
-	ClusterConf    *ClusterConfResource `json:"clusterConf"`
-	ClusterTpl     *ClusterTplResource  `json:"clusterTpl"`
-	ClusterOffline *ClusterOffResource  `json:"clusterOffline"`
+	BinaryPath     string               `json:"binaryPath,omitempty"`
+	BinarySum      string               `json:"binarySum,omitempty"`
+	KubeletPath    string               `json:"kubeletPath,omitempty"`
+	KubeletSum     string               `json:"kubeletSum,omitempty"`
+	RuntimeType    string               `json:"runtimeType,omitempty"`
+	DockerPath     string               `json:"dockerPath,omitempty"`
+	DockerSum      string               `json:"dockerSum,omitempty"`
+	ContainerdPath string               `json:"containerdPath,omitempty"`
+	ContainerdSum  string               `json:"containerdSum,omitempty"`
+	NvidiaPath     string               `json:"nvidiaPath,omitempty"`
+	NvidiaSum      string               `json:"nvidiaSum,omitempty"`
+	KataPath       string               `json:"kataPath,omitempty"`
+	KataSum        string               `json:"kataSum,omitempty"`
+	NetworkPath    string               `json:"networkPath,omitempty"`
+	NetworkSum     string               `json:"networkSum,omitempty"`
+	ContourPath    string               `json:"contourPath,omitempty"`
+	ContourSum     string               `json:"contourSum,omitempty"`
+	OfflinePath    string               `json:"offlinePath,omitempty"`
+	OfflineSum     string               `json:"offlineSum,omitempty"`
+	ClusterConf    *ClusterConfResource `json:"clusterConf,omitempty"`
+	InstallVersion *map[string]string   `json:"installVersion,omitempty"`
 }
 
 type ClusterConfResource struct {
@@ -44,16 +51,6 @@ type ClusterConfResource struct {
 	StartupScriptPath  string `json:"startupScriptPath"`
 }
 
-type ClusterTplResource struct {
-	CorednsTemplatePath string `json:"corednsTemplatePath"`
-	CalicoTemplatePath  string `json:"calicoTemplatePath"`
-}
-
-type ClusterOffResource struct {
-	OfflinePath string `json:"offlinePath"`
-	OfflineSum  string `json:"offlineSum"`
-}
-
 type ClusterRemoteResource struct {
 	BaseDir        string                     `json:"baseDir"`
 	ConfDir        string                     `json:"confDir"`
@@ -63,12 +60,16 @@ type ClusterRemoteResource struct {
 	DistDir        string                     `json:"distDir"`
 	TmpDir         string                     `json:"tmpDir"`
 	ImagesPath     string                     `json:"imagesPath"`
+	PausePath      string                     `json:"pausePath"`
 	BinaryPath     string                     `json:"binaryPath"`
 	KubeletPath    string                     `json:"kubeletPath"`
 	RuntimeType    string                     `json:"runtimeType"`
 	DockerPath     string                     `json:"dockerPath"`
 	ContainerdPath string                     `json:"containerdPath"`
+	NvidiaPath     string                     `json:"nvidiaPath"`
+	KataPath       string                     `json:"kataPath"`
 	NetworkPath    string                     `json:"networkPath"`
+	ContourPath    string                     `json:"contourPath"`
 	OfflinePath    string                     `json:"offlinePath"`
 	ClusterConf    *ClusterRemoteConfResource `json:"clusterConf"`
 }

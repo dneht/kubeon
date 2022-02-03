@@ -21,14 +21,17 @@ import (
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/module"
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"time"
+	"k8s.io/klog/v2"
 )
 
 type flagpole struct {
-	WithMirror bool
+	MirrorHost string
+	SetOffline string
+	WithNvidia bool
+	WithKata   bool
 }
 
 func NewCommand() *cobra.Command {
@@ -46,9 +49,23 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 	}
+	cmd.Flags().StringVar(
+		&flags.MirrorHost, "mirror",
+		"yes", "download use mirror, if in cn please keep true",
+	)
+	cmd.Flags().StringVar(
+		&flags.SetOffline, "set-offline",
+		"", "modify upgrade offline mode",
+	)
 	cmd.Flags().BoolVar(
-		&flags.WithMirror, "with-mirror",
-		true, "download use mirror, if in cn please keep true",
+		&flags.WithNvidia, "with-nvidia",
+		true,
+		"Install nvidia",
+	)
+	cmd.Flags().BoolVar(
+		&flags.WithKata, "with-kata",
+		false,
+		"Install kata with Kata-deploy",
 	)
 	return cmd
 }
@@ -62,6 +79,22 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	if nil != err {
 		return err
 	}
+	current := cluster.Current()
+	if "" == current.Mirror {
+		current.Mirror = onutil.ConvMirror(flags.MirrorHost, define.MirrorImageRepo)
+	}
+	if "" != flags.SetOffline {
+		switch flags.SetOffline {
+		case define.OnlineModule, "false", "no":
+			current.IsOffline = false
+			break
+		case define.OfflineModule, "true", "yes":
+			current.IsOffline = true
+			break
+		}
+	}
+	current.UseNvidia = flags.WithNvidia && current.RuntimeMode == define.ContainerdRuntime && inputVersion.IsSupportNvidia()
+	current.UseKata = flags.WithKata && inputVersion.IsSupportKata()
 	return cluster.InitUpgradeCluster(inputVersion)
 }
 
@@ -71,7 +104,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		return errors.New("cluster create error")
 	}
 
-	err = preUpgrade(current, flags.WithMirror)
+	err = preUpgrade(current, current.Mirror)
 	if nil != err {
 		return err
 	}
@@ -82,7 +115,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func preUpgrade(current *cluster.Cluster, mirror bool) (err error) {
+func preUpgrade(current *cluster.Cluster, mirror string) (err error) {
 	err = cluster.CreateResource(mirror)
 	if nil != err {
 		return err
@@ -96,20 +129,16 @@ func preUpgrade(current *cluster.Cluster, mirror bool) (err error) {
 }
 
 func upgradeCluster(current *cluster.Cluster) (err error) {
-	//err = module.SetupUpgradeKubeadm()
-	//if nil != err {
-	//	return err
-	//}
+	err = module.SetupUpgradeKubeadm()
+	if nil != err {
+		return err
+	}
 	for _, node := range cluster.CurrentNodes() {
 		err = action.KubectlDrainNode(node.Hostname, current.Version)
 		if nil != err {
 			return err
 		}
-		if node.IsBootstrap() {
-			err = action.KubeadmUpgradeApply(node, false, 4*time.Minute)
-		} else {
-			err = action.KubeadmUpgradeNode(node, false, 2*time.Minute)
-		}
+		err = action.KubeadmUpgrade(node, false)
 		if err != nil {
 			return err
 		}
@@ -124,11 +153,11 @@ func upgradeCluster(current *cluster.Cluster) (err error) {
 	}
 	err = module.InstallNetwork()
 	if nil != err {
-		log.Warnf("reinstall network failed %v", err)
+		klog.Warningf("Reinstall network failed %v", err)
 	}
-	err = module.InstallIngress()
+	err = module.InstallExtend()
 	if nil != err {
-		log.Warnf("reinstall ingress failed %v", err)
+		klog.Warningf("Reinstall ingress failed %v", err)
 	}
 	err = module.UpgradeLoadBalance()
 	if nil != err {

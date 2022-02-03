@@ -58,7 +58,7 @@ func ClusterInfo() error {
 
 	fmt.Println("====================container info====================")
 	if err := boot.Command(
-		"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf", "get", "pods", "--namespace=kube-system",
+		"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf", "get", "pods", "--all-namespaces",
 		"-o=jsonpath='{range .items[*]}{\"\\n\"}{.metadata.name}{\":\\t\"}{range .spec.containers[*]}{.image}{\", \"}{end}{end}'",
 	).RunWithEcho(); err != nil {
 		return err

@@ -1,45 +1,34 @@
 package log
 
 import (
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"os"
-	"time"
+	"flag"
+	"fmt"
+	"k8s.io/klog/v2"
+	"strconv"
 )
 
-var log *zap.SugaredLogger
-var logLevel = zapcore.InfoLevel
+var logLevel = 1
 
-func Init(level string) {
-	 zapLevel := &logLevel
-	if "" != level {
-		err :=  logLevel.Set(level)
-		if nil != err {
-			os.Exit(1)
-		}
+func Init(level int) {
+	if level < 0 {
+		level = 0
+	} else if level > 8 {
+		level = 8
 	}
-	core := zapcore.NewCore(zapcore.NewConsoleEncoder(
-		zapcore.EncoderConfig{
-			TimeKey:        "T",
-			LevelKey:       "L",
-			NameKey:        "N",
-			CallerKey:      "C",
-			MessageKey:     "M",
-			StacktraceKey:  "S",
-			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    zapcore.CapitalColorLevelEncoder,
-			EncodeTime:     customTimeEncoder,
-			EncodeDuration: zapcore.StringDurationEncoder,
-			EncodeCaller:   noneCallerEncoder,
-		}),
-		zapcore.Lock(os.Stdout), zap.NewAtomicLevelAt(*zapLevel))
-	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
-	log = logger.Sugar()
+	logLevel = level
+	flagSet := flag.NewFlagSet("klog", flag.ExitOnError)
+	klog.InitFlags(flagSet)
+	err := flagSet.Parse([]string{"-v", strconv.FormatInt(int64(level), 10)})
+	if nil != err {
+		fmt.Printf("Set log level failed: %v\n", err)
+	}
+	flagSet.Parsed()
 }
 
-func customTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	enc.AppendString(t.Format("15:04:05"))
+func Level() int {
+	return logLevel
 }
 
-func noneCallerEncoder(caller zapcore.EntryCaller, enc zapcore.PrimitiveArrayEncoder) {
+func IsDebug() bool {
+	return logLevel >= 4
 }

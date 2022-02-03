@@ -19,9 +19,7 @@ package define
 import "github.com/dneht/kubeon/pkg/onutil"
 
 const (
-	AppVersion = "0.9.0"
-
-	MirrorRegistry = "registry.cn-hangzhou.aliyuncs.com"
+	AppVersion = "0.10.0"
 )
 
 var (
@@ -59,6 +57,7 @@ const (
 
 	// DefaultImageRepo defines the default image repo
 	DefaultImageRepo = "k8s.gcr.io"
+	MirrorImageRepo  = "registry.cn-hangzhou.aliyuncs.com"
 
 	DefaultProxyMode = IPVSProxy
 

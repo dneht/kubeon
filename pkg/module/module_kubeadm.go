@@ -135,6 +135,8 @@ func writeKubeadmConfig(current *cluster.Cluster, node *cluster.Node, token, sec
 	}
 	kubeletTemplate := getKubeletTemplate()
 	kubeadmTemplate := &release.KubeadmTemplate{
+		APIVersion:        current.GetKubeadmAPIVersion(),
+		ImageRepository:   current.GetInitImageRepo(),
 		ClusterName:       current.Name,
 		ClusterVersion:    current.Version.Full,
 		ClusterPortRange:  current.PortRange,
@@ -155,8 +157,10 @@ func writeKubeadmConfig(current *cluster.Cluster, node *cluster.Node, token, sec
 		kubeadmTemplate.ClusterLbPort = define.DefaultClusterAPIPort
 		err = release.WriteKubeadmInitTemplate(kubeletTemplate, kubeadmTemplate,
 			&release.KubeadmInitTemplate{
+				APIVersion:       current.GetKubeadmAPIVersion(),
 				Token:            token,
 				NodeName:         node.Hostname,
+				ImagePullPolicy:  current.GetInitImagePullPolicy(),
 				AdvertiseAddress: node.IPv4,
 				BindPort:         define.DefaultClusterAPIPort,
 				CertificateKey:   secretKey,
@@ -173,12 +177,14 @@ func writeKubeadmConfig(current *cluster.Cluster, node *cluster.Node, token, sec
 		}
 		err = release.WriteKubeadmJoinTemplate(kubeletTemplate, kubeadmTemplate,
 			&release.KubeadmJoinTemplate{
+				APIVersion:       current.GetKubeadmAPIVersion(),
 				Token:            token,
 				ClusterLbDomain:  current.LbDomain,
 				ClusterLbPort:    lbPort,
 				CaCertHash:       certHash,
 				IsControlPlane:   node.IsControlPlane(),
 				NodeName:         node.Hostname,
+				ImagePullPolicy:  current.GetInitImagePullPolicy(),
 				AdvertiseAddress: node.IPv4,
 				BindPort:         define.DefaultClusterAPIPort,
 				CertificateKey:   secretKey,

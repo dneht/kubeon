@@ -7,6 +7,7 @@ sudo sed -i "/PermitRootLogin prohibit-password/d" /etc/ssh/sshd_config
 sudo sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/g" /etc/ssh/sshd_config
 sudo echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 sudo systemctl restart sshd
+export DEBIAN_FRONTEND=noninteractive
 sudo echo "apt_preserve_sources_list: true" >> /etc/cloud/cloud.cfg
 sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal main restricted" > /etc/apt/sources.list
 sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted" >> /etc/apt/sources.list
@@ -18,7 +19,6 @@ sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted
 sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-security main restricted" >> /etc/apt/sources.list
 sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-security universe" >> /etc/apt/sources.list
 sudo apt-get update
-sudo apt-get upgrade
 sudo apt-get install -y chrony
 sudo systemctl start chrony
 sudo sh -c "$(wget https://dl.sre.pub/on/install.sh -q -O -)"
@@ -37,19 +37,56 @@ if [ $num = 6 ]; then
       --default-passwd ${pwd} \
       --ic contour \
       --interface enp0s8 \
-      --log-level debug
-  kubeon view info test
+      --v 4
   sleep 2s
+  kubeon display test
   kubeon add test \
       -m 192.168.60.26 \
       --master-name test60 \
       --default-passwd ${pwd} \
-      --log-level debug
-  kubeon view info test
-  sleep 2s
+      --v 4
+  sleep 4s
+  kubeon display test
   kubeon del test \
       ip=192.168.60.25 \
-      --log-level debug
-  kubeon view info test
-  sleep 2s
+      --v 4
+  sleep 4s
+  kubeon display test
+
+  cat>"${HOME}/test.yaml"<<EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test
+  labels:
+    run: app
+    type: test
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      run: app
+      type: test
+  template:
+    metadata:
+      labels:
+        run: app
+        type: test
+    spec:
+      containers:
+        - name: test
+          image: registry.cn-hangzhou.aliyuncs.com/dneht/debian-test:latest
+          args:
+            - /bin/sh
+            - -c
+            - sleep 10; touch /tmp/healthy; sleep 30000
+          readinessProbe:
+            exec:
+              command:
+                - cat
+                - /tmp/healthy
+            initialDelaySeconds: 10
+            periodSeconds: 5
+EOF
+  kubectl apply -f ${HOME}/test.yaml
 fi

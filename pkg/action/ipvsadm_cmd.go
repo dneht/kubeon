@@ -18,7 +18,7 @@ package action
 
 import (
 	"github.com/dneht/kubeon/pkg/cluster"
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"k8s.io/klog/v2"
 )
 
 func IPVSAdmClear(nodes cluster.NodeList) {
@@ -26,7 +26,7 @@ func IPVSAdmClear(nodes cluster.NodeList) {
 	for _, node := range nodes {
 		err = node.RunCmd("ipvsadm", "-C")
 		if nil != err {
-			log.Warnf("clear ipvs rule failed: %v", err)
+			klog.Warningf("Clear ipvs rule failed: %v", err)
 		}
 	}
 }

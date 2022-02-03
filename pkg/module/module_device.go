@@ -14,21 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package action
+package module
 
 import (
+	"github.com/dneht/kubeon/pkg/action"
 	"github.com/dneht/kubeon/pkg/cluster"
-	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-	"time"
 )
 
-func HAProxyInitWait(current *cluster.Cluster, node *cluster.Node, wait time.Duration) error {
-	klog.V(1).Infof("Waiting for local-haproxy pod to become ready (timeout %s)", wait)
-	if pass := waitFor(current, node, wait,
-		staticPodIsReady("local-haproxy"),
-	); !pass {
-		return errors.New("timeout: LocalLB local-haproxy did not reach target state")
+func LabelDevice() {
+	LabelNvidia()
+}
+
+func LabelNvidia() {
+	current := cluster.Current()
+	for _, node := range cluster.CurrentNodes() {
+		if current.UseNvidia && node.HasNvidia {
+			err := action.KubectlLabelRole(node.Hostname, "nvidia.com/gpu.present=yes")
+			if nil != err {
+				klog.Warningf("Label[nvidia.com/gpu.present=yes] on %s failed: %v, please set it manually using [kubectl label nodes %s nvidia.com/gpu.present=yes]", node.Hostname, err, node.Hostname)
+			}
+		}
 	}
-	return nil
 }

@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"github.com/dneht/kubeon/pkg/execute/connect"
 	"github.com/dneht/kubeon/pkg/onutil"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"io"
+	"k8s.io/klog/v2"
 	"os"
 	"strings"
 )
@@ -63,6 +63,9 @@ func (c *RemoteCmd) RunAndResult() (result string, err error) {
 		result = strings.Join(lines, "\n")
 		return result, err
 	} else {
+		if normal.Len() == 0 {
+			return "", err
+		}
 		lines = onutil.ReadLinesFromBuff(&normal)
 		return strings.TrimSpace(lines[0]), err
 	}
@@ -87,6 +90,9 @@ func (c *RemoteCmd) RunAndCapture() (lines []string, err error) {
 		lines = onutil.ReadLinesFromBuff(&wrong)
 		return lines, err
 	} else {
+		if normal.Len() == 0 {
+			return []string{}, err
+		}
 		lines = onutil.ReadLinesFromBuff(&normal)
 		return lines, nil
 	}
@@ -117,10 +123,10 @@ func (c *RemoteCmd) runInnerCommand() error {
 	}
 
 	run := c.command + " " + strings.Join(c.args, " ")
-	log.Debugf("[remote] running %s on %s", run, c.node)
+	klog.V(6).Infof("[remote] running [%s] on [%s]", run, c.node)
 	err = cmd.Run(run)
 	if nil != err {
-		log.Errorf("[remote] running %s on %s failed: %s", run, c.node, err)
+		klog.Errorf("[remote] running [%s] on [%s] failed: %s", run, c.node, err)
 	}
 	return err
 }

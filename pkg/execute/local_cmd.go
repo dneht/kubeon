@@ -21,6 +21,7 @@ import (
 	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/dneht/kubeon/pkg/onutil/log"
 	"io"
+	"k8s.io/klog/v2"
 	"os"
 	"os/exec"
 	"strings"
@@ -97,10 +98,10 @@ func (c *LocalCmd) runInnerCommand() (err error) {
 		cmd.Stderr = c.stderr
 	}
 
-	log.Debugf("[local] running %s", cmd.Args)
+	klog.V(6).Infof("[local] running %s", cmd.Args)
 	err = cmd.Run()
 	if nil != err && log.IsDebug() {
-		log.Warnf("[local] running %s failed: %s", cmd.String(), err)
+		klog.Warningf("[local] running %s failed: %s", cmd.String(), err)
 	}
 	return err
 }

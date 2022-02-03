@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package clusterinfo
+package etcdcheck
 
 import (
 	"github.com/dneht/kubeon/pkg/action"
@@ -24,25 +24,21 @@ import (
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args:  cobra.ExactArgs(1),
-		Use:   "info CLUSTER_NAME",
-		Short: "Prints cluster info",
+		Args:  cobra.ExactArgs(2),
+		Use:   "check CLUSTER_NAME SAVE_PATH",
+		Short: "Check etcd snapshot",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cluster.InitConfig(args[0])
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(cmd, args)
+			_, err := cluster.InitExistCluster()
+			if nil != err {
+				return err
+			}
+
+			return action.EtcdSnapshotCheck(args[1])
 		},
 	}
 	return cmd
-}
-
-func runE(cmd *cobra.Command, args []string) error {
-	_, err := cluster.InitExistCluster()
-	if nil != err {
-		return err
-	}
-
-	return action.ClusterInfo()
 }

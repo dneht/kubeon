@@ -17,7 +17,7 @@ limitations under the License.
 package onutil
 
 import (
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"k8s.io/klog/v2"
 	"strconv"
 )
 
@@ -33,7 +33,7 @@ func ShowProgress(total, done int64, prompt string) {
 	totalLength, totalUnit := toSizeFormat(total)
 	doneLength, doneUnit := toSizeFormat(done)
 	doneProgress := strconv.FormatFloat(float64(done*100)/float64(total), 'f', 2, 64) + "%"
-	log.Infof("[%s] total: %s%s | done: %s%s | progress: %s", prompt,
+	klog.V(1).Infof("[%s] total: %s%s | done: %s%s | progress: %s", prompt,
 		totalLength, totalUnit, doneLength, doneUnit, doneProgress)
 }
 

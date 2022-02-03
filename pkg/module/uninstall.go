@@ -20,8 +20,8 @@ import (
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/onutil"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/dneht/kubeon/pkg/release"
+	"k8s.io/klog/v2"
 )
 
 func AllUninstall(nodes cluster.NodeList, isDestroy bool) (err error) {
@@ -30,35 +30,35 @@ func AllUninstall(nodes cluster.NodeList, isDestroy bool) (err error) {
 
 func removePackage(nodes cluster.NodeList, isDestroy bool) (err error) {
 	for _, node := range nodes {
-		log.Infof("start uninstall [%s] on [%s]", define.KubeletModule, node.Addr())
+		klog.V(1).Infof("Start uninstall [%s] on [%s]", define.KubeletModule, node.Addr())
 		err = uninstallOnNode(node, define.KubeletModule)
 		if nil != err {
-			log.Warnf("uninstall module %s error: %s", define.KubeletModule, err)
+			klog.Warningf("Uninstall module %s error: %s", define.KubeletModule, err)
 		} else {
-			log.Debugf("uninstall module %s success", define.KubeletModule)
+			klog.V(4).Infof("Uninstall module %s success", define.KubeletModule)
 		}
 
-		log.Infof("start uninstall [%s] on [%s]", cluster.Current().RuntimeMode, node.Addr())
+		klog.V(1).Infof("Start uninstall [%s] on [%s]", cluster.Current().RuntimeMode, node.Addr())
 		if cluster.Current().RuntimeMode == define.ContainerdRuntime {
 			err = uninstallOnNode(node, define.ContainerdRuntime)
 			if nil != err {
-				log.Warnf("uninstall module %s error: %s", define.ContainerdRuntime, err)
+				klog.Warningf("Uninstall module %s error: %s", define.ContainerdRuntime, err)
 			} else {
-				log.Debugf("uninstall module %s success", define.ContainerdRuntime)
+				klog.V(4).Infof("Uninstall module %s success", define.ContainerdRuntime)
 			}
 		} else {
 			err = uninstallOnNode(node, define.DockerRuntime)
 			if nil != err {
-				log.Warnf("uninstall module %s error: %s", define.DockerRuntime, err)
+				klog.Warningf("Uninstall module %s error: %s", define.DockerRuntime, err)
 			} else {
-				log.Debugf("uninstall module %s success", define.DockerRuntime)
+				klog.V(4).Infof("Uninstall module %s success", define.DockerRuntime)
 			}
 		}
 		err = uninstallOnNode(node, define.NetworkPlugin)
 		if nil != err {
-			log.Warnf("uninstall module %s error: %s", define.NetworkPlugin, err)
+			klog.Warningf("Uninstall module %s error: %s", define.NetworkPlugin, err)
 		} else {
-			log.Debugf("uninstall module %s success", define.NetworkPlugin)
+			klog.V(4).Infof("Uninstall module %s success", define.NetworkPlugin)
 		}
 		uninstallScript(node)
 		if onutil.IsLocalIPv4(node.IPv4) {
@@ -79,10 +79,10 @@ func uninstallScript(node *cluster.Node) {
 		installMode = "offline"
 	}
 	proxyMode := current.ProxyMode
-	log.Infof("start final uninstall on [%s], %s, proxy=%s", node.Addr(), installMode, proxyMode)
+	klog.V(1).Infof("Start final uninstall on [%s], %s, proxy=%s", node.Addr(), installMode, proxyMode)
 	err := node.RunCmd("bash", node.GetResource().ScriptDir+"/prepare.sh",
 		"delete", installMode, proxyMode)
 	if nil != err {
-		log.Warnf("final uninstall on [%s] failed", node.Addr())
+		klog.Warningf("Final uninstall on [%s] failed", node.Addr())
 	}
 }

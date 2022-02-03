@@ -18,39 +18,39 @@ package create
 
 import (
 	"github.com/dneht/kubeon/pkg/define"
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"k8s.io/klog/v2"
 )
 
 func checkSupport(flags *flagpole, clusterVersion string) bool {
 	var isSupport bool
 	isSupport = define.IsSupportVersion(clusterVersion)
 	if !isSupport {
-		log.Errorf("input version[%s] not support", clusterVersion)
+		klog.Errorf("[check] Input version[%s] not support", clusterVersion)
 		return false
 	}
 	isSupport = define.IsSupportRuntime(flags.InputCRIMode)
 	if !isSupport {
-		log.Errorf("input cri[%s] not support", flags.InputCRIMode)
+		klog.Errorf("[check] Input cri[%s] not support", flags.InputCRIMode)
 		return false
 	}
 	isSupport = define.IsSupportNetwork(flags.InputCNIMode)
 	if !isSupport {
-		log.Errorf("input cni[%s] not support", flags.InputCNIMode)
+		klog.Errorf("[check] Input cni[%s] not support", flags.InputCNIMode)
 		return false
 	}
 	isSupport = define.IsSupportIngress(flags.InputICMode)
 	if !isSupport {
-		log.Errorf("input ic[%s] not support", flags.InputICMode)
+		klog.Errorf("[check] Input ic[%s] not support", flags.InputICMode)
 		return false
 	}
 	isSupport = define.IsSupportProxyMode(flags.InputProxyMode)
 	if !isSupport {
-		log.Errorf("input proxy mode[%s] not support", flags.InputProxyMode)
+		klog.Errorf("[check] Input proxy mode[%s] not support", flags.InputProxyMode)
 		return false
 	}
 	isSupport = define.IsSupportCalicoMode(flags.CalicoMode)
 	if !isSupport {
-		log.Errorf("input calico mode[%s] not support", flags.CalicoMode)
+		klog.Errorf("[check] Input calico mode[%s] not support", flags.CalicoMode)
 		return false
 	}
 	return true

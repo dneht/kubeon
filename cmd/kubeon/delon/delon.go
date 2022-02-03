@@ -20,8 +20,8 @@ import (
 	"github.com/dneht/kubeon/pkg/action"
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/module"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 )
 
 func NewCommand() *cobra.Command {
@@ -53,12 +53,12 @@ func runE(cmd *cobra.Command, args []string) error {
 
 	err = preRemove(delNodes)
 	if nil != err {
-		log.Warnf("prepare remove nodes failed, please check: %v", err)
+		klog.Warningf("Prepare remove nodes failed, please check: %v", err)
 		return nil
 	}
 	err = removeNodes(delNodes)
 	if nil != err {
-		log.Errorf("remove nodes failed, clean manually: %v", err)
+		klog.Errorf("Remove nodes failed, clean manually: %v", err)
 	}
 	return nil
 }
@@ -67,14 +67,10 @@ func preRemove(delNodes cluster.NodeList) (err error) {
 	for _, node := range delNodes {
 		err = action.KubectlDrainNodeForce(node.Hostname, cluster.Current().Version)
 		if nil != err {
-			log.Warnf("drain node[%s] failed: %v", node.Addr(), err)
-		}
-		err = action.KubectlDeleteNode(node.Hostname)
-		if nil != err {
-			log.Warnf("delete node[%s] failed: %v", node.Addr(), err)
+			klog.Warningf("Drain node[%s] failed: %v", node.Addr(), err)
 		}
 	}
-	action.KubeadmResetList(delNodes)
+	action.KubeadmResetList(delNodes, false)
 	return nil
 }
 
@@ -90,17 +86,23 @@ func removeNodes(delNodes cluster.NodeList) (err error) {
 			cluster.DelResetLocalHost(node)
 			err = action.EtcdMemberRemove(node.Hostname)
 			if nil != err {
-				log.Warnf("remove etcd member failed %v", err)
+				klog.Warningf("Remove etcd member failed %v", err)
 			}
 		}
 		err = module.InstallNetwork()
 		if nil != err {
-			log.Warnf("reinstall network failed %v", err)
+			klog.Warningf("Reinstall network failed %v", err)
 		}
 	}
 	err = module.ChangeLoadBalance(isDelMaster, cluster.EmptyNodeList())
 	if nil != err {
 		return err
+	}
+	for _, node := range delNodes {
+		err = action.KubectlDeleteNode(node.Hostname)
+		if nil != err {
+			klog.Warningf("Delete node[%s] failed: %v", node.Addr(), err)
+		}
 	}
 	return cluster.DelCompleteCluster(delNodes)
 }

@@ -19,8 +19,8 @@ package cluster
 import (
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/onutil"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"sort"
 	"strings"
 )
@@ -52,10 +52,12 @@ func EmptyNodeList() NodeList {
 	return make(NodeList, 0)
 }
 
-func newNodeList(base define.DefaultList, master define.MasterList, worker define.WorkerList) (masterList NodeList, workerList NodeList, retResult bool) {
+func newNodeList(base define.DefaultList, master define.MasterList, worker define.WorkerList) (NodeList, NodeList, bool, bool) {
 	startIdx := maxOrder() + 1
 	masterSize := len(master.MasterIPs)
-	masterList = make(NodeList, masterSize)
+	masterList := make(NodeList, masterSize)
+	workerList := make(NodeList, len(worker.WorkerIPs))
+	hasNvidia := false
 	for idx, one := range master.MasterIPs {
 		node := &Node{
 			IPv4:       one.String(),
@@ -70,12 +72,15 @@ func newNodeList(base define.DefaultList, master define.MasterList, worker defin
 		}
 		getHostname, result := mergeHostname(master.MasterNames, idx, node)
 		if !result {
-			return masterList, workerList, false
+			return masterList, workerList, false, false
 		}
 		node.Hostname = getHostname
+		node.HasNvidia = node.CheckNvidia()
+		if node.HasNvidia {
+			hasNvidia = true
+		}
 		masterList[idx] = node
 	}
-	workerList = make(NodeList, len(worker.WorkerIPs))
 	for idx, one := range worker.WorkerIPs {
 		node := &Node{
 			IPv4:       one.String(),
@@ -90,18 +95,23 @@ func newNodeList(base define.DefaultList, master define.MasterList, worker defin
 		}
 		getHostname, result := mergeHostname(worker.WorkerNames, idx, node)
 		if !result {
-			return masterList, workerList, false
+			return masterList, workerList, false, false
 		}
 		node.Hostname = getHostname
+		node.HasNvidia = node.CheckNvidia()
+		if node.HasNvidia {
+			hasNvidia = true
+		}
 		workerList[idx] = node
 	}
-	return masterList, workerList, checkHostIP(masterList, workerList) && checkHostname(masterList, workerList)
+	return masterList, workerList, hasNvidia, checkHostIP(masterList, workerList) && checkHostname(masterList, workerList)
 }
 
 func checkExist(newNodes NodeList) (err error) {
 	if nil == current {
 		return nil
 	}
+	currentNodes := CurrentNodes()
 	result := checkHostIP(currentNodes, newNodes) && checkHostname(currentNodes, newNodes)
 	if !result {
 		return errors.New("wait add node is exist")
@@ -111,6 +121,7 @@ func checkExist(newNodes NodeList) (err error) {
 
 func maxOrder() uint {
 	startIdx := uint(0)
+	currentNodes := CurrentNodes()
 	if nil != current && nil != currentNodes && len(currentNodes) > 0 {
 		for _, node := range currentNodes {
 			if node.Order > startIdx {
@@ -233,7 +244,7 @@ func checkHostIP(ml, wl NodeList) bool {
 	}
 	isDup := onutil.IsDuplicateInStringArr(hl)
 	if isDup {
-		log.Error("cluster ip is duplicate")
+		klog.Error("Cluster ip is duplicate")
 		return false
 	}
 	return true
@@ -250,7 +261,7 @@ func checkHostname(ml, wl NodeList) bool {
 	}
 	isDup := onutil.IsDuplicateInStringArr(hl)
 	if isDup {
-		log.Error("cluster hostname is duplicate")
+		klog.Error("Cluster hostname is duplicate")
 		return false
 	}
 	return true

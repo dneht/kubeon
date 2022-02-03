@@ -26,48 +26,48 @@ import (
 	"strconv"
 )
 
-var isDryRun = false
-
-var (
-	current      *Cluster
-	currentNodes NodeList
-)
+var current *Cluster
 
 type Cluster struct {
-	Name            string                   `json:"name"`
-	Version         *define.StdVersion       `json:"version"`
-	IsBinary        bool                     `json:"binary"`
-	IsOffline       bool                     `json:"offline"`
-	UsePatch        bool                     `json:"usePatch"`
-	UseTool         bool                     `json:"useTool"`
-	ApiIP           string                   `json:"apiIP"`
-	DnsIP           string                   `json:"dnsIP"`
-	LbIP            string                   `json:"lbIP"`
-	LbPort          int32                    `json:"lbPort"`
-	LbDomain        string                   `json:"lbDomain"`
-	LbMode          string                   `json:"lbMode"`
-	DnsDomain       string                   `json:"dnsDomain"`
-	MaxPods         uint32                   `json:"maxPods"`
-	PortRange       string                   `json:"portRange"`
-	SvcCIDR         string                   `json:"svcCIDR"`
-	PodCIDR         string                   `json:"podCIDR"`
-	NodeInterface   []string                 `json:"nodeInterface"`
-	ProxyMode       string                   `json:"proxyMode"`
-	IPVSScheduler   string                   `json:"ipvsScheduler"`
-	RuntimeMode     string                   `json:"runtimeMode"`
-	NetworkMode     string                   `json:"networkMode"`
-	CalicoMode      string                   `json:"calicoMode"`
-	CalicoMTU       string                   `json:"calicoMTU"`
-	IngressMode     string                   `json:"ingressMode"`
-	ControlPlanes   NodeList                 `json:"controlPlanes"`
-	Workers         NodeList                 `json:"workers"`
-	IsExternalLb    bool                     `json:"isExternalLb"`
-	IsExternalEtcd  bool                     `json:"isExternalEtcd"`
-	CertSANs        []string                 `json:"certSANs,omitempty"`
-	CreateConfig    *CreateConfig            `json:"createConfig,omitempty"`
-	LocalResource   *release.ClusterResource `json:"localResource,omitempty"`
-	AdminConfigPath string                   `json:"adminConfigPath,omitempty"`
-	Status          RunStatus                `json:"status"`
+	Name                 string                   `json:"name"`
+	Version              *define.StdVersion       `json:"version"`
+	Mirror               string                   `json:"mirror,omitempty"`
+	IsBinary             bool                     `json:"binary"`
+	IsOffline            bool                     `json:"offline"`
+	UsePatch             bool                     `json:"usePatch"`
+	ApiIP                string                   `json:"apiIP"`
+	DnsIP                string                   `json:"dnsIP"`
+	LbIP                 string                   `json:"lbIP"`
+	LbPort               int32                    `json:"lbPort"`
+	LbDomain             string                   `json:"lbDomain"`
+	LbMode               string                   `json:"lbMode"`
+	DnsDomain            string                   `json:"dnsDomain"`
+	MaxPods              uint32                   `json:"maxPods"`
+	PortRange            string                   `json:"portRange"`
+	SvcCIDR              string                   `json:"svcCIDR"`
+	PodCIDR              string                   `json:"podCIDR"`
+	NodeInterface        []string                 `json:"nodeInterface"`
+	ProxyMode            string                   `json:"proxyMode"`
+	IPVSScheduler        string                   `json:"ipvsScheduler"`
+	RuntimeMode          string                   `json:"runtimeMode"`
+	NetworkMode          string                   `json:"networkMode"`
+	CalicoMode           string                   `json:"calicoMode"`
+	CalicoMTU            string                   `json:"calicoMTU"`
+	IngressMode          string                   `json:"ingressMode"`
+	UseNvidia            bool                     `json:"useNvidia"`
+	HasNvidia            bool                     `json:"hasNvidia"`
+	UseKata              bool                     `json:"useKata"`
+	ControlPlanes        NodeList                 `json:"controlPlanes"`
+	Workers              NodeList                 `json:"workers"`
+	AllNodes             NodeList                 `json:"-"`
+	IsExternalLb         bool                     `json:"isExternalLb"`
+	IsExternalEtcd       bool                     `json:"isExternalEtcd"`
+	CertSANs             []string                 `json:"certSANs,omitempty"`
+	CreateConfig         *CreateConfig            `json:"createConfig,omitempty"`
+	LocalResource        *release.ClusterResource `json:"localResource,omitempty"`
+	ExistResourceVersion *map[string]string       `json:"-"`
+	AdminConfigPath      string                   `json:"adminConfigPath,omitempty"`
+	Status               RunStatus                `json:"status"`
 }
 
 type RunStatus string
@@ -80,20 +80,12 @@ const (
 	StatusRunning    RunStatus = "running"
 )
 
-func SetDryRun() {
-	isDryRun = true
-}
-
-func IsDryRun() bool {
-	return isDryRun
-}
-
 func Current() *Cluster {
 	return current
 }
 
 func CurrentNodes() NodeList {
-	return currentNodes
+	return current.AllNodes
 }
 
 func CurrentResource() *release.ClusterResource {
@@ -114,8 +106,8 @@ func CreateToken() error {
 }
 
 func (c *Cluster) AllIPs() []string {
-	all := make([]string, len(currentNodes))
-	for i, node := range currentNodes {
+	all := make([]string, len(c.AllNodes))
+	for i, node := range c.AllNodes {
 		all[i] = node.IPv4
 	}
 	return all
@@ -182,4 +174,63 @@ func (c *Cluster) GetCertHash() (string, error) {
 		return "", err
 	}
 	return "sha256:" + onutil.CertSHA256(caData), nil
+}
+
+func (c *Cluster) IsRealLocal() bool {
+	return c.IsOffline || c.Version.LessThen(define.K8S_1_22_0)
+}
+
+func (c *Cluster) GetInitImageRepo() string {
+	if c.IsRealLocal() {
+		return define.DefaultImageRepo
+	} else {
+		return define.MirrorImageRepo + "/kubeon"
+	}
+}
+
+func (c *Cluster) GetInitImagePullPolicy() string {
+	if c.IsRealLocal() {
+		return "IfNotPresent"
+	} else {
+		return "Always"
+	}
+}
+
+func (c *Cluster) GetHaproxyResource() string {
+	if c.IsRealLocal() {
+		return define.HaproxyResource
+	} else {
+		return define.MirrorImageRepo + "/" + define.HaproxyResource
+	}
+}
+
+func (c *Cluster) GetUpdaterResource() string {
+	if c.IsRealLocal() {
+		return define.UpdaterResource
+	} else {
+		return define.MirrorImageRepo + "/" + define.UpdaterResource
+	}
+}
+
+func (c *Cluster) GetExistVer(mod string) string {
+	return (*c.ExistResourceVersion)[mod]
+}
+
+func (c *Cluster) ModuleVersionChange(mod, iVer string) bool {
+	if len(mod) == 0 || nil == c.ExistResourceVersion {
+		return true
+	}
+	eVer := (*c.ExistResourceVersion)[mod]
+	return eVer != iVer
+}
+
+func (c *Cluster) GetKubeletAPIVersion() string {
+	return define.KubeletConfigApiB1
+}
+func (c *Cluster) GetKubeadmAPIVersion() string {
+	if c.Version.LessThen(define.K8S_1_22_0) {
+		return define.KubeadmConfigApiB2
+	} else {
+		return define.KubeadmConfigApiB3
+	}
 }

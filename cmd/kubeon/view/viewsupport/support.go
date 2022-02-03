@@ -24,10 +24,10 @@ import (
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "support",
-		Short: "Prints support version",
-		Long:  "Prints support version",
+		Args:    cobra.NoArgs,
+		Use:     "support",
+		Aliases: []string{"hold"},
+		Short:   "Prints support version",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			for _, version := range define.SupportVersionList() {
 				fmt.Println(version)

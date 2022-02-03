@@ -20,22 +20,49 @@ import (
 	"github.com/dneht/kubeon/pkg/action"
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/dneht/kubeon/pkg/release"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"strings"
 )
 
 func InstallNetwork() (err error) {
-	if cluster.Current().NetworkMode == define.CalicoNetwork {
-		return InstallInner(define.CalicoNetwork)
+	current := cluster.Current()
+	switch current.NetworkMode {
+	case define.CalicoNetwork:
+		{
+			err = InstallInner(define.CalicoNetwork)
+			if nil != err {
+				return err
+			}
+		}
 	}
 	return nil
 }
 
-func InstallIngress() (err error) {
-	if cluster.Current().IngressMode == define.ContourIngress {
-		return InstallInner(define.ContourIngress)
+func InstallExtend() (err error) {
+	current := cluster.Current()
+	if current.UseNvidia && current.HasNvidia {
+		err = InstallInner(define.NvidiaRuntime)
+		if nil != err {
+			return err
+		}
+	}
+	if current.UseKata {
+		err = InstallInner(define.KataRuntime)
+		if nil != err {
+			return err
+		}
+	}
+	switch current.IngressMode {
+	case define.ContourIngress:
+		{
+			err = InstallInner(define.ContourIngress)
+			if nil != err {
+				return err
+			}
+			break
+		}
 	}
 	return nil
 }
@@ -46,7 +73,7 @@ func InstallInner(moduleName string) (err error) {
 		return err
 	}
 	if nil != bytes {
-		log.Debugf("install %s on cluster", moduleName)
+		klog.V(4).Infof("Install %s on cluster", moduleName)
 		return action.KubectlApplyData(bytes)
 	}
 	return nil
@@ -66,6 +93,7 @@ func DeleteInner(moduleName string) (err error) {
 func getKubeletTemplate() *release.KubeletTemplate {
 	current := cluster.Current()
 	return &release.KubeletTemplate{
+		APIVersion:       current.GetKubeletAPIVersion(),
 		ClusterDnsIP:     current.DnsIP,
 		ClusterDnsDomain: current.DnsDomain,
 		ClusterMaxPods:   current.MaxPods,
@@ -81,21 +109,20 @@ func getCorednsTemplate() *release.CorednsTemplate {
 
 func ShowInner(moduleName string) ([]byte, error) {
 	current := cluster.Current()
+	local := current.IsRealLocal()
+	klog.V(4).Infof("[module] Get module [%s] config", moduleName)
 	switch moduleName {
 	case define.KubeletModule:
-		log.Debugf("get module %s config", define.KubeletModule)
 		return release.RenderKubeletTemplate(getKubeletTemplate(), current.Version.Full)
 	case define.CorednsPart:
-		log.Debugf("get module %s config", define.CorednsPart)
-		return release.RenderCorednsTemplate(getCorednsTemplate())
+		return release.RenderCorednsTemplate(getCorednsTemplate(), local)
 	case define.CalicoNetwork:
-		log.Debugf("get module %s config", define.CalicoNetwork)
-		ipipMode := "Always"
-		vxlanMode := "Never"
 		etcdConfig := current.CreateConfig
 		if nil == etcdConfig {
 			return nil, errors.New("get etcd config error")
 		}
+		ipipMode := "Always"
+		vxlanMode := "Never"
 		if define.CalicoVXLan == current.CalicoMode {
 			ipipMode = "Never"
 			vxlanMode = "Always"
@@ -116,35 +143,34 @@ func ShowInner(moduleName string) ([]byte, error) {
 			CalicoMTU:        current.CalicoMTU,
 			IPIPMode:         ipipMode,
 			VXLanMode:        vxlanMode,
-		})
+		}, local)
+	case define.NvidiaRuntime:
+		return release.RenderNvidiaTemplate(&release.NvidiaTemplate{}, local)
+	case define.KataRuntime:
+		return release.RenderKataTemplate(&release.KataTemplate{}, local)
 	case define.ContourIngress:
-		log.Debugf("get module %s config", define.ContourIngress)
-		return release.RenderContourTemplate(&release.ContourTemplate{})
+		return release.RenderContourTemplate(&release.ContourTemplate{}, local)
 	case define.HealthzReader:
-		log.Debugf("get module %s config", define.HealthzReader)
 		return release.RenderHealthzTemplate(current.Version.Full), nil
 	case define.LocalHaproxy:
-		log.Debugf("get module %s config", define.LocalHaproxy)
 		return release.RenderHaproxyTemplate(&release.BalanceHaproxyTemplate{
 			MasterHosts: current.MasterAPIs(),
-			ImageUrl:    define.HaproxyResource + ":" + current.Version.Full,
+			ImageUrl:    current.GetHaproxyResource() + ":" + current.Version.Full,
 		})
 	case define.ApiserverStartup:
-		log.Debugf("get module %s config", define.ApiserverStartup)
 		return release.RenderStartupService(&release.ApiserverScriptTemplate{
 			TargetDomain: current.LbDomain,
 			VirtualAddr:  current.LbIP,
 			RealAddrs:    strings.Join(current.MasterIPs(), ","),
 		})
 	case define.ApiserverUpdater:
-		log.Debugf("get module %s config", define.ApiserverUpdater)
 		return release.RenderUpdaterTemplate(&release.ApiserverUpdaterTemplate{
 			ClusterLbIP: current.LbIP,
 			MasterIPs:   current.MasterIPs(),
-			ImageUrl:    define.UpdaterResource + ":" + current.Version.Full,
+			ImageUrl:    current.GetUpdaterResource() + ":" + current.Version.Full,
 		})
 	default:
-		log.Warnf("not support inner module[%s]", moduleName)
+		klog.Warningf("Not support inner module[%s]", moduleName)
 		return nil, nil
 	}
 }

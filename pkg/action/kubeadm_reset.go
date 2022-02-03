@@ -21,31 +21,42 @@ import (
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/onutil/log"
+	"k8s.io/klog/v2"
 )
 
-func KubeadmResetOne(node *cluster.Node) {
-	err := node.RunCmd("kubeadm", "reset", "--force", fmt.Sprintf("--v=%d", log.Level()))
+func KubeadmResetOne(node *cluster.Node, force bool) {
+	var err error
+	current := cluster.Current()
+	if force {
+		err = node.RunCmd("systemctl", "stop", current.RuntimeMode, "--force")
+		if nil != err {
+			klog.Warningf("%s restart failed: %v", current.RuntimeMode, err)
+		}
+	}
+	err = node.RunCmd("kubeadm", "reset", "--force", fmt.Sprintf("--v=%d", log.Level()))
 	if nil != err {
-		log.Warnf("kubeadm reset failed: %v", err)
+		klog.Warningf("Kubeadm reset failed: %v", err)
 	}
 	err = node.Rm("/etc/cni/net.d")
 	if nil != err {
-		log.Warnf("remove cni config failed: %v", err)
+		klog.Warningf("Remove cni config failed: %v", err)
 	}
-	if cluster.Current().ProxyMode == define.IPVSProxy {
+	_ = node.Rm("/etc/kubernetes")
+	_ = node.Rm("/etc/kubeadm.yaml")
+	if current.ProxyMode == define.IPVSProxy {
 		err = node.RunCmd("ipvsadm", "--clear")
 		if nil != err {
-			log.Warnf("clean ipvs rules failed: %v", err)
+			klog.Warningf("Clean ipvs rules failed: %v", err)
 		}
-	} else if cluster.Current().ProxyMode == define.IPTablesProxy {
-		log.Warnf("please clean the iptables rules yourself")
+	} else if current.ProxyMode == define.IPTablesProxy {
+		klog.Warningf("Please clean the iptables rules yourself")
 	}
 }
 
-func KubeadmResetList(list cluster.NodeList) {
+func KubeadmResetList(list cluster.NodeList, force bool) {
 	for _, node := range list {
 		if node.IsWorker() {
-			KubeadmResetOne(node)
+			KubeadmResetOne(node, false)
 		}
 	}
 	var boot *cluster.Node = nil
@@ -55,10 +66,10 @@ func KubeadmResetList(list cluster.NodeList) {
 			continue
 		}
 		if node.IsControlPlane() {
-			KubeadmResetOne(node)
+			KubeadmResetOne(node, false)
 		}
 	}
 	if nil != boot {
-		KubeadmResetOne(boot)
+		KubeadmResetOne(boot, force)
 	}
 }

@@ -14,21 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package viewconfig
+package etcdbackup
 
 import (
-	"fmt"
+	"github.com/dneht/kubeon/pkg/action"
 	"github.com/dneht/kubeon/pkg/cluster"
-	"github.com/dneht/kubeon/pkg/module"
 	"github.com/spf13/cobra"
 )
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args:    cobra.ExactArgs(2),
-		Use:     "config CLUSTER_NAME CONFIG_TYPE",
-		Aliases: []string{"conf"},
-		Short:   "Prints select config",
+		Args:  cobra.ExactArgs(2),
+		Use:   "save CLUSTER_NAME SAVE_PATH",
+		Short: "Save etcd snapshot",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cluster.InitConfig(args[0])
 			return nil
@@ -39,17 +37,7 @@ func NewCommand() *cobra.Command {
 				return err
 			}
 
-			moduleName := args[1]
-			bytes, err := module.ShowInner(moduleName)
-			if nil != err {
-				return err
-			}
-			if nil == bytes {
-				fmt.Printf("not found or not need this module %s", moduleName)
-			} else {
-				fmt.Println(string(bytes))
-			}
-			return nil
+			return action.EtcdSnapshotSave(args[0])
 		},
 	}
 	return cmd

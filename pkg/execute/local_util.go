@@ -34,3 +34,7 @@ func UnpackTar(filePath, unpackDir string) (err error) {
 func UnpackTarGz(filePath, unpackDir string) (err error) {
 	return NewLocalCmd("tar", "zxf", filePath, "-C", unpackDir).Run()
 }
+
+func UnpackTarXz(filePath, unpackDir string) (err error) {
+	return NewLocalCmd("tar", "Jxf", filePath, "-C", unpackDir).Run()
+}

@@ -21,9 +21,10 @@ import (
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/module"
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 	"net"
 	"os"
 	"time"
@@ -33,9 +34,9 @@ type flagpole struct {
 	define.DefaultList
 	define.MasterList
 	define.WorkerList
+	MirrorHost       string
 	OnlyCreate       bool
-	WithMirror       bool
-	WithOffline      bool
+	UseOffline       bool
 	ClusterLBDomain  string
 	ClusterDNSDomain string
 	ClusterMaxPods   uint32
@@ -53,6 +54,8 @@ type flagpole struct {
 	CalicoMode       string
 	CalicoMTU        string
 	InputICMode      string
+	WithNvidia       bool
+	WithKata         bool
 	InputCertSANs    []string
 }
 
@@ -71,16 +74,16 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 	}
+	cmd.Flags().StringVar(
+		&flags.MirrorHost, "mirror",
+		"yes", "download use mirror, if in cn please keep true",
+	)
 	cmd.Flags().BoolVarP(
 		&flags.OnlyCreate, "only-create", "C",
-		false, "create  config¬ only",
+		false, "create config only",
 	)
 	cmd.Flags().BoolVar(
-		&flags.WithMirror, "with-mirror",
-		true, "download use mirror, if in cn please keep true",
-	)
-	cmd.Flags().BoolVar(
-		&flags.WithOffline, "with-offline",
+		&flags.UseOffline, "use-offline",
 		false, "install use offline system package",
 	)
 	cmd.Flags().StringVar(
@@ -167,6 +170,16 @@ func NewCommand() *cobra.Command {
 		&flags.InputICMode, "ic",
 		define.DefaultIngressMode,
 		"Ingress controller, only none or contour",
+	)
+	cmd.Flags().BoolVar(
+		&flags.WithNvidia, "with-nvidia",
+		true,
+		"Install nvidia",
+	)
+	cmd.Flags().BoolVar(
+		&flags.WithKata, "with-kata",
+		false,
+		"Install kata with Kata-deploy",
 	)
 	cmd.Flags().StringSliceVar(
 		&flags.InputCertSANs, "cert-san",
@@ -310,9 +323,12 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		!flags.MasterList.CheckMatch() || !flags.WorkerList.CheckMatch() {
 		os.Exit(1)
 	}
+	flags.WithNvidia = flags.WithNvidia && flags.InputCRIMode == define.ContainerdRuntime && inputVersion.IsSupportNvidia()
+	flags.WithKata = flags.WithKata && inputVersion.IsSupportKata()
 	return cluster.InitNewCluster(&cluster.Cluster{
 		Version:       inputVersion,
-		IsOffline:     flags.WithOffline,
+		Mirror:        onutil.ConvMirror(flags.MirrorHost, define.MirrorImageRepo),
+		IsOffline:     flags.UseOffline,
 		LbPort:        flags.ExternalLBPort,
 		LbMode:        flags.InnerLBMode,
 		LbDomain:      flags.ClusterLBDomain,
@@ -329,6 +345,8 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		CalicoMode:    flags.CalicoMode,
 		CalicoMTU:     flags.CalicoMTU,
 		IngressMode:   flags.InputICMode,
+		UseNvidia:     flags.WithNvidia,
+		UseKata:       flags.WithKata,
 		CertSANs:      flags.InputCertSANs,
 		Status:        cluster.StatusCreating,
 	}, flags.ExternalLBIP, flags.DefaultList, flags.MasterList, flags.WorkerList)
@@ -343,20 +361,20 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		return nil
 	}
 
-	err = preInstall(current, flags.WithMirror)
+	err = preInstall(current, current.Mirror)
 	if nil != err {
-		log.Warnf("prepare input nodes failed, please check: %v", err)
+		klog.Warningf("prepare input nodes failed, please check: %v", err)
 		return nil
 	}
 	err = initCluster(current)
 	if nil != err {
-		log.Errorf("create cluster failed, reset nodes: %v", err)
-		action.KubeadmResetList(cluster.CurrentNodes())
+		klog.Errorf("Create cluster failed, reset nodes: %v", err)
+		action.KubeadmResetList(cluster.CurrentNodes(), false)
 	}
 	return nil
 }
 
-func preInstall(current *cluster.Cluster, mirror bool) (err error) {
+func preInstall(current *cluster.Cluster, mirror string) (err error) {
 	err = cluster.CreateResource(mirror)
 	if nil != err {
 		return err
@@ -383,7 +401,7 @@ func initCluster(current *cluster.Cluster) (err error) {
 	if nil != err {
 		return err
 	}
-	err = module.InstallIngress()
+	err = module.InstallExtend()
 	if nil != err {
 		return err
 	}
@@ -401,5 +419,6 @@ func initCluster(current *cluster.Cluster) (err error) {
 	if nil != err {
 		return err
 	}
+	module.LabelDevice()
 	return cluster.CreateCompleteCluster()
 }

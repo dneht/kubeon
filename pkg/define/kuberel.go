@@ -21,32 +21,50 @@ var (
 	K8S_1_19_0, _ = NewStdVersion("v1.19.0")
 	K8S_1_20_0, _ = NewStdVersion("v1.20.0")
 	K8S_1_21_0, _ = NewStdVersion("v1.21.0")
+	K8S_1_22_0, _ = NewStdVersion("v1.22.0")
 	K8S_1_19_x, _ = NewRngVersion("v1.19.4", "v1.19.16")
-	K8S_1_20_x, _ = NewRngVersion("v1.20.1", "v1.20.14")
-	K8S_1_21_x, _ = NewRngVersion("v1.21.1", "v1.21.8")
-	K8S_1_22_x, _ = NewRngVersion("v1.22.1", "v1.22.5")
-	K8S_1_23_x, _ = NewRngVersion("v1.23.1", "v1.23.1")
+	K8S_1_20_x, _ = NewRngVersion("v1.20.1", "v1.20.15")
+	K8S_1_21_x, _ = NewRngVersion("v1.21.1", "v1.21.9")
+	K8S_1_22_x, _ = NewRngVersion("v1.22.1", "v1.22.6")
+	K8S_1_23_x, _ = NewRngVersion("v1.23.1", "v1.23.3")
 	ETCD_3_4_0, _ = NewStdVersion("3.4.0")
 )
 
-const ImagesPackage = "images"
+const (
+	KubeletConfigApiB1 = "v1beta1"
+	KubeadmConfigApiB2 = "v1beta2"
+	KubeadmConfigApiB3 = "v1beta3"
+)
+
+const (
+	ImagesPackage = "images"
+	PausePackage  = "pause"
+)
 
 const (
 	KubeletModule = "kubelet"
-
-	BinaryModule = "binary"
-
+	KubeadmModule = "kubeadm"
+	BinaryModule  = "binary"
+	OnlineModule  = "online"
 	OfflineModule = "offline"
 )
 
 const (
-	HealthzReader = "healthz"
-
-	LocalHaproxy = "haproxy"
-
+	HealthzReader    = "healthz"
+	LocalHaproxy     = "haproxy"
 	ApiserverUpdater = "updater"
-
 	ApiserverStartup = "startup"
-
 	ApiserverService = "apiserver-startup"
 )
+
+func (v *StdVersion) IsSupportPatch() bool {
+	return v.GreaterEqual(K8S_1_19_0)
+}
+
+func (v *StdVersion) IsSupportNvidia() bool {
+	return v.GreaterThen(K8S_1_22_0)
+}
+
+func (v *StdVersion) IsSupportKata() bool {
+	return v.GreaterThen(K8S_1_22_0)
+}

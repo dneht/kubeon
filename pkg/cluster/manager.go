@@ -19,9 +19,9 @@ package cluster
 import (
 	"fmt"
 	"github.com/dneht/kubeon/pkg/define"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/dneht/kubeon/pkg/release"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"net"
 	"strings"
 )
@@ -34,7 +34,7 @@ func InitNewCluster(cluster *Cluster, lb string, base define.DefaultList, master
 			return err
 		}
 		fmt.Println(configRaw)
-		return errors.Errorf("input cluster[%s] exist", runConfig.Name)
+		return errors.Errorf("Input cluster[%s] exist", runConfig.Name)
 	}
 
 	err, apiIP, dnsIP, isExtendLB, lbIP := parseCIDR(current.SvcCIDR, current.PodCIDR, lb, current.LbMode)
@@ -42,7 +42,7 @@ func InitNewCluster(cluster *Cluster, lb string, base define.DefaultList, master
 		return err
 	}
 	current.Name = runConfig.Name
-	masterNodes, workerNodes, isReady := newNodeList(base, master, worker)
+	masterNodes, workerNodes, hasNvidia, isReady := newNodeList(base, master, worker)
 	if !isReady {
 		return errors.New("init new cluster node error")
 	}
@@ -56,15 +56,17 @@ func InitNewCluster(cluster *Cluster, lb string, base define.DefaultList, master
 		//}
 		current.LbPort = define.DefaultClusterAPIPort
 	}
+	current.HasNvidia = hasNvidia
 	current.ControlPlanes = masterNodes
 	current.Workers = workerNodes
-	current.LocalResource = release.InitResource(current.Version.Full, current.RuntimeMode, current.IsBinary, current.IsOffline)
+	current.LocalResource = release.InitResource(current.Version.Full, current.RuntimeMode,
+		current.IsBinary, current.IsOffline, current.HasNvidia, current.UseKata, current.IngressMode)
 	current.AdminConfigPath = define.AppConfDir + "/cluster/" + current.Name + ".yaml"
 
 	initCurrent(current)
 	err = InitHost()
 	if nil != err {
-		log.Errorf("init node host error: %v", err)
+		klog.Errorf("Init node host error: %v", err)
 		return err
 	}
 	return runConfig.WriteConfig()
@@ -72,14 +74,14 @@ func InitNewCluster(cluster *Cluster, lb string, base define.DefaultList, master
 
 func InitExistCluster() (*RunConfig, error) {
 	if nil == runConfig || !runConfig.Exist {
-		return nil, errors.Errorf("cluster[%s] not exist, please create", runConfig.Name)
+		return nil, errors.Errorf("Cluster[%s] not exist, please create", runConfig.Name)
 	} else {
 		cluster, err := runConfig.ParseConfig()
 		if nil != err {
 			return nil, err
 		}
 		initCurrent(cluster)
-		for _, node := range currentNodes {
+		for _, node := range CurrentNodes() {
 			node.SetConnect()
 		}
 	}
@@ -88,16 +90,18 @@ func InitExistCluster() (*RunConfig, error) {
 
 func InitUpgradeCluster(version *define.StdVersion) error {
 	if current.Status != StatusUpgrading && version.LessEqual(current.Version) {
-		return errors.Errorf("upgrade version [%s] is less than now version [%s]", version.Full, current.Version.Full)
+		return errors.Errorf("Upgrade version [%s] is less than now version [%s]", version.Full, current.Version.Full)
 	}
 
 	current.Version = version
-	current.LocalResource = release.InitResource(version.Full, current.RuntimeMode, current.IsBinary, current.IsOffline)
+	current.ExistResourceVersion = current.LocalResource.InstallVersion
+	current.LocalResource = release.InitResource(version.Full, current.RuntimeMode,
+		current.IsBinary, current.IsOffline, current.HasNvidia, current.UseKata, current.IngressMode)
 	current.Status = StatusUpgrading
 
 	err := InitHost()
 	if nil != err {
-		log.Errorf("init node host error: %v", err)
+		klog.Errorf("Init node host error: %v", err)
 		return err
 	}
 	return runConfig.WriteConfig()
@@ -111,13 +115,13 @@ func AfterBuildCluster() (*CreateConfig, error) {
 	}
 	err = runConfig.ChangeConfig()
 	if nil != err {
-		log.Error("change cluster config failed: " + err.Error())
+		klog.Error("Change cluster config failed: " + err.Error())
 	}
 	return current.CreateConfig, err
 }
 
 func InitAddNodes(base define.DefaultList, master define.MasterList, worker define.WorkerList) (NodeList, error) {
-	masterNodes, workerNodes, isReady := newNodeList(base, master, worker)
+	masterNodes, workerNodes, hasNvidia, isReady := newNodeList(base, master, worker)
 	if !isReady {
 		return nil, errors.New("init add cluster node error")
 	}
@@ -127,6 +131,7 @@ func InitAddNodes(base define.DefaultList, master define.MasterList, worker defi
 		return nil, err
 	}
 
+	current.HasNvidia = hasNvidia
 	current.ControlPlanes = MergeNodeList(current.ControlPlanes, masterNodes)
 	current.Workers = MergeNodeList(current.Workers, workerNodes)
 	if nil != current.CreateConfig {
@@ -137,7 +142,7 @@ func InitAddNodes(base define.DefaultList, master define.MasterList, worker defi
 	initCurrent(current)
 	err = InitHost()
 	if nil != err {
-		log.Errorf("init node host error: %v", err)
+		klog.Errorf("Init node host error: %v", err)
 		return nil, err
 	}
 	return newNodes, nil
@@ -149,8 +154,9 @@ func InitDelNodes(selector string) (NodeList, error) {
 		return nil, err
 	}
 	if len(delNodes) == 0 {
-		return nil, errors.Errorf("selector[%s] can not get some node", selector)
+		return nil, errors.Errorf("Selector[%s] can not get some node", selector)
 	}
+	currentNodes := CurrentNodes()
 	hash := make(map[string]*Node, len(currentNodes))
 	for _, node := range currentNodes {
 		hash[node.IPv4] = node
@@ -170,7 +176,7 @@ func InitDelNodes(selector string) (NodeList, error) {
 	}
 	cpSize := len(controlPlanes)
 	if cpSize == 0 {
-		return nil, errors.Errorf("selector[%s] no master exists after delete", selector)
+		return nil, errors.Errorf("Selector[%s] no master exists after delete", selector)
 	}
 	current.ControlPlanes = SortNodeList(controlPlanes)
 	current.Workers = SortNodeList(workers)
@@ -184,18 +190,18 @@ func InitDelNodes(selector string) (NodeList, error) {
 }
 
 func initCurrent(cluster *Cluster) {
-	currentNodes = MergeNodeList(cluster.ControlPlanes, cluster.Workers)
+	cluster.AllNodes = MergeNodeList(cluster.ControlPlanes, cluster.Workers)
 }
 
 func parseCIDR(svcCIDR, podCIDR, lbIP, lbMode string) (error, string, string, bool, string) {
 	start, _, err := net.ParseCIDR(svcCIDR)
 	if err != nil {
-		log.Errorf("cluster service CIDR error, please check [%s]", svcCIDR)
+		klog.Errorf("Cluster service CIDR error, please check [%s]", svcCIDR)
 		return err, "", "", false, ""
 	}
 	_, _, err = net.ParseCIDR(podCIDR)
 	if err != nil {
-		log.Errorf("cluster pod CIDR error, please check [%s]", podCIDR)
+		klog.Errorf("Cluster pod CIDR error, please check [%s]", podCIDR)
 		return err, "", "", false, ""
 	}
 	start = start.To4()

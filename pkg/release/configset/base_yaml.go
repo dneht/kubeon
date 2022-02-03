@@ -16,7 +16,7 @@ limitations under the License.
 
 package configset
 
-const kubeletYaml = `apiVersion: kubelet.config.k8s.io/v1beta1
+const kubeletYaml = `apiVersion: kubelet.config.k8s.io/{{.APIVersion}}
 kind: KubeletConfiguration
 address: 0.0.0.0
 authentication:
@@ -40,6 +40,12 @@ containerLogMaxFiles: 5
 containerLogMaxSize: 10Mi
 enforceNodeAllocatable:
   - pods
+allowedUnsafeSysctls:
+  - kernel.sem
+  - kernel.shm*
+  - kernel.msg*
+  - fs.mqueue.*
+  - net.*
 eventBurst: 10
 eventRecordQPS: 5
 evictionHard:
@@ -65,8 +71,9 @@ syncFrequency: 1m0s
 volumeStatsAggPeriod: 1m0s
 `
 
-const kubeadmYaml = `apiVersion: kubeadm.k8s.io/v1beta2
+const kubeadmYaml = `apiVersion: kubeadm.k8s.io/{{.APIVersion}}
 kind: ClusterConfiguration
+imageRepository: "{{.ImageRepository}}"
 clusterName: "{{.ClusterName}}"
 kubernetesVersion: "{{.ClusterVersion}}"
 controlPlaneEndpoint: "{{.ClusterLbDomain}}:{{.ClusterLbPort}}"
@@ -131,13 +138,16 @@ iptables:
 ---
 `
 
-const kubeadmInitYaml = `apiVersion: kubeadm.k8s.io/v1beta2
+const kubeadmInitYaml = `apiVersion: kubeadm.k8s.io/{{.APIVersion}}
 kind: InitConfiguration
 bootstrapTokens:
 - token: "{{.Token}}"
   description: "kubeadm bootstrap token"
 nodeRegistration:
   name: "{{.NodeName}}"
+  {{- if ne .APIVersion "v1beta2"}}
+  imagePullPolicy: "{{.ImagePullPolicy}}"
+  {{- end}}
 localAPIEndpoint:
   advertiseAddress: "{{.AdvertiseAddress}}"
   bindPort: {{.BindPort}}
@@ -145,7 +155,7 @@ certificateKey: {{.CertificateKey}}
 ---
 `
 
-const kubeadmJoinYaml = `apiVersion: kubeadm.k8s.io/v1beta2
+const kubeadmJoinYaml = `apiVersion: kubeadm.k8s.io/{{.APIVersion}}
 kind: JoinConfiguration
 discovery:
   bootstrapToken:
@@ -156,6 +166,9 @@ discovery:
   timeout: 5m0s
 nodeRegistration:
   name: "{{.NodeName}}"
+  {{- if ne .APIVersion "v1beta2"}}
+  imagePullPolicy: "{{.ImagePullPolicy}}"
+  {{- end}}
 {{- if .IsControlPlane}}
 controlPlane:
   localAPIEndpoint:

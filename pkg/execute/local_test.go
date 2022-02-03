@@ -22,7 +22,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	log.Init("debug")
+	log.Init(4)
 	m.Run()
 }
 

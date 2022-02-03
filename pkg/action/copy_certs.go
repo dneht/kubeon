@@ -19,7 +19,7 @@ package action
 import (
 	"fmt"
 	"github.com/dneht/kubeon/pkg/cluster"
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"k8s.io/klog/v2"
 	"path/filepath"
 )
 
@@ -76,14 +76,14 @@ func copyConfigFilesToNode(current *cluster.Cluster, node *cluster.Node) error {
 }
 
 func copyCertAndConfToNode(current *cluster.Cluster, node *cluster.Node, basePath string, fileNames []string) error {
-	log.Infof("importing cluster certificates from %s", cluster.BootstrapNode())
+	klog.V(1).Infof("Importing cluster certificates from %s", cluster.BootstrapNode())
 
 	for _, fileName := range fileNames {
 		fmt.Printf("%s\n", fileName)
 		filePath := filepath.Join(etcKubernetes, basePath, fileName)
 		err := node.CopyTo(filePath, filePath)
 		if nil != err {
-			log.Errorf("copy cert|config[%s] to node[%s] failed", fileName, node.Addr())
+			klog.Errorf("Copy cert|config[%s] to node[%s] failed", fileName, node.Addr())
 			return err
 		}
 	}

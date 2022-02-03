@@ -20,9 +20,9 @@ import (
 	"encoding/json"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/onutil"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/pkg/errors"
 	"io/ioutil"
+	"k8s.io/klog/v2"
 )
 
 var runConfig *RunConfig
@@ -100,7 +100,7 @@ func (c *RunConfig) ParseConfig() (*Cluster, error) {
 
 func (c *RunConfig) ChangeConfig() error {
 	if !onutil.PathExists(current.AdminConfigPath) {
-		log.Warnf("cluster config not created, please use: kubeon change -N %s", current.Name)
+		klog.Warningf("Cluster config not created, please use: kubeon change -N %s", current.Name)
 		return nil
 	}
 

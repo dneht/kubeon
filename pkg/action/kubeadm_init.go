@@ -27,7 +27,7 @@ import (
 
 func KubeadmInitStart(boot *cluster.Node, uploadCerts, usePatch bool, ignorePreflightErrors string) (err error) {
 	current := cluster.Current()
-	if usePatch && current.Version.LessThen(define.K8S_1_19_0) {
+	if usePatch && !current.Version.IsSupportPatch() {
 		return errors.New("--patches can't be used with kubeadm older than v1.19")
 	}
 	err = kubeadmInit(boot, uploadCerts, usePatch, ignorePreflightErrors)

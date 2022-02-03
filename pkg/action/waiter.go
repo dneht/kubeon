@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"k8s.io/klog/v2"
 	"math/rand"
 	"time"
 
@@ -29,7 +29,7 @@ import (
 
 // waitNewControlPlaneNodeReady waits for a new control plane node reaching the target state after init/join
 func waitNewControlPlaneNodeReady(current *cluster.Cluster, node *cluster.Node, wait time.Duration) error {
-	log.Infof("waiting for control-plane pods to become ready (timeout %s)", wait)
+	klog.V(1).Infof("Waiting for control-plane pods to become ready (timeout %s)", wait)
 	if pass := waitFor(current, node, wait,
 		nodeIsReady,
 		staticPodIsReady("kube-apiserver"),
@@ -38,7 +38,6 @@ func waitNewControlPlaneNodeReady(current *cluster.Cluster, node *cluster.Node, 
 	); !pass {
 		return errors.New("timeout: Node and control-plane did not reach target state")
 	}
-	fmt.Println()
 	return nil
 }
 
@@ -48,31 +47,28 @@ func waitForPodsRunning(current *cluster.Cluster, node *cluster.Node, wait time.
 	); !pass {
 		return errors.New("timeout: Node and control-plane did not reach target state")
 	}
-	fmt.Println()
 	return nil
 }
 
 // waitForNodePort waits for a nodePort to become ready
 func waitForNodePort(current *cluster.Cluster, node *cluster.Node, wait time.Duration, nodePort string) error {
-	log.Infof("waiting for node port %q to become ready (timeout %s)", nodePort, wait)
+	klog.V(1).Infof("Waiting for node port %q to become ready (timeout %s)", nodePort, wait)
 	if pass := waitFor(current, node, wait,
 		nodePortIsReady(nodePort),
 	); !pass {
 		return errors.New("timeout: NodePort not ready")
 	}
-	fmt.Println()
 	return nil
 }
 
 // waitNewWorkerNodeReady waits for a new control plane node reaching the target state after join
 func waitNewWorkerNodeReady(current *cluster.Cluster, node *cluster.Node, wait time.Duration) error {
-	log.Infof("waiting for node to become ready (timeout %s)", wait)
+	klog.V(1).Infof("Waiting for node to become ready (timeout %s)", wait)
 	if pass := waitFor(current, node, wait,
 		nodeIsReady,
 	); !pass {
 		return errors.New("timeout: node did not reach target state")
 	}
-	fmt.Println()
 	return nil
 }
 
@@ -80,7 +76,7 @@ func waitNewWorkerNodeReady(current *cluster.Cluster, node *cluster.Node, wait t
 func waitControlPlaneUpgraded(current *cluster.Cluster, node *cluster.Node, upgradeVersion *define.StdVersion, wait time.Duration) error {
 	version := upgradeVersion.Full
 
-	log.Infof("waiting for control-plane pods to restart with the new version (timeout %s)", wait)
+	klog.V(1).Infof("Waiting for control-plane pods to restart with the new version (timeout %s)", wait)
 	if pass := waitFor(current, node, wait,
 		staticPodHasVersion("kube-apiserver", version),
 		staticPodHasVersion("kube-controller-manager", version),
@@ -88,7 +84,6 @@ func waitControlPlaneUpgraded(current *cluster.Cluster, node *cluster.Node, upgr
 	); !pass {
 		return errors.New("timeout: control-plane did not reach target state")
 	}
-	fmt.Println()
 	return nil
 }
 
@@ -96,13 +91,12 @@ func waitControlPlaneUpgraded(current *cluster.Cluster, node *cluster.Node, upgr
 func waitKubeletUpgraded(current *cluster.Cluster, node *cluster.Node, upgradeVersion *define.StdVersion, wait time.Duration) error {
 	version := upgradeVersion.Full
 
-	log.Infof("waiting for node to restart with the new version (timeout %s)", wait)
+	klog.V(1).Infof("Waiting for node to restart with the new version (timeout %s)", wait)
 	if pass := waitFor(current, node, wait,
 		nodeHasKubernetesVersion(version),
 	); !pass {
 		return errors.New("timeout: node did not reach target state")
 	}
-	fmt.Println()
 	return nil
 }
 
@@ -110,13 +104,12 @@ func waitKubeletUpgraded(current *cluster.Cluster, node *cluster.Node, upgradeVe
 // please note that this is a temporary workaround for a problem we are observing on upgrades while
 // executing node upgrades immediately after control-plane upgrade.
 func waitKubeletHasRBAC(current *cluster.Cluster, node *cluster.Node, upgradeVersion *define.StdVersion, wait time.Duration) error {
-	log.Infof("waiting for kubelet RBAC validation - workaround (timeout %s)", wait)
+	klog.V(1).Infof("Waiting for kubelet RBAC validation - workaround (timeout %s)", wait)
 	if pass := waitFor(current, node, wait,
 		kubeletHasRBAC(upgradeVersion.Major, upgradeVersion.Minor),
 	); !pass {
 		return errors.New("timeout: Node did not reach target state")
 	}
-	fmt.Println()
 	return nil
 }
 

@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"strings"
 )
 
@@ -30,17 +30,29 @@ var (
 	etcdCertArgsOld = []string{"--ca-file=/etc/kubernetes/pki/etcd/ca.crt", "--cert-file=/etc/kubernetes/pki/etcd/peer.crt", "--key-file=/etc/kubernetes/pki/etcd/peer.key"}
 )
 
+func Etcdctl(cmds []string) error {
+	boot := cluster.BootstrapNode()
+	args := buildEtcdctlArgs(boot)
+	// Append version specific etcdctl certificate flags
+	err := appendEtcdctlCertArgs(EtcdVersion(), &args)
+	if nil != err {
+		return err
+	}
+	args = append(args, cmds...)
+	return boot.Command("kubectl", args...).RunWithEcho()
+}
+
 func EtcdVersion() string {
 	boot := cluster.BootstrapNode()
-	versionArgs := append(buildEtcdctlArgs(boot), "version")
-	lines, err := boot.Command("kubectl", versionArgs...).RunAndCapture()
+	args := append(buildEtcdctlArgs(boot), "version")
+	lines, err := boot.Command("kubectl", args...).RunAndCapture()
 	if err != nil {
-		log.Warn("get etcdctl version error: %s", err)
+		klog.Warningf("Get etcdctl version error: %s", err)
 		return define.ETCD_3_4_0.Full
 	}
 	version, err := parseEtcdctlVersion(lines)
 	if err != nil {
-		log.Warn(err)
+		klog.Warningf("Parse etcdctl version error: %s", err)
 		return define.ETCD_3_4_0.Full
 	}
 	return version
@@ -48,37 +60,57 @@ func EtcdVersion() string {
 
 func EtcdMemberList() ([]string, error) {
 	boot := cluster.BootstrapNode()
-	memberArgs := buildEtcdctlArgs(boot)
+	args := buildEtcdctlArgs(boot)
 	// Append version specific etcdctl certificate flags
-	err := appendEtcdctlCertArgs(EtcdVersion(), &memberArgs)
+	err := appendEtcdctlCertArgs(EtcdVersion(), &args)
 	if nil != err {
 		return nil, err
 	}
-	memberArgs = append(memberArgs, "member", "list")
-	return boot.Command("kubectl", memberArgs...).RunAndCapture()
+	args = append(args, "member", "list")
+	return boot.Command("kubectl", args...).RunAndCapture()
 }
 
 func EtcdMemberRemove(name string) error {
 	boot := cluster.BootstrapNode()
-	memberArgs := buildEtcdctlArgs(boot)
+	args := buildEtcdctlArgs(boot)
 	// Append version specific etcdctl certificate flags
-	err := appendEtcdctlCertArgs(EtcdVersion(), &memberArgs)
+	err := appendEtcdctlCertArgs(EtcdVersion(), &args)
 	if nil != err {
 		return err
 	}
-	listArgs := append(memberArgs, "member", "list")
-	lines, err := boot.Command("kubectl", listArgs...).RunAndCapture()
+	args = append(args, "member", "list")
+	lines, err := boot.Command("kubectl", args...).RunAndCapture()
 	if nil != err {
 		return err
 	}
 	for _, line := range lines {
 		if strings.Contains(line, name) {
 			id := strings.Split(line, ",")[0]
-			removeArgs := append(memberArgs, "member", "remove", id)
+			removeArgs := append(args, "member", "remove", id)
 			return boot.Command("kubectl", removeArgs...).RunWithEcho()
 		}
 	}
 	return nil
+}
+
+func EtcdSnapshotSave(file string) error {
+	return etcdSnapshotOpera("snapshot", "save", file)
+}
+
+func EtcdSnapshotCheck(file string) error {
+	return etcdSnapshotOpera("snapshot", "--write-out=table", "status", file)
+}
+
+func etcdSnapshotOpera(input ...string) error {
+	boot := cluster.BootstrapNode()
+	args := buildEtcdctlArgs(boot)
+	// Append version specific etcdctl certificate flags
+	err := appendEtcdctlCertArgs(EtcdVersion(), &args)
+	if nil != err {
+		return err
+	}
+	args = append(args, input...)
+	return boot.Command("kubectl", args...).RunWithEcho()
 }
 
 func buildEtcdctlArgs(boot *cluster.Node) []string {

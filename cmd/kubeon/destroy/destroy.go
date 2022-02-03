@@ -20,47 +20,55 @@ import (
 	"github.com/dneht/kubeon/pkg/action"
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/module"
-	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 )
 
+type flagpole struct {
+	ForceReset bool
+}
+
 func NewCommand() *cobra.Command {
+	flags := &flagpole{}
 	cmd := &cobra.Command{
 		Args:    cobra.ExactArgs(1),
 		Use:     "destroy CLUSTER_NAME [flags]\n",
-		Aliases: []string{"stop"},
+		Aliases: []string{"rmr"},
 		Short:   "Destroy an exist cluster",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cluster.InitConfig(args[0])
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(cmd, args)
+			return runE(flags, cmd, args)
 		},
 	}
-
+	cmd.Flags().BoolVarP(
+		&flags.ForceReset, "force", "f",
+		false, "if kubeadm reset hang, use force and reboot the machine after",
+	)
 	return cmd
 }
 
-func runE(cmd *cobra.Command, args []string) error {
+func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	_, err := cluster.InitExistCluster()
 	if nil != err {
 		return err
 	}
 
-	err = resetCluster()
+	err = resetCluster(flags.ForceReset)
 	if nil != err {
-		log.Warnf("reset cluster failed, continue uninstall: %v", err)
+		klog.Warningf("Reset cluster failed, continue uninstall: %v", err)
 	}
 	err = doUninstall()
 	if nil != err {
-		log.Warnf("uninstall module failed, please check: %v", err)
+		klog.Warningf("Uninstall module failed, please check: %v", err)
 	}
 	return nil
 }
 
-func resetCluster() (err error) {
-	action.KubeadmResetList(cluster.CurrentNodes())
+func resetCluster(force bool) (err error) {
+	action.KubeadmResetList(cluster.CurrentNodes(), force)
 	return nil
 }
 

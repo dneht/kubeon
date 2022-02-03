@@ -36,7 +36,7 @@ func SelectNodes(nodeSelector string) (nodes NodeList, err error) {
 	if strings.HasPrefix(nodeSelector, "@") {
 		switch strings.ToLower(nodeSelector) {
 		case "@all":
-			return currentNodes, nil
+			return current.AllNodes, nil
 		case "@cp*":
 			return current.ControlPlanes, nil
 		case "@cp1":
@@ -50,10 +50,10 @@ func SelectNodes(nodeSelector string) (nodes NodeList, err error) {
 			}
 			return current.ControlPlanes[1:], nil
 		case "@j*":
-			if len(currentNodes) <= 1 {
+			if len(current.AllNodes) <= 1 {
 				return nil, nil
 			}
-			return currentNodes[1:], nil
+			return current.AllNodes[1:], nil
 		case "@w*":
 			return current.Workers, nil
 		default:
@@ -63,26 +63,34 @@ func SelectNodes(nodeSelector string) (nodes NodeList, err error) {
 		idx := strings.Index(nodeSelector, "=")
 		if idx > 0 {
 			selectType := nodeSelector[0:idx]
-			selectVal := nodeSelector[idx+1:]
+			selectVals := nodeSelector[idx+1:]
+			selectValArr := strings.Split(selectVals, ",")
+			nodeList := NodeList{}
 			switch strings.ToLower(selectType) {
 			case "ip":
-				for _, n := range currentNodes {
-					if strings.EqualFold(selectVal, n.IPv4) {
-						return toNodeList(n), nil
+				for _, n := range current.AllNodes {
+					for _, s := range selectValArr {
+						if strings.EqualFold(s, n.IPv4) {
+							nodeList = append(nodeList, n)
+						}
 					}
 				}
-			case "name":
-				for _, n := range currentNodes {
-					if strings.EqualFold(selectVal, n.Hostname) {
-						return toNodeList(n), nil
+				return nodeList, nil
+			case "n", "name":
+				for _, n := range current.AllNodes {
+					for _, s := range selectValArr {
+						if strings.EqualFold(s, n.Hostname) {
+							nodeList = append(nodeList, n)
+						}
 					}
 				}
+				return nodeList, nil
 			default:
 				return nil, errors.Errorf("Invalid node selector %q. Use one of [ip=ipv4, name=hostname]", nodeSelector)
 			}
 		}
 	}
-	for _, n := range currentNodes {
+	for _, n := range current.AllNodes {
 		if strings.EqualFold(nodeSelector, n.Addr()) {
 			return toNodeList(n), nil
 		}
@@ -91,15 +99,15 @@ func SelectNodes(nodeSelector string) (nodes NodeList, err error) {
 }
 
 func BootstrapNode() *Node {
-	return currentNodes[0]
+	return current.AllNodes[0]
 }
 
 func JoinsNode() NodeList {
-	return currentNodes[1:]
+	return current.AllNodes[1:]
 }
 
 func SelectNodeByIP(ipv4 string) *Node {
-	for _, n := range currentNodes {
+	for _, n := range current.AllNodes {
 		if strings.EqualFold(ipv4, n.IPv4) {
 			return n
 		}
@@ -108,7 +116,7 @@ func SelectNodeByIP(ipv4 string) *Node {
 }
 
 func SelectNodeByName(name string) *Node {
-	for _, n := range currentNodes {
+	for _, n := range current.AllNodes {
 		if strings.EqualFold(name, n.Home) {
 			return n
 		}

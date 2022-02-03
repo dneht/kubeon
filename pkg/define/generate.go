@@ -18,7 +18,7 @@ package define
 
 import (
 	"github.com/dneht/kubeon/pkg/onutil"
-	"github.com/dneht/kubeon/pkg/onutil/log"
+	"k8s.io/klog/v2"
 	"net"
 )
 
@@ -49,12 +49,12 @@ type MasterList struct {
 func (l MasterList) CheckMatch() bool {
 	isDup := onutil.IsDuplicateInStringArr(onutil.IP2StringArr(l.MasterIPs))
 	if isDup {
-		log.Error("cluster master is duplicate")
+		klog.Error("Cluster master is duplicate")
 		return false
 	}
 	ipSize := len(l.MasterIPs)
 	if ipSize == 0 {
-		log.Error("cluster must has one node")
+		klog.Error("Cluster must has one node")
 		return false
 	}
 
@@ -81,7 +81,7 @@ type WorkerList struct {
 func (l WorkerList) CheckMatch() bool {
 	isDup := onutil.IsDuplicateInStringArr(onutil.IP2StringArr(l.WorkerIPs))
 	if isDup {
-		log.Error("cluster worker is duplicate")
+		klog.Error("Cluster worker is duplicate")
 		return false
 	}
 
@@ -106,11 +106,11 @@ func checkHostnameMatch(names []string, expect int, mode string) bool {
 	if nameSize > 0 {
 		isDup := onutil.IsDuplicateInStringArr(names)
 		if isDup {
-			log.Errorf("%s hostnames is duplicate", mode)
+			klog.Errorf("[%s] hostnames is duplicate", mode)
 			return false
 		}
 		if nameSize < expect {
-			log.Errorf("number of %s hostnames is less than expected %s", mode, expect)
+			klog.Errorf("Number of[%s hostnames is less than expected %s", mode, expect)
 			return false
 		}
 	}
@@ -120,17 +120,17 @@ func checkHostnameMatch(names []string, expect int, mode string) bool {
 func checkOtherMatch(ports []uint, users, passwords []string, expect int, mode string) bool {
 	portSize := len(ports)
 	if portSize > 0 && portSize < expect {
-		log.Errorf("number of %s ports is less than expected %s", mode, expect)
+		klog.Errorf("Number of %s ports is less than expected %s", mode, expect)
 		return false
 	}
 	userSize := len(users)
 	if userSize > 0 && userSize < expect {
-		log.Errorf("number of %s users is less than expected %s", mode, expect)
+		klog.Errorf("Number of %s users is less than expected %s", mode, expect)
 		return false
 	}
 	pwdSize := len(passwords)
 	if pwdSize > 0 && pwdSize < expect {
-		log.Errorf("number of %s passwords is less than expected %s", mode, expect)
+		klog.Errorf("Number of %s passwords is less than expected %s", mode, expect)
 		return false
 	}
 	return true

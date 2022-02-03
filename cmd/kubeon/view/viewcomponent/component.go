@@ -14,40 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package viewconfig
+package viewcomponent
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/dneht/kubeon/pkg/cluster"
-	"github.com/dneht/kubeon/pkg/module"
+	"github.com/dneht/kubeon/pkg/define"
 	"github.com/spf13/cobra"
 )
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args:    cobra.ExactArgs(2),
-		Use:     "config CLUSTER_NAME CONFIG_TYPE",
-		Aliases: []string{"conf"},
-		Short:   "Prints select config",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			cluster.InitConfig(args[0])
-			return nil
-		},
+		Args:    cobra.ExactArgs(1),
+		Use:     "component CLUSTER_VERSION",
+		Aliases: []string{"cm"},
+		Short:   "Prints component version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := cluster.InitExistCluster()
-			if nil != err {
-				return err
-			}
-
-			moduleName := args[1]
-			bytes, err := module.ShowInner(moduleName)
-			if nil != err {
-				return err
-			}
-			if nil == bytes {
-				fmt.Printf("not found or not need this module %s", moduleName)
+			version := define.SupportComponentFull[args[0]]
+			if nil == version {
+				fmt.Println("input version " + args[0] + " is not support")
 			} else {
-				fmt.Println(string(bytes))
+				out, err := json.MarshalIndent(version, "", "    ")
+				if nil != err {
+					fmt.Println(err)
+				} else {
+					fmt.Println(string(out))
+				}
 			}
 			return nil
 		},
