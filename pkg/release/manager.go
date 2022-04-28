@@ -63,17 +63,20 @@ func initResource(clusterVersion, runtimeMode string, isBinary, isOffline,
 		localResource.KubeletPath = distPath + "/" + define.KubeletModule + ".tar"
 		localResource.KubeletSum = onutil.GetRemoteSum(clusterVersion, define.KubeletModule)
 	}
-	if hasNvidia {
-		localResource.NvidiaPath = distPath + "/" + define.NvidiaRuntime + ".tar"
-		localResource.NvidiaSum = onutil.GetRemoteSum(clusterVersion, define.NvidiaRuntime)
-	}
-	if useKata {
-		localResource.KataPath = distPath + "/" + define.KataRuntime + ".tar"
-		localResource.KataSum = onutil.GetRemoteSum(clusterVersion, define.KataRuntime)
-	}
-	if ingressMode == define.ContourIngress {
-		localResource.ContourPath = distPath + "/" + define.ContourIngress + ".tar"
-		localResource.ContourSum = onutil.GetRemoteSum(clusterVersion, define.ContourIngress)
+	extVersion, ok := define.SupportComponentFull[clusterVersion]
+	if ok {
+		if hasNvidia {
+			localResource.NvidiaPath = distPath + "/" + define.NvidiaRuntime + ".tar"
+			localResource.NvidiaSum = onutil.GetRemoteSum(extVersion.Nvidia, define.NvidiaRuntime)
+		}
+		if useKata {
+			localResource.KataPath = distPath + "/" + define.KataRuntime + ".tar"
+			localResource.KataSum = onutil.GetRemoteSum(extVersion.Kata, define.KataRuntime)
+		}
+		if ingressMode == define.ContourIngress {
+			localResource.ContourPath = distPath + "/" + define.ContourIngress + ".tar"
+			localResource.ContourSum = onutil.GetRemoteSum(extVersion.Contour, define.ContourIngress)
+		}
 	}
 	if isOffline {
 		localResource.OfflinePath = distPath + "/" + define.OfflineModule + ".tar"

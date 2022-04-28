@@ -22,11 +22,12 @@ var (
 	K8S_1_20_0, _ = NewStdVersion("v1.20.0")
 	K8S_1_21_0, _ = NewStdVersion("v1.21.0")
 	K8S_1_22_0, _ = NewStdVersion("v1.22.0")
+	K8S_1_23_0, _ = NewStdVersion("v1.23.0")
 	K8S_1_19_x, _ = NewRngVersion("v1.19.4", "v1.19.16")
 	K8S_1_20_x, _ = NewRngVersion("v1.20.1", "v1.20.15")
-	K8S_1_21_x, _ = NewRngVersion("v1.21.1", "v1.21.9")
-	K8S_1_22_x, _ = NewRngVersion("v1.22.1", "v1.22.6")
-	K8S_1_23_x, _ = NewRngVersion("v1.23.1", "v1.23.3")
+	K8S_1_21_x, _ = NewRngVersion("v1.21.1", "v1.21.12")
+	K8S_1_22_x, _ = NewRngVersion("v1.22.1", "v1.22.9")
+	K8S_1_23_x, _ = NewRngVersion("v1.23.1", "v1.23.6")
 	ETCD_3_4_0, _ = NewStdVersion("3.4.0")
 )
 
@@ -59,6 +60,10 @@ const (
 
 func (v *StdVersion) IsSupportPatch() bool {
 	return v.GreaterEqual(K8S_1_19_0)
+}
+
+func (v *StdVersion) IsSupportContour() bool {
+	return v.GreaterThen(K8S_1_21_0)
 }
 
 func (v *StdVersion) IsSupportNvidia() bool {

@@ -227,10 +227,19 @@ func (c *Cluster) ModuleVersionChange(mod, iVer string) bool {
 func (c *Cluster) GetKubeletAPIVersion() string {
 	return define.KubeletConfigApiB1
 }
+
 func (c *Cluster) GetKubeadmAPIVersion() string {
 	if c.Version.LessThen(define.K8S_1_22_0) {
 		return define.KubeadmConfigApiB2
 	} else {
 		return define.KubeadmConfigApiB3
+	}
+}
+
+func (c *Cluster) GetKubeadmFeatureGates() string {
+	if c.Version.LessThen(define.K8S_1_23_0) {
+		return "feature-gates: TTLAfterFinished=true"
+	} else {
+		return ""
 	}
 }

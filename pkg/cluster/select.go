@@ -22,11 +22,12 @@ import (
 )
 
 const (
-	AllNode        = "@all"
-	AllControlNode = "@cp*"
-	NowBootNode    = "@cp1"
-	AllJoinNode    = "@j*"
-	AllWorkerNode  = "@w*"
+	AllNode           = "@all"
+	AllControlNode    = "@cp*"
+	NowBootNode       = "@cp1"
+	NoBootControlNode = "@cpn"
+	AllJoinNode       = "@j*"
+	AllWorkerNode     = "@w*"
 )
 
 func SelectNodes(nodeSelector string) (nodes NodeList, err error) {
@@ -35,26 +36,26 @@ func SelectNodes(nodeSelector string) (nodes NodeList, err error) {
 	}
 	if strings.HasPrefix(nodeSelector, "@") {
 		switch strings.ToLower(nodeSelector) {
-		case "@all":
+		case AllNode:
 			return current.AllNodes, nil
-		case "@cp*":
+		case AllControlNode:
 			return current.ControlPlanes, nil
-		case "@cp1":
+		case NowBootNode:
 			if len(current.ControlPlanes) == 0 {
 				return nil, nil
 			}
 			return toNodeList(BootstrapNode()), nil
-		case "@cpn":
+		case NoBootControlNode:
 			if len(current.ControlPlanes) <= 1 {
 				return nil, nil
 			}
 			return current.ControlPlanes[1:], nil
-		case "@j*":
+		case AllJoinNode:
 			if len(current.AllNodes) <= 1 {
 				return nil, nil
 			}
 			return current.AllNodes[1:], nil
-		case "@w*":
+		case AllWorkerNode:
 			return current.Workers, nil
 		default:
 			return nil, errors.Errorf("Invalid node selector %q. Use one of [@all, @cp*, @cp1, @cpn, @w*, @lb, @etcd]", nodeSelector)

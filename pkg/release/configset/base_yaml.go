@@ -94,7 +94,9 @@ apiServer:
   - {{.}}
   {{- end}}
   extraArgs:
-    feature-gates: TTLAfterFinished=true
+    {{- if .ClusterFeatureGates}}
+	{{.ClusterFeatureGates}}
+    {{- end}}
     service-node-port-range: {{.ClusterPortRange}}
   extraVolumes:
   - name: localtime
@@ -103,7 +105,9 @@ apiServer:
     readOnly: true
 controllerManager:
   extraArgs:
-    feature-gates: TTLAfterFinished=true
+    {{- if .ClusterFeatureGates}}
+	{{.ClusterFeatureGates}}
+    {{- end}}
     experimental-cluster-signing-duration: 876000h
   extraVolumes:
   - hostPath: /etc/localtime
@@ -112,7 +116,9 @@ controllerManager:
     readOnly: true
 scheduler:
   extraArgs:
-    feature-gates: TTLAfterFinished=true
+    {{- if .ClusterFeatureGates}}
+	{{.ClusterFeatureGates}}
+    {{- end}}
   extraVolumes:
   - hostPath: /etc/localtime
     mountPath: /etc/localtime

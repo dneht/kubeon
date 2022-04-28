@@ -323,6 +323,9 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		!flags.MasterList.CheckMatch() || !flags.WorkerList.CheckMatch() {
 		os.Exit(1)
 	}
+	if flags.InputICMode == define.ContourIngress && !inputVersion.IsSupportContour() {
+		flags.InputICMode = define.NoneIngress
+	}
 	flags.WithNvidia = flags.WithNvidia && flags.InputCRIMode == define.ContainerdRuntime && inputVersion.IsSupportNvidia()
 	flags.WithKata = flags.WithKata && inputVersion.IsSupportKata()
 	return cluster.InitNewCluster(&cluster.Cluster{

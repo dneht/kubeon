@@ -144,10 +144,14 @@ func downloadNetwork(localRes *ClusterResource, version, mirror string) (err err
 }
 
 func downloadExtend(localRes *ClusterResource, version, mirror string, useNvidia, useKata bool, ingressMode string) (err error) {
+	extVersion, ok := define.SupportComponentFull[version]
+	if !ok {
+		return errors.New("not found extend resource")
+	}
 	if useNvidia {
 		klog.V(1).Info("Start download nvidia package...")
 		if !onutil.PathExists(localRes.NvidiaPath) || execute.FileSum(localRes.NvidiaPath) != localRes.NvidiaSum {
-			err = processImage(mirror, version, NvidiaResource, define.NvidiaRuntime)
+			err = processImage(mirror, extVersion.Nvidia, NvidiaResource, define.NvidiaRuntime)
 			if nil != err {
 				return err
 			}
@@ -156,7 +160,7 @@ func downloadExtend(localRes *ClusterResource, version, mirror string, useNvidia
 	if useKata {
 		klog.V(1).Info("Start download kata package...")
 		if !onutil.PathExists(localRes.KataPath) || execute.FileSum(localRes.KataPath) != localRes.KataSum {
-			err = processImage(mirror, version, KataResource, define.KataRuntime)
+			err = processImage(mirror, extVersion.Kata, KataResource, define.KataRuntime)
 			if nil != err {
 				return err
 			}
@@ -167,7 +171,7 @@ func downloadExtend(localRes *ClusterResource, version, mirror string, useNvidia
 		{
 			klog.V(1).Info("Start download contour package...")
 			if !onutil.PathExists(localRes.ContourPath) || execute.FileSum(localRes.ContourPath) != localRes.ContourSum {
-				err = processImage(mirror, version, ContourResource, define.ContourIngress)
+				err = processImage(mirror, extVersion.Contour, ContourResource, define.ContourIngress)
 				if nil != err {
 					return err
 				}
@@ -200,7 +204,7 @@ func processImage(mirror, version, image, module string) error {
 	onutil.RmFile(down)
 	onutil.MkDir(temp)
 
-	if !strings.HasPrefix(version, "v") {
+	if (image == ImagesResource || image == DefaultResource || image == BinaryResource) && !strings.HasPrefix(version, "v") {
 		return errors.New("version format is error, like v1.x.x")
 	}
 	hash, err := DownloadImage(version, image, down, mirror, module)

@@ -33,23 +33,24 @@ type KubeletTemplate struct {
 }
 
 type KubeadmTemplate struct {
-	APIVersion        string
-	ImageRepository   string
-	ClusterName       string
-	ClusterVersion    string
-	ClusterPortRange  string
-	ClusterApiIP      string
-	ClusterLbIP       string
-	ClusterLbPort     int32
-	ClusterLbDomain   string
-	ClusterDnsDomain  string
-	ClusterSvcCIDR    string
-	ClusterPodCIDR    string
-	IsExternalLB      bool
-	MasterCertSANs    []string
-	InputCertSANs     []string
-	KubeProxyMode     string
-	KubeIPVSScheduler string
+	APIVersion          string
+	ImageRepository     string
+	ClusterName         string
+	ClusterVersion      string
+	ClusterPortRange    string
+	ClusterFeatureGates string
+	ClusterApiIP        string
+	ClusterLbIP         string
+	ClusterLbPort       int32
+	ClusterLbDomain     string
+	ClusterDnsDomain    string
+	ClusterSvcCIDR      string
+	ClusterPodCIDR      string
+	IsExternalLB        bool
+	MasterCertSANs      []string
+	InputCertSANs       []string
+	KubeProxyMode       string
+	KubeIPVSScheduler   string
 }
 
 type KubeadmInitTemplate struct {
