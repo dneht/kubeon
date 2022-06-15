@@ -78,10 +78,12 @@ type KubeadmJoinTemplate struct {
 }
 
 type CorednsTemplate struct {
+	MirrorUrl    string
 	ClusterDnsIP string
 }
 
 type CalicoTemplate struct {
+	MirrorUrl        string
 	IsSetInterface   bool
 	DefaultInterface string
 	EtcdKeyBase64    string
@@ -94,12 +96,15 @@ type CalicoTemplate struct {
 }
 
 type NvidiaTemplate struct {
+	MirrorUrl string
 }
 
 type KataTemplate struct {
+	MirrorUrl string
 }
 
 type ContourTemplate struct {
+	MirrorUrl string
 }
 
 type BalanceHaproxyTemplate struct {

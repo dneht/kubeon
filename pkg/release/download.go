@@ -26,7 +26,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
-	"io/ioutil"
+	"github.com/vbauerster/mpb/v7"
+	"github.com/vbauerster/mpb/v7/decor"
 	"k8s.io/klog/v2"
 	"net/http"
 	"os"
@@ -38,6 +39,7 @@ const (
 	DefaultResource    = "kubeon/install-kubeadm"
 	BinaryResource     = "kubeon/install-binary"
 	ImagesResource     = "kubeon/install-images"
+	PauseResource      = "kubeon/install-pause"
 	OfflineResource    = "kubeon/install-offline"
 	DockerResource     = "kubeon/runtime-docker"
 	ContainerdResource = "kubeon/runtime-containerd"
@@ -51,179 +53,141 @@ var (
 	IsUpdateRuntime = false
 )
 
-func ProcessDownload(resource *ClusterResource, version, runtime, mirror string, isLocal, isBinary, isOffline,
-	useNvidia, useKata bool, ingressMode string) (err error) {
+type ProcessModule struct {
+	Version  string
+	Resource string
+	Module   string
+}
+
+func ProcessDownload(resource *ClusterResource, version, runtime, mirror string,
+	isLocal, isBinary, isOffline, useNvidia, useKata bool, ingressMode string) error {
 	klog.V(1).Infof("Start download binary package, version=%s, runtime=%s", version, runtime)
 	if nil == resource {
-		return errors.New("cluster not initialized")
+		return errors.New("cluster not init")
 	}
+	tasks := make([]*ProcessModule, 0, 16)
 	if isBinary {
 		if !onutil.PathExists(resource.BinaryPath) || execute.FileSum(resource.BinaryPath) != resource.BinarySum {
-			err = processImage(mirror, version, BinaryResource, define.BinaryModule)
-			if nil != err {
-				return err
-			}
+			tasks = append(tasks, &ProcessModule{version, BinaryResource, define.BinaryModule})
 		}
 	} else {
 		if !onutil.PathExists(resource.KubeletPath) || execute.FileSum(resource.KubeletPath) != resource.KubeletSum {
-			err = processImage(mirror, version, DefaultResource, define.KubeletModule)
-			if nil != err {
-				return err
-			}
+			tasks = append(tasks, &ProcessModule{version, DefaultResource, define.KubeletModule})
+
 		}
 	}
-	err = downloadRuntime(resource, runtime, version, mirror)
-	if nil != err {
-		return err
+	if define.DockerRuntime == runtime {
+		if !onutil.PathExists(resource.ContainerdPath) || execute.FileSum(resource.ContainerdPath) != resource.ContainerdSum {
+			IsUpdateRuntime = true
+			tasks = append(tasks, &ProcessModule{version, ContainerdResource, define.ContainerdRuntime})
+		}
+		if !onutil.PathExists(resource.DockerPath) || execute.FileSum(resource.DockerPath) != resource.DockerSum {
+			IsUpdateRuntime = true
+			tasks = append(tasks, &ProcessModule{version, DockerResource, define.DockerRuntime})
+		}
+	} else {
+		if !onutil.PathExists(resource.ContainerdPath) || execute.FileSum(resource.ContainerdPath) != resource.ContainerdSum {
+			IsUpdateRuntime = true
+			tasks = append(tasks, &ProcessModule{version, ContainerdResource, define.ContainerdRuntime})
+		}
 	}
-	err = downloadNetwork(resource, version, mirror)
-	if nil != err {
-		return err
+	if !onutil.PathExists(resource.NetworkPath) || execute.FileSum(resource.NetworkPath) != resource.NetworkSum {
+		tasks = append(tasks, &ProcessModule{version, NetworkResource, define.NetworkPlugin})
 	}
 	if isLocal {
-		klog.V(1).Info("Start download images package...")
 		if !onutil.PathExists(resource.ImagesPath) || execute.FileSum(resource.ImagesPath) != resource.ImagesSum {
-			err = processImage(mirror, version, ImagesResource, define.ImagesPackage)
-			if nil != err {
-				return err
-			}
+			tasks = append(tasks, &ProcessModule{version, ImagesResource, define.ImagesPackage})
 		}
 		if isOffline {
-			klog.V(1).Info("Start download offline package...")
 			if !onutil.PathExists(resource.OfflinePath) || execute.FileSum(resource.OfflinePath) != resource.OfflineSum {
-				err = processImage(mirror, version, OfflineResource, define.OfflineModule)
-				if nil != err {
-					return err
+				tasks = append(tasks, &ProcessModule{version, OfflineResource, define.OfflineModule})
+			}
+		}
+
+		if extVersion, extExist := define.SupportComponentFull[version]; !extExist {
+			return errors.New("extend resource not exist, please enter newer version")
+		} else {
+			if useNvidia {
+				if !onutil.PathExists(resource.NvidiaPath) || execute.FileSum(resource.NvidiaPath) != resource.NvidiaSum {
+					tasks = append(tasks, &ProcessModule{extVersion.Nvidia, NvidiaResource, define.NvidiaRuntime})
+
+				}
+			}
+			if useKata {
+				if !onutil.PathExists(resource.KataPath) || execute.FileSum(resource.KataPath) != resource.KataSum {
+					tasks = append(tasks, &ProcessModule{extVersion.Kata, KataResource, define.KataRuntime})
+				}
+			}
+			switch ingressMode {
+			case define.ContourIngress:
+				{
+					tasks = append(tasks, &ProcessModule{extVersion.Contour, ContourResource, define.ContourIngress})
+					break
 				}
 			}
 		}
-		err = downloadExtend(resource, version, mirror, useNvidia, useKata, ingressMode)
-		if nil != err {
-			return err
-		}
-	}
-	return nil
-}
-
-func downloadRuntime(localRes *ClusterResource, runtime, version, mirror string) (err error) {
-	if "" == runtime || define.DockerRuntime == runtime {
-		if !onutil.PathExists(localRes.ContainerdPath) || execute.FileSum(localRes.ContainerdPath) != localRes.ContainerdSum {
-			IsUpdateRuntime = true
-			err = processImage(mirror, version, ContainerdResource, define.ContainerdRuntime)
-			if nil != err {
-				return err
-			}
-		}
-		if !onutil.PathExists(localRes.DockerPath) || execute.FileSum(localRes.DockerPath) != localRes.DockerSum {
-			IsUpdateRuntime = true
-			err = processImage(mirror, version, DockerResource, define.DockerRuntime)
-			if nil != err {
-				return err
-			}
-		}
 	} else {
-		if !onutil.PathExists(localRes.ContainerdPath) || execute.FileSum(localRes.ContainerdPath) != localRes.ContainerdSum {
-			IsUpdateRuntime = true
-			err = processImage(mirror, version, ContainerdResource, define.ContainerdRuntime)
-			if nil != err {
-				return err
-			}
+		if !onutil.PathExists(resource.PausePath) || execute.FileSum(resource.PausePath) != resource.PauseSum {
+			tasks = append(tasks, &ProcessModule{version, PauseResource, define.PausePackage})
 		}
 	}
+
+	prog := mpb.New(mpb.WithWidth(80))
+	for _, task := range tasks {
+		down := prog.New(0,
+			mpb.BarStyle().Rbound("|"),
+			mpb.PrependDecorators(
+				decor.Name(task.Module, decor.WC{W: 12, C: decor.DidentRight}),
+				decor.CountersKibiByte("% .2f / % .2f"),
+			),
+			mpb.AppendDecorators(
+				decor.EwmaETA(decor.ET_STYLE_GO, 0),
+				decor.Name(" ] "),
+				decor.EwmaSpeed(decor.UnitKiB, "% .2f", 0),
+			),
+		)
+		move := prog.New(1,
+			mpb.NopStyle(),
+			mpb.BarQueueAfter(down, true),
+			mpb.BarFillerClearOnComplete(),
+			mpb.PrependDecorators(
+				decor.Name(task.Module, decor.WC{W: 12, C: decor.DidentRight}),
+				decor.OnComplete(decor.Name("\x1b[36mmove...\x1b[0m", decor.WCSyncSpaceR), "\x1b[32mdone!\x1b[0m"),
+				decor.OnComplete(decor.CountersNoUnit("%d / %d", decor.WCSyncWidth), ""),
+			),
+		)
+		go progressImage(down, move, mirror, task.Version, task.Resource, task.Module)
+	}
+	prog.Wait()
 	return nil
 }
 
-func downloadNetwork(localRes *ClusterResource, version, mirror string) (err error) {
-	if !onutil.PathExists(localRes.NetworkPath) || execute.FileSum(localRes.NetworkPath) != localRes.NetworkSum {
-		err = processImage(mirror, version, NetworkResource, define.NetworkPlugin)
-		if nil != err {
-			return err
-		}
-	}
-	return nil
-}
-
-func downloadExtend(localRes *ClusterResource, version, mirror string, useNvidia, useKata bool, ingressMode string) (err error) {
-	extVersion, ok := define.SupportComponentFull[version]
-	if !ok {
-		return errors.New("not found extend resource")
-	}
-	if useNvidia {
-		klog.V(1).Info("Start download nvidia package...")
-		if !onutil.PathExists(localRes.NvidiaPath) || execute.FileSum(localRes.NvidiaPath) != localRes.NvidiaSum {
-			err = processImage(mirror, extVersion.Nvidia, NvidiaResource, define.NvidiaRuntime)
-			if nil != err {
-				return err
-			}
-		}
-	}
-	if useKata {
-		klog.V(1).Info("Start download kata package...")
-		if !onutil.PathExists(localRes.KataPath) || execute.FileSum(localRes.KataPath) != localRes.KataSum {
-			err = processImage(mirror, extVersion.Kata, KataResource, define.KataRuntime)
-			if nil != err {
-				return err
-			}
-		}
-	}
-	switch ingressMode {
-	case define.ContourIngress:
-		{
-			klog.V(1).Info("Start download contour package...")
-			if !onutil.PathExists(localRes.ContourPath) || execute.FileSum(localRes.ContourPath) != localRes.ContourSum {
-				err = processImage(mirror, extVersion.Contour, ContourResource, define.ContourIngress)
-				if nil != err {
-					return err
-				}
-			}
-			break
-		}
-	}
-	return nil
-}
-
-func getLocalSum(distPath, name string) string {
-	localPath := distPath + "/" + name + ".sum"
-	if !onutil.PathExists(localPath) {
-		return ""
-	}
-	sum, err := ioutil.ReadFile(localPath)
-	if nil != err {
-		klog.V(4).Infof("Get local[%s] err is %s", localPath, err)
-		return ""
-	} else {
-		sumStr := strings.TrimSpace(string(sum))
-		klog.V(4).Infof("Get local[%s] sum is %s", localPath, sumStr)
-		return sumStr
-	}
-}
-
-func processImage(mirror, version, image, module string) error {
+func progressImage(bar, move *mpb.Bar, mirror, version, image, module string) {
 	temp, src, down := define.AppTmpDir+"/"+module, define.AppTmpDir+"/"+module+"/on", define.AppTmpDir+"/"+module+".tar"
 	onutil.RmDir(temp)
 	onutil.RmFile(down)
 	onutil.MkDir(temp)
 
-	if (image == ImagesResource || image == DefaultResource || image == BinaryResource) && !strings.HasPrefix(version, "v") {
-		return errors.New("version format is error, like v1.x.x")
-	}
-	hash, err := DownloadImage(version, image, down, mirror, module)
+	hash, err := DownloadImage(bar, version, image, down, mirror, module)
 	if nil != err {
-		return err
+		klog.Errorf("Download resource failed: %v", err.Error())
+		os.Exit(1)
 	}
 	if !onutil.PathExists(down) {
-		return errors.New("download resource failed, please check network")
+		klog.Errorf("Download resource failed, please check network")
+		os.Exit(1)
 	}
-	err = execute.UnpackTar(down, temp)
-	if nil != err {
-		return err
+	if err = execute.UnpackTar(down, temp); nil != err {
+		klog.Errorf("Unpack resource failed, please try again")
+		os.Exit(1)
 	}
-	err = execute.UnpackTarGz(layerFileByBase(temp, hash), temp)
-	if nil != err {
-		return err
+	if err = execute.UnpackTarGz(layerFileByBase(temp, hash), temp); nil != err {
+		klog.Errorf("Unpack resource failed, please try again")
+		os.Exit(1)
 	}
 	if !onutil.PathIsDir(src) {
-		return errors.New("download resource failed, please retry")
+		klog.Errorf("Download resource failed, please try again")
+		os.Exit(1)
 	}
 	onutil.MkDir(define.AppDistDir)
 	for _, file := range onutil.LsDir(src) {
@@ -237,10 +201,10 @@ func processImage(mirror, version, image, module string) error {
 	}
 	onutil.RmDir(temp)
 	onutil.RmFile(down)
-	return err
+	move.SetCurrent(1)
 }
 
-func DownloadImage(version, image, dest, mirror, module string) (string, error) {
+func DownloadImage(bar *mpb.Bar, version, image, dest, mirror, module string) (string, error) {
 	if mirror != "" && mirror != "false" && mirror != "no" {
 		image = mirror + "/" + image + ":" + version
 	} else {
@@ -262,35 +226,32 @@ func DownloadImage(version, image, dest, mirror, module string) (string, error) 
 		return "", err
 	}
 	ref = setNewRegistry(ref, newReg)
-
 	remoteImage, err := remote.Image(ref, remoteOptions()...)
 	if nil != err {
 		return "", err
 	}
-	totalSize, hash, err := parseImageLayer(remoteImage)
+	total, hash, err := parseImageLayer(remoteImage)
 	if nil != err {
 		return "", err
 	}
 	onutil.MkDir(define.AppTmpDir)
-	timeTicker := time.NewTicker(time.Second * 5)
-	showProgress(module, timeTicker, totalSize, dest)
+	bar.SetTotal(total, false)
+	ticker := time.NewTicker(time.Second)
+	defer func() {
+		bar.SetTotal(total, true)
+		ticker.Stop()
+	}()
+	go showProgress(bar, ticker, total, dest)
 	err = tarball.WriteToFile(dest, ref, remoteImage)
-	timeTicker.Stop()
 	return hash, err
 }
 
 func parseImageLayer(image pkgv1.Image) (int64, string, error) {
-	var err error
-	var layers []pkgv1.Layer
-	layers, err = image.Layers()
+	layers, err := image.Layers()
 	if nil != err {
 		return 0, "", err
 	}
-	var size int64
-	var hash string
-	var max int64 = 0
-	var total int64 = 0
-	var get pkgv1.Hash
+	size, hash, max, total := int64(0), "", int64(0), int64(0)
 	for _, layer := range layers {
 		size, err = layer.Size()
 		if nil != err {
@@ -298,9 +259,9 @@ func parseImageLayer(image pkgv1.Image) (int64, string, error) {
 		}
 		if size > max {
 			max = size
-			get, err = layer.Digest()
-			if nil != err {
-				return 0, "", err
+			get, derr := layer.Digest()
+			if nil != derr {
+				return 0, "", derr
 			}
 			hash = get.Hex
 		}
@@ -309,24 +270,22 @@ func parseImageLayer(image pkgv1.Image) (int64, string, error) {
 	return total, hash, nil
 }
 
-func showProgress(module string, timeTicker *time.Ticker, totalSize int64, destFile string) {
-	go func(total int64, dest string) {
-		for {
-			<-timeTicker.C
-			destStat, err := os.Stat(dest)
-			if nil != err {
-				klog.Errorf("[download] Get local file info err: %s", err)
-				break
-			} else {
-				done := destStat.Size()
-				onutil.ShowProgress(total, done, "download "+module)
-				if done >= int64(float64(total)*0.98) {
-					break
-				}
+func showProgress(bar *mpb.Bar, ticker *time.Ticker, total int64, dest string) {
+	for range ticker.C {
+		if stat, err := os.Stat(dest); nil == err {
+			done := stat.Size()
+			if bar.Current() != done {
+				bar.SetCurrent(done)
+				bar.DecoratorEwmaUpdate(time.Second)
 			}
+		} else {
+			klog.Errorf("Check download failed: %v", err.Error())
+			os.Exit(1)
 		}
-
-	}(totalSize, destFile)
+		if bar.Completed() {
+			break
+		}
+	}
 }
 
 func layerFileByBase(baseDir, hash string) string {

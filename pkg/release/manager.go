@@ -24,8 +24,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func InitResource(clusterVersion, runtimeMode string, isBinary, isOffline,
-	hasNvidia, useKata bool, ingressMode string) *ClusterResource {
+func InitResource(clusterVersion, runtimeMode string, isBinary, isOffline, hasNvidia, useKata bool, ingressMode string) *ClusterResource {
 	return initResource(clusterVersion, runtimeMode, isBinary, isOffline, hasNvidia, useKata, ingressMode)
 }
 
@@ -40,6 +39,8 @@ func initResource(clusterVersion, runtimeMode string, isBinary, isOffline,
 	localResource := &ClusterResource{
 		ImagesPath:     distPath + "/" + define.ImagesPackage + ".tar",
 		ImagesSum:      onutil.GetRemoteSum(clusterVersion, define.ImagesPackage),
+		PausePath:      distPath + "/" + define.PausePackage + ".tar",
+		PauseSum:       onutil.GetRemoteSum(clusterVersion, define.PausePackage),
 		RuntimeType:    runtimeMode,
 		DockerPath:     distPath + "/" + define.DockerRuntime + ".tar",
 		DockerSum:      onutil.GetRemoteSum(clusterVersion, define.DockerRuntime),

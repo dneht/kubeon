@@ -23,6 +23,7 @@ import (
 	"github.com/dneht/kubeon/cmd/kubeon/delon"
 	"github.com/dneht/kubeon/cmd/kubeon/destroy"
 	"github.com/dneht/kubeon/cmd/kubeon/display"
+	"github.com/dneht/kubeon/cmd/kubeon/download"
 	"github.com/dneht/kubeon/cmd/kubeon/etcd"
 	"github.com/dneht/kubeon/cmd/kubeon/exec"
 	"github.com/dneht/kubeon/cmd/kubeon/module"
@@ -67,6 +68,7 @@ func NewCommand() *cobra.Command {
 	// add kubeon commands
 	cmd.AddCommand(copy.NewCommand())
 	cmd.AddCommand(exec.NewCommand())
+	cmd.AddCommand(download.NewCommand())
 	cmd.AddCommand(module.NewCommand())
 	cmd.AddCommand(create.NewCommand())
 	cmd.AddCommand(upgrade.NewCommand())

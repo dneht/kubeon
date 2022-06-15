@@ -76,14 +76,14 @@ func NewCommand() *cobra.Command {
 	}
 	cmd.Flags().StringVar(
 		&flags.MirrorHost, "mirror",
-		"yes", "download use mirror, if in cn please keep true",
+		"yes", "default yes will use aliyun mirror, like: xxx.mirror.aliyuncs.com",
 	)
 	cmd.Flags().BoolVarP(
 		&flags.OnlyCreate, "only-create", "C",
 		false, "create config only",
 	)
-	cmd.Flags().BoolVar(
-		&flags.UseOffline, "use-offline",
+	cmd.Flags().BoolVarP(
+		&flags.UseOffline, "offline", "O",
 		false, "install use offline system package",
 	)
 	cmd.Flags().StringVar(
@@ -318,6 +318,7 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	if nil != err {
 		return err
 	}
+	klog.V(1).Info("Ready to check hostname, please wait a moment...")
 	version := inputVersion.Full
 	if !checkSupport(flags, version) ||
 		!flags.MasterList.CheckMatch() || !flags.WorkerList.CheckMatch() {
@@ -366,7 +367,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 
 	err = preInstall(current, current.Mirror)
 	if nil != err {
-		klog.Warningf("prepare input nodes failed, please check: %v", err)
+		klog.Warningf("Prepare input nodes failed, please check: %v", err)
 		return nil
 	}
 	err = initCluster(current)

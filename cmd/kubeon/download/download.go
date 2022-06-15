@@ -17,16 +17,21 @@ limitations under the License.
 package download
 
 import (
+	"github.com/dneht/kubeon/pkg/define"
+	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/dneht/kubeon/pkg/release"
 	"github.com/spf13/cobra"
 )
 
 type flagpole struct {
-	WithMirror  bool
-	WithBinary  bool
-	WithNvidia  bool
-	WithKata    bool
-	WithOffline bool
+	MirrorHost   string
+	ForceLocal   bool
+	UseOffline   bool
+	InputCRIMode string
+	InputICMode  string
+	WithBinary   bool
+	WithNvidia   bool
+	WithKata     bool
 }
 
 func NewCommand() *cobra.Command {
@@ -36,7 +41,7 @@ func NewCommand() *cobra.Command {
 		Use: "download CLUSTER_VERSION\n" +
 			"Args:\n" +
 			"  CLUSTER_VERSION is you wanted kubernetes version",
-		Aliases: []string{"d", "down"},
+		Aliases: []string{"down"},
 		Short:   "Download resource",
 		Long:    "",
 		Example: "",
@@ -44,33 +49,48 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 	}
+	cmd.Flags().StringVar(
+		&flags.MirrorHost, "mirror",
+		"yes", "default yes will use aliyun mirror, like: xxx.mirror.aliyuncs.com",
+	)
+	cmd.Flags().BoolVarP(
+		&flags.ForceLocal, "force-local", "F",
+		false, "install use local package",
+	)
 	cmd.Flags().BoolVar(
-		&flags.WithMirror, "with-mirror",
-		true, "download use mirror, if you is cn please keep true",
+		&flags.UseOffline, "use-offline",
+		false, "install use offline system package",
 	)
 	cmd.Flags().BoolVar(
 		&flags.WithBinary, "with-binary",
 		false, "download binary package",
 	)
-	cmd.Flags().BoolVar(
-		&flags.WithBinary, "with-nvidia",
-		false, "download nvidia package",
+	cmd.Flags().StringVar(
+		&flags.InputCRIMode, "cri",
+		define.DefaultRuntimeMode,
+		"Runtime interface, only docker or containerd",
+	)
+	cmd.Flags().StringVar(
+		&flags.InputICMode, "ic",
+		define.DefaultIngressMode,
+		"Ingress controller, only none or contour",
 	)
 	cmd.Flags().BoolVar(
-		&flags.WithBinary, "with-kata",
-		false, "download kata image",
+		&flags.WithNvidia, "with-nvidia",
+		true,
+		"Install nvidia",
 	)
-	cmd.Flags().BoolVarP(
-		&flags.WithOffline, "with-offline", "O",
-		false, "download offline system package",
+	cmd.Flags().BoolVar(
+		&flags.WithKata, "with-kata",
+		false,
+		"Install kata with Kata-deploy",
 	)
 	return cmd
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	clusterVersion := args[0]
-	runtimeMode := ""
-	return release.ProcessDownload(release.InitResource(clusterVersion, runtimeMode,
-		flags.WithBinary, flags.WithOffline, flags.WithNvidia, flags.WithKata),
-		clusterVersion, runtimeMode, flags.WithMirror, flags.WithBinary, flags.WithOffline)
+	version, runtime, ingress := args[0], flags.InputCRIMode, flags.InputICMode
+	resource := release.InitResource(version, runtime, flags.WithBinary, flags.UseOffline, flags.WithNvidia, flags.WithKata, ingress)
+	return release.ProcessDownload(resource, version, runtime, onutil.ConvMirror(flags.MirrorHost, define.MirrorImageRepo),
+		flags.ForceLocal, flags.WithBinary, flags.UseOffline, flags.WithNvidia, flags.WithKata, ingress)
 }

@@ -21,8 +21,11 @@ import (
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/execute"
 	"github.com/dneht/kubeon/pkg/onutil"
+	"github.com/vbauerster/mpb/v7"
+	"github.com/vbauerster/mpb/v7/decor"
 	"k8s.io/klog/v2"
 	"os"
+	"time"
 )
 
 func InstallSelect(moduleName, nodeSelector string) (err error) {
@@ -52,52 +55,88 @@ func InstallSelect(moduleName, nodeSelector string) (err error) {
 		}
 	}
 
+	progGroup := mpb.New(
+		mpb.WithWidth(90),
+		mpb.WithRefreshRate(250*time.Millisecond),
+	)
 	getNodes := selectNodes(nodeSelector)
 	for _, node := range getNodes {
-		var remotePath string
-		remoteResource := node.GetResource()
-		switch moduleName {
-		case define.DockerRuntime:
-			remotePath = remoteResource.DockerPath
-			break
-		case define.ContainerdRuntime:
-			remotePath = remoteResource.ContainerdPath
-			break
-		case define.NetworkPlugin:
-			remotePath = remoteResource.NetworkPath
-			break
-		default:
-			remotePath = remoteResource.DistDir + "/" + moduleName + ".tar"
+		remote := remotePath(node, moduleName)
+		bar := copyUseBar(node, progGroup, nil, moduleName, remote, localSum)
+		if nil != bar {
+			go node.CopyToWithBar(localPath, remote, localSum, bar)
 		}
-		err = copyToNode(node, remotePath, localPath, localSum)
-		if nil != err {
-			return err
-		}
-		var sd bool
-		sd, err = installOnNode(node, moduleName, remotePath)
-		if nil != err {
-			return err
-		}
-		if sd {
-			err = enableModuleOneNow(node, moduleName)
-			if nil != err {
-				klog.Warningf("Enable systemd failed: %v", err)
+	}
+	progGroup.Wait()
+
+	for _, node := range getNodes {
+		if res, ierr := installOnNode(node, moduleName, remotePath(node, moduleName)); nil != ierr {
+			return ierr
+		} else {
+			if res {
+				eerr := enableModuleOneNow(node, moduleName)
+				if nil != eerr {
+					klog.Warningf("Enable systemd failed: %v", err)
+				}
 			}
 		}
 	}
 	return nil
 }
 
-func copyToNode(node *cluster.Node, remotePath, localPath, localSum string) (err error) {
-	remoteSum := node.FileSum(remotePath)
-	klog.V(4).Infof("Get local[%s] sum %s, remote[%s] sum %s", localPath, localSum, remotePath, remoteSum)
-	if localSum != remoteSum {
-		err = node.CopyToWithSum(localPath, remotePath, localSum)
-		if nil != err {
-			return err
-		}
+func remotePath(node *cluster.Node, module string) string {
+	var nodePath string
+	nodeResource := node.GetResource()
+	switch module {
+	case define.DockerRuntime:
+		nodePath = nodeResource.DockerPath
+		break
+	case define.ContainerdRuntime:
+		nodePath = nodeResource.ContainerdPath
+		break
+	case define.NetworkPlugin:
+		nodePath = nodeResource.NetworkPath
+		break
+	default:
+		nodePath = nodeResource.DistDir + "/" + module + ".tar"
 	}
-	return nil
+	return nodePath
+}
+
+func copyUseBar(node *cluster.Node, prog *mpb.Progress, bar *mpb.Bar, module, remotePath, localSum string) *mpb.Bar {
+	remoteSum := node.FileSum(remotePath)
+	if localSum != remoteSum {
+		if nil == bar {
+			return prog.New(0,
+				mpb.BarStyle().Rbound("|"),
+				mpb.PrependDecorators(
+					decor.Name("copy "+module+" to "+node.Hostname, decor.WC{W: 32, C: decor.DidentRight}),
+					decor.CountersKibiByte("% .2f / % .2f"),
+				),
+				mpb.AppendDecorators(
+					decor.EwmaETA(decor.ET_STYLE_GO, 0),
+					decor.Name(" ] "),
+					decor.EwmaSpeed(decor.UnitKiB, "% .2f", 0),
+				),
+			)
+		} else {
+			return prog.AddBar(0,
+				mpb.BarQueueAfter(bar, false),
+				mpb.BarFillerClearOnComplete(),
+				mpb.PrependDecorators(
+					decor.Name("copy "+module+" to "+node.Hostname, decor.WC{W: 32, C: decor.DidentRight}),
+					decor.CountersKibiByte("% .2f / % .2f"),
+				),
+				mpb.AppendDecorators(
+					decor.OnComplete(decor.EwmaETA(decor.ET_STYLE_GO, 0), ""),
+					decor.OnComplete(decor.Name(" ] "), ""),
+					decor.OnComplete(decor.EwmaSpeed(decor.UnitKiB, "% .2f", 0), ""),
+				),
+			)
+		}
+	} else {
+		return nil
+	}
 }
 
 func unzipOnNode(node *cluster.Node, moduleName, remotePath string) (err error) {

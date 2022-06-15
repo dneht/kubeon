@@ -18,6 +18,7 @@ package onutil
 
 import (
 	"net"
+	"strings"
 )
 
 func IP2StringArr(ips []net.IP) []string {
@@ -44,18 +45,17 @@ func IsDuplicateInStringArr(arr []string) bool {
 	return false
 }
 
-func FillUintArr(one uint, size int) []uint {
-	arr := make([]uint, size)
-	for i := 0; i < size; i++ {
-		arr[i] = one
+func SplitStringSpace(str string) []string {
+	arr := strings.Split(str, "\n")
+	if len(arr) == 1 {
+		arr = strings.Split(str, "\r")
 	}
-	return arr
-}
-
-func FillStringArr(one string, size int) []string {
-	arr := make([]string, size)
-	for i := 0; i < size; i++ {
-		arr[i] = one
+	res := make([]string, 0, len(arr))
+	for _, one := range arr {
+		ts := strings.TrimSpace(one)
+		if "" != ts {
+			res = append(res, ts)
+		}
 	}
-	return arr
+	return res
 }

@@ -223,10 +223,10 @@ func joinNodes(newNodes cluster.NodeList) (err error) {
 		if nil != err {
 			klog.Warningf("reinstall network failed %v", err)
 		}
-		err = module.InstallExtend()
-		if nil != err {
-			klog.Warningf("reinstall ingress failed %v", err)
-		}
+	}
+	err = module.InstallExtend()
+	if nil != err {
+		klog.Warningf("reinstall extend failed %v", err)
 	}
 	err = module.ChangeLoadBalance(isNewMaster, newNodes)
 	if nil != err {

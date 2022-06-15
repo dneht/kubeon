@@ -100,13 +100,6 @@ func getKubeletTemplate() *release.KubeletTemplate {
 	}
 }
 
-func getCorednsTemplate() *release.CorednsTemplate {
-	current := cluster.Current()
-	return &release.CorednsTemplate{
-		ClusterDnsIP: current.DnsIP,
-	}
-}
-
 func ShowInner(moduleName string) ([]byte, error) {
 	current := cluster.Current()
 	local := current.IsRealLocal()
@@ -115,7 +108,10 @@ func ShowInner(moduleName string) ([]byte, error) {
 	case define.KubeletModule:
 		return release.RenderKubeletTemplate(getKubeletTemplate(), current.Version.Full)
 	case define.CorednsPart:
-		return release.RenderCorednsTemplate(getCorednsTemplate(), local)
+		return release.RenderCorednsTemplate(&release.CorednsTemplate{
+			MirrorUrl:    current.Mirror,
+			ClusterDnsIP: current.DnsIP,
+		}, local)
 	case define.CalicoNetwork:
 		etcdConfig := current.CreateConfig
 		if nil == etcdConfig {
@@ -134,6 +130,7 @@ func ShowInner(moduleName string) ([]byte, error) {
 			defaultInterface = nodeInterface[0]
 		}
 		return release.RenderCalicoTemplate(&release.CalicoTemplate{
+			MirrorUrl:        current.Mirror,
 			IsSetInterface:   isSetInterface,
 			DefaultInterface: defaultInterface,
 			EtcdKeyBase64:    etcdConfig.EtcdKeyBase64,
@@ -145,11 +142,17 @@ func ShowInner(moduleName string) ([]byte, error) {
 			VXLanMode:        vxlanMode,
 		}, local)
 	case define.NvidiaRuntime:
-		return release.RenderNvidiaTemplate(&release.NvidiaTemplate{}, local)
+		return release.RenderNvidiaTemplate(&release.NvidiaTemplate{
+			MirrorUrl: current.Mirror,
+		}, local)
 	case define.KataRuntime:
-		return release.RenderKataTemplate(&release.KataTemplate{}, local)
+		return release.RenderKataTemplate(&release.KataTemplate{
+			MirrorUrl: current.Mirror,
+		}, local)
 	case define.ContourIngress:
-		return release.RenderContourTemplate(&release.ContourTemplate{}, local)
+		return release.RenderContourTemplate(&release.ContourTemplate{
+			MirrorUrl: current.Mirror,
+		}, local)
 	case define.HealthzReader:
 		return release.RenderHealthzTemplate(current.Version.Full), nil
 	case define.LocalHaproxy:

@@ -30,5 +30,5 @@ func Level() int {
 }
 
 func IsDebug() bool {
-	return logLevel >= 4
+	return logLevel >= 6
 }

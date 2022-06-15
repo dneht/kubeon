@@ -19,8 +19,9 @@ package execute
 import (
 	"errors"
 	"github.com/dneht/kubeon/pkg/execute/connect"
-	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/pkg/sftp"
+	"github.com/vbauerster/mpb/v7"
+	"io"
 	"k8s.io/klog/v2"
 	"os"
 	"path"
@@ -32,6 +33,7 @@ type RemoteCopy struct {
 	src  string
 	dest string
 	sum  string
+	bar  *mpb.Bar
 }
 
 // NewRemoteCopy returns a new RemoteCopy to run copy file.
@@ -44,9 +46,16 @@ func NewRemoteCopy(node, src, dest, sum string) *RemoteCopy {
 	}
 }
 
+func (c *RemoteCopy) Node() string {
+	return c.node
+}
+
+func (c *RemoteCopy) UseBar(bar *mpb.Bar) {
+	c.bar = bar
+}
+
 // CopyTo copies the source file from local to remote.
 func (c *RemoteCopy) CopyTo() error {
-	klog.V(4).Infof("[remote] [%s] push -- from: %s, to: %s", c.node, c.src, c.dest)
 	client, err := c.getInnerCopy()
 	if nil != err {
 		return err
@@ -55,7 +64,7 @@ func (c *RemoteCopy) CopyTo() error {
 
 	srcFile, err := os.Open(c.src)
 	if nil != err {
-		klog.Errorf("[remote] [%s] open file [%s] err : %s", c.node, c.src, err)
+		klog.Errorf("[remote] [%s] local file [%s] err", c.node, c.src, err)
 		return err
 	}
 	defer srcFile.Close()
@@ -63,50 +72,47 @@ func (c *RemoteCopy) CopyTo() error {
 	destPath := path.Dir(c.dest)
 	err = client.MkdirAll(destPath)
 	if nil != err {
-		klog.Errorf("[remote] [%s] create remote dir err:", c.node, destPath)
+		klog.Errorf("[remote] [%s] create remote dir err: %s", c.node, destPath)
 		return err
 	}
 	dstFile, err := client.Create(c.dest)
 	if nil != err {
-		klog.Errorf("[remote] [%s] create remote file err:", c.node, err)
+		klog.Errorf("[remote] [%s] create remote file err", c.node, err)
 		return err
 	}
 	defer dstFile.Close()
 
-	sreStat, err := srcFile.Stat()
-	if nil != err {
-		klog.Errorf("[remote] [%s] get local file info err:", c.node, err)
-		return err
-	}
-	total := sreStat.Size()
-	done := int64(0)
-	per := total / 4 / onutil.OneMBByte
-	if per < 8 {
-		per = 8
-	} else if per > 160 {
-		per = 160
-	}
-	buf := make([]byte, per*onutil.OneMBByte)
-	for {
-		size, ierr := srcFile.Read(buf)
-		if size == 0 {
-			break
+	if nil == c.bar {
+		klog.V(4).Infof("[remote] [%s] push -- from: %s, to: %s", c.node, c.src, c.dest)
+		_, err = io.Copy(dstFile, srcFile)
+		if nil != err {
+			klog.Errorf("[remote] [%s] copy file to remote failed", err)
+			return err
 		}
-		if nil != ierr {
-			klog.Errorf("[remote] [%s] read local file failed: %s", ierr)
+	} else {
+		srcStat, serr := srcFile.Stat()
+		if nil != serr {
+			klog.Errorf("[remote] [%s] get local file info err", c.node, err)
+			return serr
 		}
-		size, ierr = dstFile.Write(buf[0:size])
-		if nil != ierr {
-			klog.Errorf("[remote] [%s] write remote file failed: %s", ierr)
-		}
-		done += int64(size)
-		onutil.ShowProgress(total, done, "transfer to "+c.node)
+		c.bar.SetTotal(srcStat.Size(), false)
+		proxyReader := c.bar.ProxyReader(srcFile)
+		defer func() {
+			_ = proxyReader.Close()
+			c.bar.SetTotal(srcStat.Size(), true)
+		}()
 
+		_, err = io.Copy(dstFile, proxyReader)
+		if nil != err {
+			klog.Errorf("[remote] [%s] copy file to remote failed", err)
+			return err
+		}
 	}
+
 	success, localSum, remoteSum := c.isCopySuccess()
 	if !success {
 		klog.Errorf("[remote] [%s] copy file[%s](%s) to remote[%s](%s) validate cksum failed", c.node, c.src, localSum, c.dest, remoteSum)
-		return errors.New("copy file validate error")
+		return errors.New("checksum mismatch on copied file")
 	}
 	return nil
 }
@@ -127,7 +133,7 @@ func (c *RemoteCopy) isCopySuccess() (bool, string, string) {
 
 	sum, err := NewRemoteCmd(c.node, "cksum", c.dest).RunAndResult()
 	if nil != err {
-		klog.Errorf("[remote] [%s] get cksum error: %s", c.node, err)
+		klog.Errorf("[remote] [%s] get cksum error", c.node, err)
 		return false, "", ""
 	}
 	if "" == sum {

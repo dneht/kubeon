@@ -57,17 +57,13 @@ func (c *RemoteCmd) RunAndResult() (result string, err error) {
 	c.stderr = &wrong
 	err = c.runInnerCommand()
 
-	var lines []string
 	if nil != err {
-		lines = onutil.ReadLinesFromBuff(&wrong)
-		result = strings.Join(lines, "\n")
-		return result, err
+		return strings.TrimSpace(string(wrong.Bytes())), err
 	} else {
 		if normal.Len() == 0 {
-			return "", err
+			return "", nil
 		}
-		lines = onutil.ReadLinesFromBuff(&normal)
-		return strings.TrimSpace(lines[0]), err
+		return strings.TrimSpace(string(normal.Bytes())), nil
 	}
 }
 
@@ -87,14 +83,12 @@ func (c *RemoteCmd) RunAndCapture() (lines []string, err error) {
 	err = c.runInnerCommand()
 
 	if nil != err {
-		lines = onutil.ReadLinesFromBuff(&wrong)
-		return lines, err
+		return onutil.SplitStringSpace(string(wrong.Bytes())), err
 	} else {
 		if normal.Len() == 0 {
 			return []string{}, err
 		}
-		lines = onutil.ReadLinesFromBuff(&normal)
-		return lines, nil
+		return onutil.SplitStringSpace(string(normal.Bytes())), nil
 	}
 }
 
@@ -123,7 +117,7 @@ func (c *RemoteCmd) runInnerCommand() error {
 	}
 
 	run := c.command + " " + strings.Join(c.args, " ")
-	klog.V(6).Infof("[remote] running [%s] on [%s]", run, c.node)
+	klog.V(8).Infof("[remote] running [%s] on [%s]", run, c.node)
 	err = cmd.Run(run)
 	if nil != err {
 		klog.Errorf("[remote] running [%s] on [%s] failed: %s", run, c.node, err)

@@ -21,11 +21,13 @@ import (
 	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"sync"
 )
 
 type flagpole struct {
-	Params     []string
-	WithResult bool
+	Params      []string
+	WithResult  bool
+	UseParallel bool
 }
 
 func NewCommand() *cobra.Command {
@@ -58,6 +60,11 @@ func NewCommand() *cobra.Command {
 		false,
 		"show result",
 	)
+	cmd.Flags().BoolVarP(
+		&flags.UseParallel, "parallel", "P",
+		false,
+		"use parallel",
+	)
 	return cmd
 }
 
@@ -79,20 +86,40 @@ func doExec(flags *flagpole, nodeSelector, command string) error {
 	if nil != err {
 		return err
 	}
-	for _, node := range nodes {
-		exec := node.Command(command, flags.Params...)
-		if flags.WithResult {
-			err = exec.RunWithEcho()
-			if nil != err {
-				return err
-			}
-		} else {
-			err = exec.Run()
-			if nil != err {
-				return err
-			}
+	if flags.UseParallel {
+		var wait sync.WaitGroup
+		wait.Add(len(nodes))
+		for _, node := range nodes {
+			go oneExec(flags, &wait, node, command)
 		}
-		klog.V(1).Infof("[%s] exec command[%s] complete", node.Addr(), command)
+		wait.Wait()
+	} else {
+		for _, node := range nodes {
+			oneExec(flags, nil, node, command)
+		}
 	}
 	return nil
+}
+
+func oneExec(flags *flagpole, wait *sync.WaitGroup, node *cluster.Node, command string) {
+	exec := node.Command(command, flags.Params...)
+	if flags.WithResult {
+		err := exec.RunWithEcho()
+		if nil != err {
+			klog.Errorf("[%s] exec command[%s] failed with: %v", node.Addr(), command, err)
+		} else {
+			klog.V(1).Infof("[%s] exec command[%s] complete", node.Addr(), command)
+		}
+	} else {
+		err := exec.Run()
+		if nil != err {
+			klog.Errorf("[%s] exec command[%s] failed with: %v", node.Addr(), command, err)
+		} else {
+			klog.V(1).Infof("[%s] exec command[%s] complete", node.Addr(), command)
+
+		}
+	}
+	if nil != wait {
+		wait.Done()
+	}
 }

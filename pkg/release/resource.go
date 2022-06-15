@@ -19,6 +19,8 @@ package release
 type ClusterResource struct {
 	ImagesPath     string               `json:"imagesPath"`
 	ImagesSum      string               `json:"imagesSum"`
+	PausePath      string               `json:"pausePath"`
+	PauseSum       string               `json:"pauseSum"`
 	BinaryPath     string               `json:"binaryPath,omitempty"`
 	BinarySum      string               `json:"binarySum,omitempty"`
 	KubeletPath    string               `json:"kubeletPath,omitempty"`

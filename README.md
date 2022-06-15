@@ -9,30 +9,31 @@
 ```text
 v1.19.4-v1.19.16
 v1.20.1-v1.20.15
-v1.21.1-v1.21.12
-v1.22.1-v1.22.9
-v1.23.1-v1.23.6
+v1.21.1-v1.21.13
+v1.22.1-v1.22.10
+v1.23.1-v1.23.7
+v1.24.1
 ```
 ## Component
 
-> kubeon view component v1.23.6
+> kubeon view component v1.24.1
 
 ```json
 {
-  "kubernetes": "v1.23.6",
-  "etcd": "3.5.1",
-  "coredns": "1.8.7",
-  "crictl": "v1.23.0",
-  "runc": "v1.1.1",
-  "containerd": "1.5.11",
-  "docker": "20.10.14",
+  "kubernetes": "v1.24.1",
+  "etcd": "3.5.3",
+  "coredns": "1.9.3",
+  "crictl": "v1.24.2",
+  "runc": "v1.1.2",
+  "containerd": "1.6.4",
+  "docker": "20.10.16",
   "nvidia": "v3.9.0",
-  "kata": "2.4.0",
+  "kata": "2.4.1",
   "cni": "v1.1.1",
-  "calico": "v3.21.5",
-  "cilium": "v1.10.10",
-  "contour": "v1.20.1",
-  "haproxy": "2.5.6"
+  "calico": "v3.22.3",
+  "cilium": "v1.11.5",
+  "contour": "v1.21.0",
+  "haproxy": "2.5.7"
 }
 ```
 
@@ -58,11 +59,11 @@ other images such as etcd remain the same
 
 online mode is the default and uses `registry.cn-hangzhou.aliyuncs.com` as the default mirror source, you can set `--mirror=no` to use `k8s.gcr.io` source
 
-offline mode(**--use-offline**) will download the all image tar and import it on all machines
+offline mode(**--offline**) will download the all image tar and import it on all machines
 
 ## Usage
 
-> k8s_ver=v1.23.6
+> k8s_ver=v1.23.7
 
 ### Vagrant test
 

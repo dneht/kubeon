@@ -22,6 +22,7 @@ import (
 	"github.com/dneht/kubeon/pkg/execute/connect"
 	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/dneht/kubeon/pkg/release"
+	"github.com/vbauerster/mpb/v7"
 	"k8s.io/klog/v2"
 	"os"
 	"strconv"
@@ -103,6 +104,18 @@ func (n *Node) CopyTo(src, dest string) error {
 
 func (n *Node) CopyToWithSum(src, dest, sum string) error {
 	return execute.NewRemoteCopy(n.Addr(), src, dest, sum).CopyTo()
+}
+
+func (n *Node) CopyToWithBar(src, dest, sum string, bar *mpb.Bar) {
+	rc := execute.NewRemoteCopy(n.Addr(), src, dest, sum)
+	if nil != bar {
+		rc.UseBar(bar)
+	}
+	err := rc.CopyTo()
+	if nil != err {
+		klog.Errorf("copy to remote failed: %v", err)
+		os.Exit(1)
+	}
 }
 
 func (n *Node) Chmod(mode, path string) error {

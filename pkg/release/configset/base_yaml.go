@@ -95,7 +95,7 @@ apiServer:
   {{- end}}
   extraArgs:
     {{- if .ClusterFeatureGates}}
-	{{.ClusterFeatureGates}}
+    {{.ClusterFeatureGates}}
     {{- end}}
     service-node-port-range: {{.ClusterPortRange}}
   extraVolumes:
@@ -106,7 +106,7 @@ apiServer:
 controllerManager:
   extraArgs:
     {{- if .ClusterFeatureGates}}
-	{{.ClusterFeatureGates}}
+    {{.ClusterFeatureGates}}
     {{- end}}
     experimental-cluster-signing-duration: 876000h
   extraVolumes:
@@ -117,7 +117,7 @@ controllerManager:
 scheduler:
   extraArgs:
     {{- if .ClusterFeatureGates}}
-	{{.ClusterFeatureGates}}
+    {{.ClusterFeatureGates}}
     {{- end}}
   extraVolumes:
   - hostPath: /etc/localtime

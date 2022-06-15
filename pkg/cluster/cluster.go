@@ -184,7 +184,7 @@ func (c *Cluster) GetInitImageRepo() string {
 	if c.IsRealLocal() {
 		return define.DefaultImageRepo
 	} else {
-		return define.MirrorImageRepo + "/kubeon"
+		return c.Mirror + "/kubeon"
 	}
 }
 
@@ -200,7 +200,7 @@ func (c *Cluster) GetHaproxyResource() string {
 	if c.IsRealLocal() {
 		return define.HaproxyResource
 	} else {
-		return define.MirrorImageRepo + "/" + define.HaproxyResource
+		return c.Mirror + "/" + define.HaproxyResource
 	}
 }
 
@@ -208,7 +208,7 @@ func (c *Cluster) GetUpdaterResource() string {
 	if c.IsRealLocal() {
 		return define.UpdaterResource
 	} else {
-		return define.MirrorImageRepo + "/" + define.UpdaterResource
+		return c.Mirror + "/" + define.UpdaterResource
 	}
 }
 

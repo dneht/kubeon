@@ -26,7 +26,11 @@ func ConvMirror(input, define string) string {
 	} else if strings.EqualFold(input, "yes") || strings.EqualFold(input, "true") {
 		return define
 	} else {
-		return input
+		if strings.HasSuffix(input, "/") {
+			return input[0 : len(input)-1]
+		} else {
+			return input
+		}
 	}
 }
 

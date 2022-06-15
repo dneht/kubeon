@@ -51,6 +51,10 @@ func KubeadmResetOne(node *cluster.Node, force bool) {
 	} else if current.ProxyMode == define.IPTablesProxy {
 		klog.Warningf("Please clean the iptables rules yourself")
 	}
+	err = KubectlDeleteNode(node.Hostname)
+	if nil != err {
+		klog.Warningf("Delete node[%s] failed: %v", node.Addr(), err)
+	}
 }
 
 func KubeadmResetList(list cluster.NodeList, force bool) {

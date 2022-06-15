@@ -21,6 +21,10 @@ import (
 	"github.com/dneht/kubeon/pkg/execute"
 )
 
+func KubectlGetQuiet(args ...string) (string, error) {
+	return kubectlGet(args).Quiet().RunAndResult()
+}
+
 func KubectlGetResult(args ...string) (string, error) {
 	return kubectlGet(args).RunAndResult()
 }

@@ -37,56 +37,51 @@ type CreateConfig struct {
 	AdminConfigBase64 string `json:"adminConfig"`
 }
 
-func CreateResource(mirror string) (err error) {
-	return release.ProcessDownload(current.LocalResource, current.Version.Full, current.RuntimeMode, mirror,
+func CreateResource(mirror string) error {
+	return release.ProcessDownload(
+		current.LocalResource, current.Version.Full, current.RuntimeMode, mirror,
 		current.IsRealLocal(), current.IsBinary, current.IsOffline,
 		current.UseNvidia && current.HasNvidia, current.UseKata,
 		current.IngressMode)
 }
 
-func CreateCompleteCluster() (err error) {
-	err = UpdateHost()
-	if nil != err {
+func CreateCompleteCluster() error {
+	if err := UpdateHost(); nil != err {
 		klog.Errorf("Update node host error: %s", err.Error())
 		return err
 	}
 
 	current.Status = StatusRunning
 	klog.V(1).Infof("Now cluster is running, api server is %s:%d", current.LbDomain, current.LbPort)
-	err = runConfig.WriteConfig()
-	if nil != err {
+	if err := runConfig.WriteConfig(); nil != err {
 		klog.Error("Create & Save cluster config failed: " + err.Error())
 	}
 	return nil
 }
 
-func UpgradeCompleteCluster() (err error) {
-	err = UpdateHost()
-	if nil != err {
+func UpgradeCompleteCluster() error {
+	if err := UpdateHost(); nil != err {
 		klog.Errorf("Update node host error: %s", err.Error())
 		return err
 	}
 
 	current.Status = StatusRunning
 	klog.V(1).Infof("Now cluster[%s] upgrade complete, version is %s", current.Name, current.Version.Full)
-	err = runConfig.WriteConfig()
-	if nil != err {
+	if err := runConfig.WriteConfig(); nil != err {
 		klog.Error("Upgrade & save cluster config failed: " + err.Error())
 	}
 	return nil
 }
 
-func AddCompleteCluster() (err error) {
-	err = UpdateHost()
-	if nil != err {
+func AddCompleteCluster() error {
+	if err := UpdateHost(); nil != err {
 		klog.Errorf("Update node host error: %s", err.Error())
 		return err
 	}
 
 	current.Status = StatusRunning
 	klog.V(1).Infof("Add nodes complete, version is %s", current.Version.Full)
-	err = runConfig.WriteConfig()
-	if nil != err {
+	if err := runConfig.WriteConfig(); nil != err {
 		klog.Error("Add & Save cluster config failed: " + err.Error())
 	}
 	return nil

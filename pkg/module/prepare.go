@@ -18,11 +18,11 @@ package module
 
 import (
 	"crypto/tls"
-	"fmt"
 	cluster "github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/release"
 	"github.com/pkg/errors"
+	"github.com/vbauerster/mpb/v7"
 	"k8s.io/klog/v2"
 	"net/http"
 	"os"
@@ -30,20 +30,27 @@ import (
 	"time"
 )
 
+type PrepareModule struct {
+	RemotePath string
+	LocalPath  string
+	LocalSum   string
+	CopyBar    *mpb.Bar
+}
+
 func PrepareInstall(nodes cluster.NodeList, isUpgrade bool) (err error) {
 	err = prepareLocal()
 	if nil != err {
 		return err
 	}
 
-	err = sendPackage(nodes, isUpgrade)
-	if nil != err {
-		return err
-	}
-	err = handlePackage(nodes, isUpgrade)
-	if nil != err {
-		return err
-	}
+	prog := mpb.New(
+		mpb.WithWidth(90),
+		mpb.WithRefreshRate(250*time.Millisecond),
+	)
+	sendPackage(prog, nodes, isUpgrade)
+	prog.Wait()
+
+	handlePackage(nodes, isUpgrade)
 	return nil
 }
 
@@ -61,7 +68,7 @@ func AfterUpgrade(node *cluster.Node, isBootstrap bool) (err error) {
 			if nil == err {
 				return nil
 			} else {
-				fmt.Println("Bootstrap not ready, sleep 4s")
+				klog.V(1).Infof("Bootstrap not ready, sleep 4s")
 				time.Sleep(4 * time.Second)
 			}
 		}
@@ -84,195 +91,182 @@ func prepareLocal() (err error) {
 	return nil
 }
 
-func sendPackage(nodes cluster.NodeList, isUpgrade bool) (err error) {
-	current := cluster.Current()
-	localRes := cluster.CurrentResource()
-	var wait sync.WaitGroup
-	wait.Add(len(nodes))
+func sendPackage(prog *mpb.Progress, nodes cluster.NodeList, isUpgrade bool) {
+	copyQueues := make(map[*cluster.Node][]*PrepareModule)
+	klog.V(1).Info("Start copy resource to remote node")
 	for _, node := range nodes {
-		go func(node *cluster.Node) {
-			klog.V(1).Infof("[prepare] start copy resource to [%s]", node.Addr())
-			remoteRes := node.GetResource()
-			err = copyToNode(node, remoteRes.KubeletPath, localRes.KubeletPath, localRes.KubeletSum)
-			if nil != err {
-				klog.Errorf("[prepare] copy binary to [%s] failed: %v", node.Addr(), err)
-				os.Exit(1)
-			}
-			if current.RuntimeMode == define.ContainerdRuntime {
-				err = copyToNode(node, remoteRes.ContainerdPath, localRes.ContainerdPath, localRes.ContainerdSum)
-				if nil != err {
-					klog.Errorf("[prepare] copy containerd to [%s] failed: %v", node.Addr(), err)
-					os.Exit(1)
-				}
-			} else {
-				err = copyToNode(node, remoteRes.DockerPath, localRes.DockerPath, localRes.DockerSum)
-				if nil != err {
-					klog.Errorf("[prepare] copy docker to [%s] failed: %v", node.Addr(), err)
-					os.Exit(1)
-				}
-			}
-			err = copyToNode(node, remoteRes.NetworkPath, localRes.NetworkPath, localRes.NetworkSum)
-			if nil != err {
-				klog.Errorf("[prepare] copy network to [%s] failed: %v", node.Addr(), err)
-				os.Exit(1)
-			}
-			if current.IsRealLocal() {
-				err = copyToNode(node, remoteRes.ImagesPath, localRes.ImagesPath, localRes.ImagesSum)
-				if nil != err {
-					klog.Errorf("[prepare] copy images to [%s] failed: %v", node.Addr(), err)
-					os.Exit(1)
-				}
-				if current.IsOffline {
-					err = copyToNode(node, remoteRes.OfflinePath, localRes.OfflinePath, localRes.OfflineSum)
-					if nil != err {
-						klog.Errorf("[prepare] copy offline to [%s] failed: %v", node.Addr(), err)
-						os.Exit(1)
-					}
-				}
-				if current.UseNvidia && node.HasNvidia {
-					err = copyToNode(node, remoteRes.NvidiaPath, localRes.NvidiaPath, localRes.NvidiaSum)
-					if nil != err {
-						klog.Errorf("[prepare] copy nvidia to [%s] failed: %v", node.Addr(), err)
-						os.Exit(1)
-					}
-				}
-				if current.UseKata {
-					err = copyToNode(node, remoteRes.KataPath, localRes.KataPath, localRes.KataSum)
-					if nil != err {
-						klog.Errorf("[prepare] copy kata to [%s] failed: %v", node.Addr(), err)
-						os.Exit(1)
-					}
-				}
-				switch current.IngressMode {
-				case define.ContourIngress:
-					{
-						err = copyToNode(node, remoteRes.ContourPath, localRes.ContourPath, localRes.ContourSum)
-						if nil != err {
-							klog.Errorf("[prepare] copy contour to [%s] failed: %v", node.Addr(), err)
-							os.Exit(1)
-						}
-						break
-					}
-				}
-			}
-			klog.V(1).Infof("[prepare] copy resource to [%s] success", node.Addr())
-			wait.Done()
-		}(node)
+		copyQueues[node] = doQueuedPackage(node, prog)
 	}
-	wait.Wait()
-	return err
+
+	for node, queue := range copyQueues {
+		go doTransPackage(node, queue)
+	}
 }
 
-func handlePackage(nodes cluster.NodeList, upgrade bool) (err error) {
+func doQueuedPackage(node *cluster.Node, prog *mpb.Progress) []*PrepareModule {
+	current := cluster.Current()
+	localRes := cluster.CurrentResource()
+	remoteRes := node.GetResource()
+	barQueue, copyQueue := make([]*mpb.Bar, 16), make([]*PrepareModule, 16)
+	doAppendPackage(0, node, prog, barQueue, copyQueue, define.KubeletModule, remoteRes.KubeletPath, localRes.KubeletPath, localRes.KubeletSum)
+	if current.RuntimeMode == define.ContainerdRuntime {
+		doAppendPackage(1, node, prog, barQueue, copyQueue, define.ContainerdRuntime, remoteRes.ContainerdPath, localRes.ContainerdPath, localRes.ContainerdSum)
+	} else {
+		doAppendPackage(1, node, prog, barQueue, copyQueue, define.DockerRuntime, remoteRes.DockerPath, localRes.DockerPath, localRes.DockerSum)
+	}
+	doAppendPackage(2, node, prog, barQueue, copyQueue, define.NetworkPlugin, remoteRes.NetworkPath, localRes.NetworkPath, localRes.NetworkSum)
+	if current.IsRealLocal() {
+		doAppendPackage(3, node, prog, barQueue, copyQueue, define.ImagesPackage, remoteRes.ImagesPath, localRes.ImagesPath, localRes.ImagesSum)
+		if current.IsOffline {
+			doAppendPackage(4, node, prog, barQueue, copyQueue, define.OfflineModule, remoteRes.OfflinePath, localRes.OfflinePath, localRes.OfflineSum)
+		}
+		if current.UseKata {
+			doAppendPackage(5, node, prog, barQueue, copyQueue, define.KataRuntime, remoteRes.KataPath, localRes.KataPath, localRes.KataSum)
+		}
+		if current.UseNvidia && node.HasNvidia {
+			doAppendPackage(6, node, prog, barQueue, copyQueue, define.NvidiaRuntime, remoteRes.NvidiaPath, localRes.NvidiaPath, localRes.NvidiaSum)
+		}
+		switch current.IngressMode {
+		case define.ContourIngress:
+			{
+				doAppendPackage(12, node, prog, barQueue, copyQueue, define.ContourIngress, remoteRes.ContourPath, localRes.ContourPath, localRes.ContourSum)
+				break
+			}
+		}
+	} else {
+		doAppendPackage(3, node, prog, barQueue, copyQueue, define.PausePackage, remoteRes.PausePath, localRes.PausePath, localRes.PauseSum)
+	}
+	return copyQueue
+}
+
+func doAppendPackage(idx int, node *cluster.Node, prog *mpb.Progress, barQueue []*mpb.Bar, copyQueue []*PrepareModule, moduleName, remotePath, localPath, localSum string) {
+	var prevBar *mpb.Bar
+	if idx > 0 {
+		for last := idx - 1; last >= 0; last-- {
+			prevBar = barQueue[last]
+			if nil != prevBar {
+				break
+			}
+		}
+	}
+	copyBar := copyUseBar(node, prog, prevBar, moduleName, remotePath, localSum)
+	if nil != copyBar {
+		barQueue[idx] = copyBar
+		copyQueue[idx] = &PrepareModule{remotePath, localPath, localSum, copyBar}
+	}
+}
+
+func doTransPackage(node *cluster.Node, queue []*PrepareModule) {
+	for _, task := range queue {
+		if nil != task {
+			node.CopyToWithBar(task.LocalPath, task.RemotePath, task.LocalSum, task.CopyBar)
+		}
+	}
+}
+
+func handlePackage(nodes cluster.NodeList, upgrade bool) {
+	var wait sync.WaitGroup
+	wait.Add(len(nodes))
+
+	for _, node := range nodes {
+		go doInstallPackage(&wait, node, upgrade)
+	}
+	wait.Wait()
+}
+
+func doInstallPackage(wait *sync.WaitGroup, node *cluster.Node, upgrade bool) {
 	current := cluster.Current()
 	localRes := cluster.CurrentResource()
 	localConf := localRes.ClusterConf
-	var wait sync.WaitGroup
-	wait.Add(len(nodes))
-	for _, node := range nodes {
-		go func(node *cluster.Node) {
-			remoteRes := node.GetResource()
-			klog.V(1).Infof("[package] Start install [%s] on [%s]", define.KubeletModule, node.Addr())
-			_, err = installOnNode(node, define.KubeletModule, remoteRes.KubeletPath)
-			if nil != err {
-				klog.Errorf("[package] install kubelet on [%s] failed: %v", node.Addr(), err)
-				os.Exit(1)
-			}
-			if !upgrade {
-				err = prepareScript(node)
-				if nil != err {
-					klog.Errorf("[package] prepare script on [%s] failed: %v", node.Addr(), err)
-					os.Exit(1)
-				}
-			}
-
-			nowRuntimeMode := cluster.Current().RuntimeMode
-			klog.V(1).Infof("[package] start install [%s] on [%s]", nowRuntimeMode, node.Addr())
-			if nowRuntimeMode == define.ContainerdRuntime {
-				_, err = installOnNode(node, define.ContainerdRuntime, remoteRes.ContainerdPath)
-				if nil != err {
-					klog.Errorf("[package] install containerd on [%s] failed: %v", node.Addr(), err)
-					os.Exit(1)
-				}
-			} else {
-				_, err = installOnNode(node, define.DockerRuntime, remoteRes.DockerPath)
-				if nil != err {
-					klog.Errorf("[package] install docker on [%s] failed: %v", node.Addr(), err)
-					os.Exit(1)
-				}
-			}
-			if !upgrade {
-				err = enableModuleOneNow(node, nowRuntimeMode)
-			}
-			if nil != err {
-				klog.Errorf("[package] enable runtime on [%s] failed: %v", node.Addr(), err)
-				os.Exit(1)
-			}
-			if current.IsRealLocal() {
-				err = importImage(node, remoteRes.ImagesPath)
-				if nil != err {
-					klog.Errorf("[package] import base image on [%s] failed: %v", node.Addr(), err)
-					os.Exit(1)
-				}
-			} else {
-				if node.FileExist(remoteRes.PausePath) {
-					err = importImage(node, remoteRes.PausePath)
-					if nil != err {
-						klog.Errorf("[package] import pause image on [%s] failed: %v", node.Addr(), err)
-						os.Exit(1)
-					}
-				}
-			}
-			klog.V(1).Infof("[package] start install [%s] on [%s]", define.NetworkPlugin, node.Addr())
-			_, err = installOnNode(node, define.NetworkPlugin, remoteRes.NetworkPath)
-			if nil != err {
-				klog.Errorf("[package] install cni on [%s] failed: %v", node.Addr(), err)
-				os.Exit(1)
-			}
-			if current.IsRealLocal() {
-				if current.UseNvidia && node.HasNvidia {
-					err = importOnNode(node, define.NvidiaRuntime, remoteRes.NvidiaPath)
-					if nil != err {
-						klog.Errorf("[package] import nvidia image on [%s] failed: %v", node.Addr(), err)
-						os.Exit(1)
-					}
-					setupNvidia(node, nowRuntimeMode)
-				}
-				if current.UseKata {
-					err = importOnNode(node, define.KataRuntime, remoteRes.KataPath)
-					if nil != err {
-						klog.Errorf("[package] import kata image on [%s] failed: %v", node.Addr(), err)
-						os.Exit(1)
-					}
-				}
-				switch current.IngressMode {
-				case define.ContourIngress:
-					{
-						err = importOnNode(node, define.ContourIngress, remoteRes.ContourPath)
-						if nil != err {
-							klog.Errorf("[package] import contour image on [%s] failed: %v", node.Addr(), err)
-							os.Exit(1)
-						}
-						break
-					}
-				}
-			} else {
-				if current.UseNvidia && node.HasNvidia {
-					setupNvidia(node, nowRuntimeMode)
-				}
-			}
-			if !upgrade {
-				err = configKubeletOne(node, localConf)
-			}
-			if nil != err {
-				klog.Errorf("[package] enable kubelet on [%s] failed: %v", node.Addr(), err)
-				os.Exit(1)
-			}
-			wait.Done()
-		}(node)
+	remoteRes := node.GetResource()
+	klog.V(1).Infof("[package] start install [%s] on [%s]", define.KubeletModule, node.Addr())
+	if _, err := installOnNode(node, define.KubeletModule, remoteRes.KubeletPath); nil != err {
+		klog.Errorf("[package] install kubelet on [%s] failed: %v", node.Addr(), err)
+		os.Exit(1)
 	}
-	wait.Wait()
-	return nil
+	if !upgrade {
+		if err := prepareScript(node); nil != err {
+			klog.Errorf("[package] prepare script on [%s] failed: %v", node.Addr(), err)
+			os.Exit(1)
+		}
+	}
+	nowRuntimeMode := cluster.Current().RuntimeMode
+	klog.V(1).Infof("[package] start install [%s] on [%s]", nowRuntimeMode, node.Addr())
+	if nowRuntimeMode == define.ContainerdRuntime {
+		if _, err := installOnNode(node, define.ContainerdRuntime, remoteRes.ContainerdPath); nil != err {
+			klog.Errorf("[package] install containerd on [%s] failed: %v", node.Addr(), err)
+			os.Exit(1)
+		}
+	} else {
+		if _, err := installOnNode(node, define.DockerRuntime, remoteRes.DockerPath); nil != err {
+			klog.Errorf("[package] install docker on [%s] failed: %v", node.Addr(), err)
+			os.Exit(1)
+		}
+	}
+	if !upgrade {
+		if err := enableModuleOneNow(node, nowRuntimeMode); nil != err {
+			klog.Errorf("[package] enable runtime on [%s] failed: %v", node.Addr(), err)
+			os.Exit(1)
+		}
+	}
+	if current.IsRealLocal() {
+		klog.V(1).Infof("[package] start load local image on [%s]", node.Addr())
+		if err := importImage(node, remoteRes.ImagesPath); nil != err {
+			klog.Errorf("[package] import base image on [%s] failed: %v", node.Addr(), err)
+			os.Exit(1)
+		}
+	} else {
+		if node.FileExist(remoteRes.PausePath) {
+			klog.V(1).Infof("[package] start load pause image on [%s]", node.Addr())
+			if err := importImage(node, remoteRes.PausePath); nil != err {
+				klog.Errorf("[package] import pause image on [%s] failed: %v", node.Addr(), err)
+				os.Exit(1)
+			}
+		} else {
+			klog.V(1).Infof("[package] pause image not exist on [%s]", node.Addr())
+		}
+	}
+	klog.V(1).Infof("[package] start install [%s] on [%s]", define.NetworkPlugin, node.Addr())
+	if _, err := installOnNode(node, define.NetworkPlugin, remoteRes.NetworkPath); nil != err {
+		klog.Errorf("[package] install cni on [%s] failed: %v", node.Addr(), err)
+		os.Exit(1)
+	}
+	if current.IsRealLocal() {
+		if current.UseNvidia && node.HasNvidia {
+			if err := importOnNode(node, define.NvidiaRuntime, remoteRes.NvidiaPath); nil != err {
+				klog.Errorf("[package] import nvidia image on [%s] failed: %v", node.Addr(), err)
+				os.Exit(1)
+			}
+			setupNvidia(node, nowRuntimeMode)
+		}
+		if current.UseKata {
+			if err := importOnNode(node, define.KataRuntime, remoteRes.KataPath); nil != err {
+				klog.Errorf("[package] import kata image on [%s] failed: %v", node.Addr(), err)
+				os.Exit(1)
+			}
+		}
+		switch current.IngressMode {
+		case define.ContourIngress:
+			{
+				if err := importOnNode(node, define.ContourIngress, remoteRes.ContourPath); nil != err {
+					klog.Errorf("[package] import contour image on [%s] failed: %v", node.Addr(), err)
+					os.Exit(1)
+				}
+				break
+			}
+		}
+	} else {
+		if current.UseNvidia && node.HasNvidia {
+			setupNvidia(node, nowRuntimeMode)
+		}
+	}
+	if !upgrade {
+		if err := configKubeletOne(node, localConf); nil != err {
+			klog.Errorf("[package] enable kubelet on [%s] failed: %v", node.Addr(), err)
+			os.Exit(1)
+		}
+	}
+	wait.Done()
 }
 
 func prepareScript(node *cluster.Node) (err error) {
@@ -282,19 +276,19 @@ func prepareScript(node *cluster.Node) (err error) {
 		installMode = "offline"
 	}
 	proxyMode := current.ProxyMode
-	klog.V(1).Infof("Start prepare install on [%s], %s, proxy=%s", node.Addr(), installMode, proxyMode)
+	klog.V(1).Infof("[package] start prepare install on [%s], %s, proxy=%s", node.Addr(), installMode, proxyMode)
 	err = node.RunCmd("bash", node.GetResource().ScriptDir+"/prepare.sh",
 		"prepare", installMode, proxyMode)
 	if nil != err {
-		klog.Errorf("Prepare install on [%s] failed", node.Addr())
+		klog.Errorf("[package] prepare install on [%s] failed", node.Addr())
 		return err
 	}
 	if current.UseNvidia && node.HasNvidia {
-		klog.V(1).Infof("Start discover nvidia on [%s]", node.Addr())
+		klog.V(1).Infof("[package] start discover nvidia on [%s]", node.Addr())
 		err = node.RunCmd("bash", node.GetResource().ScriptDir+"/discover.sh",
 			"nvidia", "no", installMode)
 		if nil != err {
-			klog.Errorf("Discover nvidia on [%s] failed", node.Addr())
+			klog.Errorf("[package] discover nvidia on [%s] failed", node.Addr())
 			return err
 		}
 	}
@@ -302,7 +296,7 @@ func prepareScript(node *cluster.Node) (err error) {
 }
 
 func afterUpgrade(node *cluster.Node) (err error) {
-	klog.V(1).Infof("Start reload [%s] on [%s]", cluster.Current().RuntimeMode, node.Addr())
+	klog.V(1).Infof("[package] start reload [%s] on [%s]", cluster.Current().RuntimeMode, node.Addr())
 	if release.IsUpdateRuntime {
 		if cluster.Current().RuntimeMode == define.ContainerdRuntime {
 			err = restartModuleOne(node, define.ContainerdRuntime)
@@ -320,16 +314,20 @@ func afterUpgrade(node *cluster.Node) (err error) {
 }
 
 func setupNvidia(node *cluster.Node, nowRuntimeMode string) {
+	if nowRuntimeMode != define.ContainerdRuntime {
+		klog.Errorf("[package] now runtime is not containerd, pass modify and install nvidia runtime", node.Addr())
+		return
+	}
 	var err error
 	err = node.RunCmd("sed", "-i", "-E", "\"s#BinaryName\\s+=\\s+\\\"[0-9a-zA-Z\\-]+\\\"#BinaryName = \\\"nvidia-container-runtime\\\"#g\"", "/etc/containerd/config.toml")
 	if nil != err {
-		klog.Errorf("[package] import nvidia image on [%s] failed: %v", node.Addr(), err)
-		os.Exit(1)
+		klog.Errorf("[package] modify containerd config on [%s] failed: %v", node.Addr(), err)
+		return
 	}
 	err = restartModuleOne(node, nowRuntimeMode)
 	if nil != err {
 		klog.Errorf("[package] restart runtime on [%s] failed: %v", node.Addr(), err)
-		os.Exit(1)
+		return
 	}
 }
 
@@ -342,7 +340,7 @@ func importImage(node *cluster.Node, path string) (err error) {
 }
 
 func containerdLoadImage(node *cluster.Node, path string) (err error) {
-	klog.V(1).Infof("Start load images on [%s]", node.Addr())
+	klog.V(1).Infof("[import] start load images on [%s]", node.Addr())
 	err = node.RunCmd("ctr", "-n=k8s.io", "image", "import", path)
 	if nil != err {
 		klog.Errorf("[import] load images on [%s] failed", node.Addr())
@@ -352,7 +350,7 @@ func containerdLoadImage(node *cluster.Node, path string) (err error) {
 }
 
 func dockerLoadImage(node *cluster.Node, path string) (err error) {
-	klog.V(1).Infof("Start load images on [%s]", node.Addr())
+	klog.V(1).Infof("[import] start load images on [%s]", node.Addr())
 	err = node.RunCmd("docker", "load", "-i", path)
 	if nil != err {
 		klog.Errorf("[import] load images on [%s] failed", node.Addr())

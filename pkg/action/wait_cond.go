@@ -19,34 +19,33 @@ package action
 import (
 	"fmt"
 	"github.com/dneht/kubeon/pkg/cluster"
+	"k8s.io/klog/v2"
 	"strings"
 	time "time"
 )
 
 // nodeIsReady implement a function that test when a node is ready
 func nodeIsReady(current *cluster.Cluster, node *cluster.Node) bool {
-	output, err := KubectlGetResult(
+	output, _ := KubectlGetQuiet(
 		"nodes",
 		// check for the selected node
 		fmt.Sprintf("-l=kubernetes.io/hostname=%s", node.Hostname),
 		// check for status.conditions type:Ready
-		"-o=jsonpath='{.items..status.conditions[?(@.type == \"Ready\")].status}'",
+		"-o=jsonpath='{.items..status.conditions[?(@.type==\"Ready\")].status}'",
 	)
-	if nil != err {
-		fmt.Print(err)
+	if strings.Contains(output, "True") {
+		klog.V(4).Infof("Node %s is ready\n", node.Hostname)
+		return true
+	} else {
+		klog.V(6).Infof("Node %s jsonpath='{.items..status.conditions[?(@.type==\"Ready\")].status}' is not True\n", node.Hostname)
 		return false
 	}
-	if strings.Contains(output, "True") {
-		fmt.Printf("Node %s is ready\n", node.Hostname)
-		return true
-	}
-	return false
 }
 
 // nodeHasKubernetesVersion implement a function that if a node is has the given Kubernetes version
 func nodeHasKubernetesVersion(version string) func(current *cluster.Cluster, node *cluster.Node) bool {
 	return func(current *cluster.Cluster, node *cluster.Node) bool {
-		output, err := KubectlGetResult(
+		output, err := KubectlGetQuiet(
 			"nodes",
 			// check for the selected node
 			fmt.Sprintf("-l=kubernetes.io/hostname=%s", node.Hostname),
@@ -54,11 +53,10 @@ func nodeHasKubernetesVersion(version string) func(current *cluster.Cluster, nod
 			"-o=jsonpath='{.items..status.nodeInfo.kubeletVersion}'",
 		)
 		if nil != err {
-			fmt.Print(err)
 			return false
 		}
 		if strings.Contains(output, version) {
-			fmt.Printf("Node %s has Kubernetes version %s\n", node.Hostname, version)
+			klog.V(4).Infof("Node %s has Kubernetes version %s\n", node.Hostname, version)
 			return true
 		}
 		return false
@@ -68,34 +66,31 @@ func nodeHasKubernetesVersion(version string) func(current *cluster.Cluster, nod
 // staticPodIsReady implement a function that test when a static pod is ready
 func staticPodIsReady(pod string) func(current *cluster.Cluster, node *cluster.Node) bool {
 	return func(current *cluster.Cluster, node *cluster.Node) bool {
-		output, err := KubectlGetResult(
+		output, _ := KubectlGetQuiet(
 			"pods",
 			"-n=kube-system",
 			// check for static pods existing on the selected node
 			fmt.Sprintf("%s-%s", pod, node.Hostname),
 			// check for status.conditions type:Ready
-			"-o=jsonpath='{.status.conditions[?(@.type == \"Ready\")].status}'",
+			"-o=jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}'",
 		)
-		if nil != err {
-			fmt.Print(err)
+		if strings.Contains(output, "True") {
+			klog.V(4).Infof("Pod %s-%s is ready\n", pod, node.Hostname)
+			return true
+		} else {
+			klog.V(6).Infof("Pod %s-%s jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}' is not True\n", pod, node.Hostname)
 			return false
 		}
-		if strings.Contains(output, "True") {
-			fmt.Printf("Pod %s-%s is ready\n", pod, node.Hostname)
-			return true
-		}
-		return false
 	}
 }
 
 func podsAreRunning(label string, replicas int) func(current *cluster.Cluster, node *cluster.Node) bool {
 	return func(current *cluster.Cluster, node *cluster.Node) bool {
-		output, err := KubectlGetResult(
+		output, err := KubectlGetQuiet(
 			"pods",
 			"-l", fmt.Sprintf("app=%s", label), "-o", "jsonpath='{.items[*].status.phase}'",
 		)
 		if nil != err {
-			fmt.Print(err)
 			return false
 		}
 		statuses := strings.Split(strings.Trim(output, "'"), " ")
@@ -113,7 +108,7 @@ func podsAreRunning(label string, replicas int) func(current *cluster.Cluster, n
 			}
 		}
 		if running {
-			fmt.Printf("%d pods running!", replicas)
+			klog.V(4).Infof("%d pods running!", replicas)
 			return true
 		}
 		return false
@@ -131,7 +126,7 @@ func nodePortIsReady(port string) func(current *cluster.Cluster, node *cluster.N
 			return false
 		}
 		if strings.Trim(result, "\n\r") == "HTTP/1.1 200 OK" {
-			fmt.Printf("node port %s on node %s is ready...", port, node.Hostname)
+			klog.V(4).Infof("Node port %s on node %s is ready...", port, node.Hostname)
 			return true
 		}
 		return false
@@ -141,7 +136,7 @@ func nodePortIsReady(port string) func(current *cluster.Cluster, node *cluster.N
 // staticPodHasVersion implement a function that if a static pod is has the given Kubernetes version
 func staticPodHasVersion(pod, version string) func(current *cluster.Cluster, node *cluster.Node) bool {
 	return func(current *cluster.Cluster, node *cluster.Node) bool {
-		output, err := KubectlGetResult(
+		output, err := KubectlGetQuiet(
 			"pods",
 			"-n=kube-system",
 			// check for static pods existing on the selected node
@@ -152,11 +147,10 @@ func staticPodHasVersion(pod, version string) func(current *cluster.Cluster, nod
 			"-o=jsonpath='{.spec.containers[0].image}'",
 		)
 		if nil != err {
-			fmt.Print(err)
 			return false
 		}
 		if strings.Contains(output, version) {
-			fmt.Printf("Pod %s-%s has Kubernetes version %s\n", pod, node.Hostname, version)
+			klog.V(4).Infof("Pod %s-%s has Kubernetes version %s\n", pod, node.Hostname, version)
 			return true
 		}
 		return false
@@ -189,7 +183,6 @@ func kubeletHasRBAC(major, minor uint) func(current *cluster.Cluster, node *clus
 				"configmaps/kube-proxy",
 			)
 			if nil != err {
-				fmt.Print(err)
 				return false
 			}
 			if output1 == "yes" && output2 == "yes" {
@@ -199,7 +192,7 @@ func kubeletHasRBAC(major, minor uint) func(current *cluster.Cluster, node *clus
 			return false
 		}
 
-		fmt.Println("kubelet has access to expected config maps")
+		klog.V(4).Infof("Kubelet has access to expected config maps")
 		return true
 	}
 }

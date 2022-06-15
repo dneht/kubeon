@@ -20,7 +20,9 @@ import (
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/spf13/cobra"
-	"k8s.io/klog/v2"
+	"github.com/vbauerster/mpb/v7"
+	"github.com/vbauerster/mpb/v7/decor"
+	"time"
 )
 
 func NewCommand() *cobra.Command {
@@ -64,13 +66,29 @@ func doCopy(nodeSelector, srcPath, destPath string) error {
 	if nil != err {
 		return err
 	}
+	prog := mpb.New(
+		mpb.WithWidth(90),
+		mpb.WithRefreshRate(250*time.Millisecond),
+	)
 	for _, node := range nodes {
-		klog.V(1).Infof("[%s] start copy file", node.Addr())
-		err = node.CopyTo(srcPath, destPath)
-		if nil != err {
-			return err
-		}
-		klog.V(1).Infof("[%s] copy file[%s] complete", node.Addr(), destPath)
+		oneCopy(prog, node, srcPath, destPath)
 	}
+	prog.Wait()
 	return nil
+}
+
+func oneCopy(prog *mpb.Progress, node *cluster.Node, srcPath, destPath string) {
+	bar := prog.New(0,
+		mpb.BarStyle().Rbound("|"),
+		mpb.PrependDecorators(
+			decor.Name("copy to "+node.Hostname, decor.WC{W: 16, C: decor.DidentRight}),
+			decor.CountersKibiByte("% .2f / % .2f"),
+		),
+		mpb.AppendDecorators(
+			decor.EwmaETA(decor.ET_STYLE_GO, 0),
+			decor.Name(" ] "),
+			decor.EwmaSpeed(decor.UnitKiB, "% .2f", 0),
+		),
+	)
+	go node.CopyToWithBar(srcPath, destPath, "", bar)
 }

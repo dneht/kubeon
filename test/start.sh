@@ -1,5 +1,5 @@
 num=$1
-ver=v1.22.1
+ver=v1.22.9
 pwd=123456
 echo "start node ${num} with password: ${pwd}"
 sudo echo root:${pwd} | chpasswd
@@ -22,7 +22,7 @@ sudo apt-get update
 sudo apt-get install -y chrony
 sudo systemctl start chrony
 sudo sh -c "$(wget https://dl.sre.pub/on/install.sh -q -O -)"
-if [ $num = 6 ]; then
+if [ $num = 5 ]; then
   kubeon create test ${ver} \
       -m 192.168.60.21 \
       -m 192.168.60.22 \
@@ -31,9 +31,7 @@ if [ $num = 6 ]; then
       --master-name test20 \
       --master-name test30 \
       -w 192.168.60.24 \
-      -w 192.168.60.25 \
       --worker-name test40 \
-      --worker-name test50 \
       --default-passwd ${pwd} \
       --ic contour \
       --interface enp0s8 \
@@ -41,8 +39,8 @@ if [ $num = 6 ]; then
   sleep 2s
   kubeon display test
   kubeon add test \
-      -m 192.168.60.26 \
-      --master-name test60 \
+      -m 192.168.60.25 \
+      --master-name test50 \
       --default-passwd ${pwd} \
       --v 4
   sleep 4s
