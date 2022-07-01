@@ -93,8 +93,8 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 			break
 		}
 	}
-	current.UseNvidia = flags.WithNvidia && current.RuntimeMode == define.ContainerdRuntime && inputVersion.IsSupportNvidia()
-	current.UseKata = flags.WithKata && inputVersion.IsSupportKata()
+	current.UseNvidia = (current.UseNvidia || flags.WithNvidia) && current.RuntimeMode == define.ContainerdRuntime && inputVersion.IsSupportNvidia()
+	current.UseKata = (current.UseKata || flags.WithKata) && inputVersion.IsSupportKata()
 	return cluster.InitUpgradeCluster(inputVersion)
 }
 

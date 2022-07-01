@@ -318,7 +318,6 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	if nil != err {
 		return err
 	}
-	klog.V(1).Info("Ready to check hostname, please wait a moment...")
 	version := inputVersion.Full
 	if !checkSupport(flags, version) ||
 		!flags.MasterList.CheckMatch() || !flags.WorkerList.CheckMatch() {
@@ -329,6 +328,8 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	}
 	flags.WithNvidia = flags.WithNvidia && flags.InputCRIMode == define.ContainerdRuntime && inputVersion.IsSupportNvidia()
 	flags.WithKata = flags.WithKata && inputVersion.IsSupportKata()
+	klog.V(1).Infof("Create cluster with cri=%s, cni=%s, ingress=%s, nvidia=%v, kata=%v",
+		flags.InputCRIMode, flags.InputCNIMode, flags.InputICMode, flags.WithNvidia, flags.WithKata)
 	return cluster.InitNewCluster(&cluster.Cluster{
 		Version:       inputVersion,
 		Mirror:        onutil.ConvMirror(flags.MirrorHost, define.MirrorImageRepo),
@@ -365,6 +366,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		return nil
 	}
 
+	klog.V(1).Info("Ready to check & prepare host, please wait a moment...")
 	err = preInstall(current, current.Mirror)
 	if nil != err {
 		klog.Warningf("Prepare input nodes failed, please check: %v", err)

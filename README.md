@@ -1,6 +1,6 @@
 ## Install
 
-> sh -c "$(wget https://dl.sre.pub/on/install.sh -q -O -)"
+> sh -c "$(wget https://back.pub/kubeon/install.sh -q -O -)"
 
 ## Support
 
@@ -9,35 +9,37 @@
 ```text
 v1.19.4-v1.19.16
 v1.20.1-v1.20.15
-v1.21.1-v1.21.13
-v1.22.1-v1.22.10
-v1.23.1-v1.23.7
-v1.24.1
+v1.21.1-v1.21.14
+v1.22.1-v1.22.11
+v1.23.1-v1.23.8
+v1.24.1-v1.24.2
 ```
 ## Component
 
-> kubeon view component v1.24.1
+> kubeon view component v1.24.2
 
 ```json
 {
-  "kubernetes": "v1.24.1",
+  "kubernetes": "v1.24.2",
   "etcd": "3.5.3",
   "coredns": "1.9.3",
   "crictl": "v1.24.2",
-  "runc": "v1.1.2",
-  "containerd": "1.6.4",
-  "docker": "20.10.16",
-  "nvidia": "v3.9.0",
-  "kata": "2.4.1",
+  "runc": "v1.1.3",
+  "containerd": "1.6.6",
+  "docker": "20.10.17",
+  "nvidia": "v3.10.0",
+  "kata": "2.4.2",
   "cni": "v1.1.1",
   "calico": "v3.22.3",
-  "cilium": "v1.11.5",
-  "contour": "v1.21.0",
+  "cilium": "v1.11.6",
+  "contour": "v1.21.1",
   "haproxy": "2.5.7"
 }
 ```
 
 ## Modified
+
+you can use the `kubeon view component` to get detailed information
 
 ### kubeadm
 
@@ -51,7 +53,10 @@ kubelet will add the following parameters and use systemd
 
 ### Coredns
 
-coredns is always the latest version, for example: 1.23.x actually uses version 1.8.7
+coredns is always the latest version, example
+
+- 1.23.8 actually uses version 1.8.7
+- 1.24.2 actually uses version 1.9.3
 
 other images such as etcd remain the same
 
@@ -59,11 +64,15 @@ other images such as etcd remain the same
 
 online mode is the default and uses `registry.cn-hangzhou.aliyuncs.com` as the default mirror source, you can set `--mirror=no` to use `k8s.gcr.io` source
 
-offline mode(**--offline**) will download the all image tar and import it on all machines
+offline mode(**--offline**) will download all images on the central machine and import them on each machine
+
+you can try setting the **--mirror** parameter like:
+
+- yes or true: use `registry.cn-hangzhou.aliyuncs.com`, **default**
+- no or false: use `k8s.gcr.io`, if you can access directly
+- any other docker mirror address
 
 ## Usage
-
-> k8s_ver=v1.23.7
 
 ### Vagrant test
 

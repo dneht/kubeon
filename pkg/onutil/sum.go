@@ -25,7 +25,9 @@ import (
 )
 
 const maxRetry = 3
-const baseDlUrl = "https://kubeon.oss-accelerate.aliyuncs.com/on/"
+
+//"https://kubeon.oss-accelerate.aliyuncs.com/on/"
+const baseDlUrl = "https://code.aliyun.com/dneht/kubeon/raw/archives/"
 
 func GetRemoteSum(version, moduleName string) string {
 	return GetRemoteSumRetry(version, moduleName, 1)

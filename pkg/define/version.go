@@ -23,11 +23,11 @@ import (
 )
 
 type StdVersion struct {
-	Full   string
-	Number uint
-	Major  uint
-	Minor  uint
-	Patch  uint
+	Full   string `json:"full"`
+	Number uint   `json:"number"`
+	Major  uint   `json:"major"`
+	Minor  uint   `json:"minor"`
+	Patch  uint   `json:"patch"`
 }
 
 func NewStdVersion(version string) (*StdVersion, error) {
