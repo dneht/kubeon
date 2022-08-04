@@ -26,9 +26,9 @@ var (
 	K8S_1_19_x, _ = NewRngVersion("v1.19.4", "v1.19.16")
 	K8S_1_20_x, _ = NewRngVersion("v1.20.1", "v1.20.15")
 	K8S_1_21_x, _ = NewRngVersion("v1.21.1", "v1.21.14")
-	K8S_1_22_x, _ = NewRngVersion("v1.22.1", "v1.22.11")
-	K8S_1_23_x, _ = NewRngVersion("v1.23.1", "v1.23.8")
-	K8S_1_24_x, _ = NewRngVersion("v1.24.1", "v1.24.2")
+	K8S_1_22_x, _ = NewRngVersion("v1.22.1", "v1.22.12")
+	K8S_1_23_x, _ = NewRngVersion("v1.23.1", "v1.23.9")
+	K8S_1_24_x, _ = NewRngVersion("v1.24.1", "v1.24.3")
 	ETCD_3_4_0, _ = NewStdVersion("3.4.0")
 )
 

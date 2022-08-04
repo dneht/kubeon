@@ -1,5 +1,5 @@
 num=$1
-ver=v1.24.2
+ver=v1.24.3
 pwd=123456
 echo "start node ${num} with password: ${pwd}"
 sudo echo root:${pwd} | chpasswd
@@ -21,7 +21,7 @@ sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-security universe" >> /et
 sudo apt-get update
 sudo apt-get install -y chrony
 sudo systemctl start chrony
-sudo sh -c "$(wget https://dl.sre.pub/on/install.sh -q -O -)"
+sudo sh -c "$(wget https://back.pub/kubeon/install.sh -q -O -)"
 if [ $num = 5 ]; then
   kubeon create test ${ver} \
       -m 192.168.60.21 \
@@ -35,7 +35,7 @@ if [ $num = 5 ]; then
       --default-passwd ${pwd} \
       --ic contour \
       --interface enp0s8 \
-      --v 4
+      --v 6
   sleep 2s
   kubeon display test
   kubeon add test \
