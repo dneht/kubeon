@@ -10,30 +10,30 @@
 v1.19.4-v1.19.16
 v1.20.1-v1.20.15
 v1.21.1-v1.21.14
-v1.22.1-v1.22.11
-v1.23.1-v1.23.8
-v1.24.1-v1.24.2
+v1.22.1-v1.22.13
+v1.23.1-v1.23.10
+v1.24.1-v1.24.4
 ```
 ## Component
 
-> kubeon view component v1.24.2
+> kubeon view component v1.24.4
 
 ```json
 {
-  "kubernetes": "v1.24.2",
+  "kubernetes": "v1.24.4",
   "etcd": "3.5.3",
   "coredns": "1.9.3",
   "crictl": "v1.24.2",
-  "runc": "v1.1.3",
-  "containerd": "1.6.6",
+  "runc": "v1.1.4",
+  "containerd": "1.6.8",
   "docker": "20.10.17",
   "nvidia": "v3.10.0",
-  "kata": "2.4.2",
+  "kata": "2.5.0",
   "cni": "v1.1.1",
-  "calico": "v3.22.3",
-  "cilium": "v1.11.6",
-  "contour": "v1.21.1",
-  "haproxy": "2.5.7"
+  "calico": "v3.22.4",
+  "cilium": "v1.11.8",
+  "contour": "v1.22.0",
+  "haproxy": "2.6.4"
 }
 ```
 
@@ -55,8 +55,8 @@ kubelet will add the following parameters and use systemd
 
 coredns is always the latest version, example
 
-- 1.23.8 actually uses version 1.8.7
-- 1.24.2 actually uses version 1.9.3
+- 1.23.x actually uses version 1.8.7
+- 1.24.x actually uses version 1.9.3
 
 other images such as etcd remain the same
 

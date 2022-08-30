@@ -20,7 +20,6 @@ import (
 	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
-	"io/ioutil"
 	"k8s.io/klog/v2"
 	"net"
 	"os"
@@ -138,7 +137,7 @@ func sshAuthMethod(passwd, pkFile, pkPasswd string) (auth []ssh.AuthMethod) {
 }
 
 func sshPrivateKeyMethod(pkFile, pkPassword string) (am ssh.AuthMethod, err error) {
-	pkData, err := ioutil.ReadFile(pkFile)
+	pkData, err := os.ReadFile(pkFile)
 	if err != nil {
 		klog.Errorf("[remote] Read %s file err is : %s", pkFile, err)
 		os.Exit(1)

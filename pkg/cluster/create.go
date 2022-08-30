@@ -21,7 +21,6 @@ import (
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/release"
 	"github.com/pkg/errors"
-	"io/ioutil"
 	"k8s.io/klog/v2"
 	"os"
 	"path/filepath"
@@ -122,5 +121,5 @@ func writeKubeConfig(caCert string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to create kubeconfig output directory")
 	}
-	return ioutil.WriteFile(current.AdminConfigPath, caData, 0600)
+	return os.WriteFile(current.AdminConfigPath, caData, 0600)
 }

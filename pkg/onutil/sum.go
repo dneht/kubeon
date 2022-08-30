@@ -17,17 +17,32 @@ limitations under the License.
 package onutil
 
 import (
-	"io/ioutil"
+	"io"
 	"k8s.io/klog/v2"
+	"net"
 	"net/http"
 	"os"
 	"strings"
 )
 
-const maxRetry = 3
+const (
+	maxRetry   = 3
+	baseDomain = "dl.back.pub"
+)
 
-//"https://kubeon.oss-accelerate.aliyuncs.com/on/"
-const baseDlUrl = "https://code.aliyun.com/dneht/kubeon/raw/archives/"
+var baseDlUrl string
+
+func init() {
+	ips, _ := net.LookupIP(baseDomain)
+	for _, ip := range ips {
+		baseDlUrl = "http://" + ip.String() + "/on/"
+		break
+	}
+	if len(baseDlUrl) < 15 {
+		klog.Error("Network error, can not get remote server")
+		os.Exit(1)
+	}
+}
 
 func GetRemoteSum(version, moduleName string) string {
 	return GetRemoteSumRetry(version, moduleName, 1)
@@ -45,7 +60,7 @@ func GetRemoteSumRetry(version, moduleName string, retry int) string {
 		return GetRemoteSumRetry(version, moduleName, retry+1)
 	}
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if nil != err {
 		klog.V(4).Infof("Get remote[%s -- %s] err is %s", version, moduleName, err)
 		return GetRemoteSumRetry(version, moduleName, retry+1)

@@ -21,8 +21,8 @@ import (
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/pkg/errors"
-	"io/ioutil"
 	"k8s.io/klog/v2"
+	"os"
 )
 
 var runConfig *RunConfig
@@ -55,7 +55,7 @@ func InitConfig(name string) *RunConfig {
 }
 
 func (c *RunConfig) ReadConfig() (string, error) {
-	fileData, err := ioutil.ReadFile(c.Path)
+	fileData, err := os.ReadFile(c.Path)
 	if nil != err {
 		return "", err
 	}

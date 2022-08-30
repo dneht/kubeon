@@ -18,7 +18,7 @@ package onutil
 
 import (
 	"errors"
-	"io/ioutil"
+	"os"
 )
 
 func WriteJsonFile(fileName, jsonData string) error {
@@ -26,16 +26,16 @@ func WriteJsonFile(fileName, jsonData string) error {
 	if nil != err {
 		return err
 	}
-	return ioutil.WriteFile(fileName, fileData, 0644)
+	return os.WriteFile(fileName, fileData, 0644)
 }
 
 func WriteFile(fileName string, fileData []byte) error {
-	return ioutil.WriteFile(fileName, fileData, 0644)
+	return os.WriteFile(fileName, fileData, 0644)
 }
 
 func ReadFile(filePath string) ([]byte, error) {
 	if !PathExists(filePath) {
 		return nil, errors.New("file " + filePath + " not exist")
 	}
-	return ioutil.ReadFile(filePath)
+	return os.ReadFile(filePath)
 }

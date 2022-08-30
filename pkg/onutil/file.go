@@ -17,7 +17,6 @@ limitations under the License.
 package onutil
 
 import (
-	"io/ioutil"
 	"k8s.io/klog/v2"
 	"os"
 )
@@ -48,11 +47,12 @@ func PathIsFile(path string) bool {
 func LsDir(path string) []os.FileInfo {
 	list := make([]os.FileInfo, 0)
 	if PathIsDir(path) {
-		dir, err := ioutil.ReadDir(path)
-		if nil == err {
+		if dir, err := os.ReadDir(path); nil == err {
 			for _, one := range dir {
 				if !one.IsDir() {
-					list = append(list, one)
+					if info, err := one.Info(); nil == err {
+						list = append(list, info)
+					}
 				}
 			}
 		} else {
@@ -104,6 +104,6 @@ func IsEmptyDir(path string) bool {
 		return false
 	}
 
-	dir, _ := ioutil.ReadDir(path)
+	dir, _ := os.ReadDir(path)
 	return len(dir) == 0
 }
