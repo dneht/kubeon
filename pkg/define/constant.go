@@ -19,7 +19,7 @@ package define
 import "github.com/dneht/kubeon/pkg/onutil"
 
 const (
-	AppVersion = "0.11.3"
+	AppVersion = "0.12.0"
 )
 
 var (
@@ -30,6 +30,8 @@ var (
 	AppTplDir = AppBaseDir + "/tpl"
 
 	AppPatchDir = AppBaseDir + "/patch"
+
+	AppScriptDir = AppBaseDir + "/script"
 
 	AppDistDir = AppBaseDir + "/dist"
 

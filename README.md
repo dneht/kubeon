@@ -131,7 +131,7 @@ only support v1.21.1 or later
 #### --with-nvidia
 default is true, if `test -c /dev/nvidia*` is true, `nvidia-container-runtime` will be installed instead of `runc`
 
-only support (debian9+, ubuntu16+) and containerd and (v1.22.1 or later)
+only support v1.22.1 or later with containerd
 
 #### --with-kata
 default is false, if true kata will be installed in namespace `kata-system` using `kata-deploy`

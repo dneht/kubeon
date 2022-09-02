@@ -175,7 +175,6 @@ func kubeletHasRBAC(major, minor uint) func(current *cluster.Cluster, node *clus
 				fmt.Sprintf("configmaps/kubelet-config-%d.%d", major, minor),
 			)
 			if nil != err {
-				fmt.Print(err)
 				return false
 			}
 			output2, err := KubectlAuthGetResult(

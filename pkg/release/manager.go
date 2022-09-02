@@ -20,6 +20,7 @@ import (
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/execute"
 	"github.com/dneht/kubeon/pkg/onutil"
+	"github.com/dneht/kubeon/pkg/release/scriptset"
 	"github.com/mitchellh/mapstructure"
 	"k8s.io/klog/v2"
 )
@@ -56,6 +57,14 @@ func initResource(clusterVersion, runtimeMode string, isBinary, isOffline,
 			StartupServicePath: define.AppConfDir + "/haproxy/apiserver-startup.service",
 			StartupScriptPath:  define.AppConfDir + "/haproxy/apiserver-startup.sh",
 		},
+		ClusterScript: &ClusterScriptResource{
+			PreparePath:        define.AppScriptDir + "/prepare.sh",
+			PrepareCentosPath:  define.AppScriptDir + "/prepare_centos.sh",
+			PrepareDebianPath:  define.AppScriptDir + "/prepare_debian.sh",
+			PrepareUbuntuPath:  define.AppScriptDir + "/prepare_ubuntu.sh",
+			DiscoverPath:       define.AppScriptDir + "/discover.sh",
+			DiscoverNvidiaPath: define.AppScriptDir + "/discover_nvidia.sh",
+		},
 	}
 	if isBinary {
 		localResource.BinaryPath = distPath + "/" + define.BinaryModule + ".tar"
@@ -91,16 +100,47 @@ func initResource(clusterVersion, runtimeMode string, isBinary, isOffline,
 			localResource.InstallVersion = &installVerMap
 		}
 	}
+	writeScript(localResource.ClusterScript)
 	return localResource
+}
+
+func writeScript(localScript *ClusterScriptResource) {
+	onutil.MkDir(define.AppScriptDir)
+	var err error
+	err = onutil.WriteFile(localScript.PreparePath, []byte(scriptset.Prepare))
+	if nil != err {
+		panic(err)
+	}
+	err = onutil.WriteFile(localScript.PrepareCentosPath, []byte(scriptset.PrepareCentos))
+	if nil != err {
+		panic(err)
+	}
+	err = onutil.WriteFile(localScript.PrepareDebianPath, []byte(scriptset.PrepareDebian))
+	if nil != err {
+		panic(err)
+	}
+	err = onutil.WriteFile(localScript.PrepareUbuntuPath, []byte(scriptset.PrepareUbuntu))
+	if nil != err {
+		panic(err)
+	}
+	err = onutil.WriteFile(localScript.DiscoverPath, []byte(scriptset.Discover))
+	if nil != err {
+		panic(err)
+	}
+	err = onutil.WriteFile(localScript.DiscoverNvidiaPath, []byte(scriptset.DiscoverNvidia))
+	if nil != err {
+		panic(err)
+	}
 }
 
 func remoteResource(basePath, runtimeMode string) *ClusterRemoteResource {
 	distPath := basePath + "/dist"
+	scriptPath := basePath + "/script"
 	return &ClusterRemoteResource{
 		BaseDir:        basePath,
 		ConfDir:        basePath + "/conf",
 		TplDir:         basePath + "/tpl",
-		ScriptDir:      basePath + "/script",
+		ScriptDir:      scriptPath,
 		PatchDir:       basePath + "/patch",
 		DistDir:        distPath,
 		TmpDir:         basePath + "/tmp",
@@ -122,6 +162,14 @@ func remoteResource(basePath, runtimeMode string) *ClusterRemoteResource {
 			HaproxyStaticPath:  "/etc/kubernetes/manifests/local-haproxy.yaml",
 			StartupServicePath: "/etc/systemd/system/apiserver-startup.service",
 			StartupScriptPath:  "/opt/kubeon/apiserver-startup.sh",
+		},
+		ClusterScript: &ClusterRemoteScriptResource{
+			PreparePath:        scriptPath + "/prepare.sh",
+			PrepareCentosPath:  scriptPath + "/prepare_centos.sh",
+			PrepareDebianPath:  scriptPath + "/prepare_debian.sh",
+			PrepareUbuntuPath:  scriptPath + "/prepare_ubuntu.sh",
+			DiscoverPath:       scriptPath + "/discover.sh",
+			DiscoverNvidiaPath: scriptPath + "/discover_nvidia.sh",
 		},
 	}
 }

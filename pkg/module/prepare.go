@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	cluster "github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
+	"github.com/dneht/kubeon/pkg/execute"
 	"github.com/dneht/kubeon/pkg/release"
 	"github.com/pkg/errors"
 	"github.com/vbauerster/mpb/v7"
@@ -64,12 +65,13 @@ func AfterUpgrade(node *cluster.Node, isBootstrap bool) (err error) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}}
 		for i := 0; i < 15; i++ {
+			time.Sleep(5 * time.Second)
 			_, err = client.Get(node.Healthz())
 			if nil == err {
+				klog.V(4).Infof("Bootstrap node is ready, continue")
 				return nil
 			} else {
-				klog.V(1).Infof("Bootstrap not ready, sleep 4s")
-				time.Sleep(4 * time.Second)
+				klog.V(1).Infof("Bootstrap node is not ready, sleep 4s")
 			}
 		}
 		return errors.New("check bootstrap health failed")
@@ -107,7 +109,7 @@ func doQueuedPackage(node *cluster.Node, prog *mpb.Progress) []*PrepareModule {
 	current := cluster.Current()
 	localRes := cluster.CurrentResource()
 	remoteRes := node.GetResource()
-	barQueue, copyQueue := make([]*mpb.Bar, 16), make([]*PrepareModule, 16)
+	barQueue, copyQueue := make([]*mpb.Bar, 24), make([]*PrepareModule, 24)
 	doAppendPackage(0, node, prog, barQueue, copyQueue, define.KubeletModule, remoteRes.KubeletPath, localRes.KubeletPath, localRes.KubeletSum)
 	if current.RuntimeMode == define.ContainerdRuntime {
 		doAppendPackage(1, node, prog, barQueue, copyQueue, define.ContainerdRuntime, remoteRes.ContainerdPath, localRes.ContainerdPath, localRes.ContainerdSum)
@@ -136,6 +138,14 @@ func doQueuedPackage(node *cluster.Node, prog *mpb.Progress) []*PrepareModule {
 	} else {
 		doAppendPackage(3, node, prog, barQueue, copyQueue, define.PausePackage, remoteRes.PausePath, localRes.PausePath, localRes.PauseSum)
 	}
+
+	localScript, remoteScript := localRes.ClusterScript, remoteRes.ClusterScript
+	doAppendPackage(16, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.PreparePath, localScript.PreparePath, execute.FileSum(localScript.PreparePath))
+	doAppendPackage(17, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.PrepareCentosPath, localScript.PrepareCentosPath, execute.FileSum(localScript.PrepareCentosPath))
+	doAppendPackage(18, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.PrepareDebianPath, localScript.PrepareDebianPath, execute.FileSum(localScript.PrepareDebianPath))
+	doAppendPackage(19, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.PrepareUbuntuPath, localScript.PrepareUbuntuPath, execute.FileSum(localScript.PrepareUbuntuPath))
+	doAppendPackage(20, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.DiscoverPath, localScript.DiscoverPath, execute.FileSum(localScript.DiscoverPath))
+	doAppendPackage(21, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.DiscoverNvidiaPath, localScript.DiscoverNvidiaPath, execute.FileSum(localScript.DiscoverNvidiaPath))
 	return copyQueue
 }
 

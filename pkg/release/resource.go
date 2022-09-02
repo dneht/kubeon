@@ -17,31 +17,32 @@ limitations under the License.
 package release
 
 type ClusterResource struct {
-	ImagesPath     string               `json:"imagesPath"`
-	ImagesSum      string               `json:"imagesSum"`
-	PausePath      string               `json:"pausePath"`
-	PauseSum       string               `json:"pauseSum"`
-	BinaryPath     string               `json:"binaryPath,omitempty"`
-	BinarySum      string               `json:"binarySum,omitempty"`
-	KubeletPath    string               `json:"kubeletPath,omitempty"`
-	KubeletSum     string               `json:"kubeletSum,omitempty"`
-	RuntimeType    string               `json:"runtimeType,omitempty"`
-	DockerPath     string               `json:"dockerPath,omitempty"`
-	DockerSum      string               `json:"dockerSum,omitempty"`
-	ContainerdPath string               `json:"containerdPath,omitempty"`
-	ContainerdSum  string               `json:"containerdSum,omitempty"`
-	NvidiaPath     string               `json:"nvidiaPath,omitempty"`
-	NvidiaSum      string               `json:"nvidiaSum,omitempty"`
-	KataPath       string               `json:"kataPath,omitempty"`
-	KataSum        string               `json:"kataSum,omitempty"`
-	NetworkPath    string               `json:"networkPath,omitempty"`
-	NetworkSum     string               `json:"networkSum,omitempty"`
-	ContourPath    string               `json:"contourPath,omitempty"`
-	ContourSum     string               `json:"contourSum,omitempty"`
-	OfflinePath    string               `json:"offlinePath,omitempty"`
-	OfflineSum     string               `json:"offlineSum,omitempty"`
-	ClusterConf    *ClusterConfResource `json:"clusterConf,omitempty"`
-	InstallVersion *map[string]string   `json:"installVersion,omitempty"`
+	ImagesPath     string                 `json:"imagesPath"`
+	ImagesSum      string                 `json:"imagesSum"`
+	PausePath      string                 `json:"pausePath"`
+	PauseSum       string                 `json:"pauseSum"`
+	BinaryPath     string                 `json:"binaryPath,omitempty"`
+	BinarySum      string                 `json:"binarySum,omitempty"`
+	KubeletPath    string                 `json:"kubeletPath,omitempty"`
+	KubeletSum     string                 `json:"kubeletSum,omitempty"`
+	RuntimeType    string                 `json:"runtimeType,omitempty"`
+	DockerPath     string                 `json:"dockerPath,omitempty"`
+	DockerSum      string                 `json:"dockerSum,omitempty"`
+	ContainerdPath string                 `json:"containerdPath,omitempty"`
+	ContainerdSum  string                 `json:"containerdSum,omitempty"`
+	NvidiaPath     string                 `json:"nvidiaPath,omitempty"`
+	NvidiaSum      string                 `json:"nvidiaSum,omitempty"`
+	KataPath       string                 `json:"kataPath,omitempty"`
+	KataSum        string                 `json:"kataSum,omitempty"`
+	NetworkPath    string                 `json:"networkPath,omitempty"`
+	NetworkSum     string                 `json:"networkSum,omitempty"`
+	ContourPath    string                 `json:"contourPath,omitempty"`
+	ContourSum     string                 `json:"contourSum,omitempty"`
+	OfflinePath    string                 `json:"offlinePath,omitempty"`
+	OfflineSum     string                 `json:"offlineSum,omitempty"`
+	ClusterConf    *ClusterConfResource   `json:"clusterConf,omitempty"`
+	ClusterScript  *ClusterScriptResource `json:"clusterScript,omitempty"`
+	InstallVersion *map[string]string     `json:"installVersion,omitempty"`
 }
 
 type ClusterConfResource struct {
@@ -53,27 +54,37 @@ type ClusterConfResource struct {
 	StartupScriptPath  string `json:"startupScriptPath"`
 }
 
+type ClusterScriptResource struct {
+	PreparePath        string `json:"preparePath"`
+	PrepareCentosPath  string `json:"prepareCentosPath"`
+	PrepareDebianPath  string `json:"prepareDebianPath"`
+	PrepareUbuntuPath  string `json:"prepareUbuntuPath"`
+	DiscoverPath       string `json:"discoverPath"`
+	DiscoverNvidiaPath string `json:"discoverNvidiaPath"`
+}
+
 type ClusterRemoteResource struct {
-	BaseDir        string                     `json:"baseDir"`
-	ConfDir        string                     `json:"confDir"`
-	TplDir         string                     `json:"tplDir"`
-	ScriptDir      string                     `json:"scriptDir"`
-	PatchDir       string                     `json:"patchDir"`
-	DistDir        string                     `json:"distDir"`
-	TmpDir         string                     `json:"tmpDir"`
-	ImagesPath     string                     `json:"imagesPath"`
-	PausePath      string                     `json:"pausePath"`
-	BinaryPath     string                     `json:"binaryPath"`
-	KubeletPath    string                     `json:"kubeletPath"`
-	RuntimeType    string                     `json:"runtimeType"`
-	DockerPath     string                     `json:"dockerPath"`
-	ContainerdPath string                     `json:"containerdPath"`
-	NvidiaPath     string                     `json:"nvidiaPath"`
-	KataPath       string                     `json:"kataPath"`
-	NetworkPath    string                     `json:"networkPath"`
-	ContourPath    string                     `json:"contourPath"`
-	OfflinePath    string                     `json:"offlinePath"`
-	ClusterConf    *ClusterRemoteConfResource `json:"clusterConf"`
+	BaseDir        string                       `json:"baseDir"`
+	ConfDir        string                       `json:"confDir"`
+	TplDir         string                       `json:"tplDir"`
+	ScriptDir      string                       `json:"scriptDir"`
+	PatchDir       string                       `json:"patchDir"`
+	DistDir        string                       `json:"distDir"`
+	TmpDir         string                       `json:"tmpDir"`
+	ImagesPath     string                       `json:"imagesPath"`
+	PausePath      string                       `json:"pausePath"`
+	BinaryPath     string                       `json:"binaryPath"`
+	KubeletPath    string                       `json:"kubeletPath"`
+	RuntimeType    string                       `json:"runtimeType"`
+	DockerPath     string                       `json:"dockerPath"`
+	ContainerdPath string                       `json:"containerdPath"`
+	NvidiaPath     string                       `json:"nvidiaPath"`
+	KataPath       string                       `json:"kataPath"`
+	NetworkPath    string                       `json:"networkPath"`
+	ContourPath    string                       `json:"contourPath"`
+	OfflinePath    string                       `json:"offlinePath"`
+	ClusterConf    *ClusterRemoteConfResource   `json:"clusterConf"`
+	ClusterScript  *ClusterRemoteScriptResource `json:"clusterScript"`
 }
 
 type ClusterRemoteConfResource struct {
@@ -82,4 +93,13 @@ type ClusterRemoteConfResource struct {
 	HaproxyStaticPath  string `json:"haproxyStaticPath"`
 	StartupServicePath string `json:"startupServicePath"`
 	StartupScriptPath  string `json:"startupScriptPath"`
+}
+
+type ClusterRemoteScriptResource struct {
+	PreparePath        string `json:"preparePath"`
+	PrepareCentosPath  string `json:"prepareCentosPath"`
+	PrepareDebianPath  string `json:"prepareDebianPath"`
+	PrepareUbuntuPath  string `json:"prepareUbuntuPath"`
+	DiscoverPath       string `json:"discoverPath"`
+	DiscoverNvidiaPath string `json:"discoverNvidiaPath"`
 }

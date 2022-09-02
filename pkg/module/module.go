@@ -114,9 +114,8 @@ func copyUseBar(node *cluster.Node, prog *mpb.Progress, bar *mpb.Bar, module, re
 					decor.CountersKibiByte("% .2f / % .2f"),
 				),
 				mpb.AppendDecorators(
-					decor.EwmaETA(decor.ET_STYLE_GO, 0),
+					decor.Percentage(decor.WC{W: 5}),
 					decor.Name(" ] "),
-					decor.EwmaSpeed(decor.UnitKiB, "% .2f", 0),
 				),
 			)
 		} else {
@@ -128,9 +127,8 @@ func copyUseBar(node *cluster.Node, prog *mpb.Progress, bar *mpb.Bar, module, re
 					decor.CountersKibiByte("% .2f / % .2f"),
 				),
 				mpb.AppendDecorators(
-					decor.OnComplete(decor.EwmaETA(decor.ET_STYLE_GO, 0), ""),
+					decor.OnComplete(decor.Percentage(decor.WC{W: 5}), ""),
 					decor.OnComplete(decor.Name(" ] "), ""),
-					decor.OnComplete(decor.EwmaSpeed(decor.UnitKiB, "% .2f", 0), ""),
 				),
 			)
 		}

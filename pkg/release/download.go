@@ -141,9 +141,8 @@ func ProcessDownload(resource *ClusterResource, version, runtime, mirror string,
 				decor.CountersKibiByte("% .2f / % .2f"),
 			),
 			mpb.AppendDecorators(
-				decor.EwmaETA(decor.ET_STYLE_GO, 0),
+				decor.Percentage(decor.WC{W: 5}),
 				decor.Name(" ] "),
-				decor.EwmaSpeed(decor.UnitKiB, "% .2f", 0),
 			),
 		)
 		move := prog.New(1,

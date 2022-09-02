@@ -51,6 +51,8 @@ const (
 	OfflineModule = "offline"
 )
 
+const InstallScript = "script"
+
 const (
 	HealthzReader    = "healthz"
 	LocalHaproxy     = "haproxy"
