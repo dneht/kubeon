@@ -29,7 +29,7 @@ func NewCommand() *cobra.Command {
 		Args:    cobra.ExactArgs(2),
 		Use:     "delon CLUSTER_NAME NODE_SELECTOR [flags]\n",
 		Aliases: []string{"del", "rm"},
-		Short:   "Del an exit node",
+		Short:   "Remove a node from the cluster",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cluster.InitConfig(args[0])
 			return nil

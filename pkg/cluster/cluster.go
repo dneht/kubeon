@@ -44,6 +44,7 @@ type Cluster struct {
 	DnsDomain            string                   `json:"dnsDomain"`
 	MaxPods              uint32                   `json:"maxPods"`
 	PortRange            string                   `json:"portRange"`
+	FeatureGates         string                   `json:"featureGates"`
 	SvcCIDR              string                   `json:"svcCIDR"`
 	PodCIDR              string                   `json:"podCIDR"`
 	NodeInterface        []string                 `json:"nodeInterface"`
@@ -237,9 +238,21 @@ func (c *Cluster) GetKubeadmAPIVersion() string {
 }
 
 func (c *Cluster) GetKubeadmFeatureGates() string {
-	if c.Version.LessThen(define.K8S_1_23_0) {
-		return "feature-gates: TTLAfterFinished=true"
+	if "" == c.FeatureGates {
+		if c.Version.LessThen(define.K8S_1_23_0) {
+			return "feature-gates: TTLAfterFinished=true"
+		} else {
+			return ""
+		}
 	} else {
-		return ""
+		return "feature-gates: " + c.FeatureGates
+	}
+}
+
+func (c *Cluster) GetKubeadmSigningDuration() string {
+	if c.Version.LessThen(define.K8S_1_25_0) {
+		return "experimental-cluster-signing-duration: 876000h"
+	} else {
+		return "cluster-signing-duration: 876000h"
 	}
 }

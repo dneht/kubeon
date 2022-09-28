@@ -108,7 +108,9 @@ controllerManager:
     {{- if .ClusterFeatureGates}}
     {{.ClusterFeatureGates}}
     {{- end}}
-    experimental-cluster-signing-duration: 876000h
+    {{- if .ClusterSigningDuration}}
+    {{.ClusterSigningDuration}}
+    {{- end}}
   extraVolumes:
   - hostPath: /etc/localtime
     mountPath: /etc/localtime

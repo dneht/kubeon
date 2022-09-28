@@ -14,10 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package viewconfig
+package redoimages
 
 import (
-	"fmt"
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/module"
 	"github.com/spf13/cobra"
@@ -25,10 +24,10 @@ import (
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args:    cobra.ExactArgs(2),
-		Use:     "config CLUSTER_NAME CONFIG_TYPE",
-		Aliases: []string{"conf"},
-		Short:   "Print select config details",
+		Args:    cobra.ExactArgs(1),
+		Use:     "images CLUSTER_NAME",
+		Aliases: []string{"img", "image"},
+		Short:   "Reimport container images",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cluster.InitConfig(args[0])
 			return nil
@@ -39,15 +38,12 @@ func NewCommand() *cobra.Command {
 				return err
 			}
 
-			moduleName := args[1]
-			bytes, err := module.ShowInner(moduleName)
-			if nil != err {
-				return err
-			}
-			if nil == bytes {
-				fmt.Printf("not found or not need this module %s", moduleName)
-			} else {
-				fmt.Println(string(bytes))
+			local := cluster.Current().IsRealLocal()
+			for _, node := range cluster.CurrentNodes() {
+				err = module.ImportImages(local, node)
+				if nil != err {
+					return err
+				}
 			}
 			return nil
 		},

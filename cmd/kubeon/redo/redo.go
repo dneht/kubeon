@@ -1,7 +1,7 @@
 /*
 Copyright 2020 Dasheng.
 
-Licensed under the Apache License, Full 2.0 (the "License");
+Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
@@ -14,24 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package version
+package redo
 
 import (
-	"fmt"
-	"github.com/dneht/kubeon/pkg/define"
+	"github.com/dneht/kubeon/cmd/kubeon/redo/redohosts"
+	"github.com/dneht/kubeon/cmd/kubeon/redo/redoimages"
 	"github.com/spf13/cobra"
 )
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:    cobra.NoArgs,
-		Use:     "version",
-		Aliases: []string{"ver"},
-		Short:   "Print kubeon version",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("kubeon version: %s\n", define.AppVersion)
-			return nil
-		},
+		Use:     "redo NEXT_NAME",
+		Aliases: []string{"R"},
+		Short:   "Redo some resource",
 	}
+	cmd.AddCommand(redohosts.NewCommand())
+	cmd.AddCommand(redoimages.NewCommand())
 	return cmd
 }

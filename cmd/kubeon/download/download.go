@@ -42,7 +42,7 @@ func NewCommand() *cobra.Command {
 			"Args:\n" +
 			"  CLUSTER_VERSION is you wanted kubernetes version",
 		Aliases: []string{"down"},
-		Short:   "Download resource",
+		Short:   "Download install resources only",
 		Long:    "",
 		Example: "",
 		RunE: func(cmd *cobra.Command, args []string) error {

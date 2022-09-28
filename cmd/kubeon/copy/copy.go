@@ -39,7 +39,7 @@ func NewCommand() *cobra.Command {
 			"    cluter@name=name		the node hostname\n" +
 			"    cluter@ip=ip		the node ip",
 		Aliases: []string{"cp"},
-		Short:   "Copy local files to node",
+		Short:   "Copy file from local to selected nodes",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(cmd, args)
 		},

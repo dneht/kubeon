@@ -27,7 +27,7 @@ func NewCommand() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		Use:     "display CLUSTER_NAME",
 		Aliases: []string{"d", "dp"},
-		Short:   "Prints cluster info",
+		Short:   "Print cluster details",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cluster.InitConfig(args[0])
 			return nil

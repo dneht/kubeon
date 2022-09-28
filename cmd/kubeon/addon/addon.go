@@ -38,7 +38,7 @@ func NewCommand() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		Use:     "addon CLUSTER_NAME [flags]\n",
 		Aliases: []string{"add"},
-		Short:   "Add a new node",
+		Short:   "Add a node to the cluster",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cluster.InitConfig(args[0])
 			return nil

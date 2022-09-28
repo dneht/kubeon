@@ -76,11 +76,11 @@ func kubeadmInit(boot *cluster.Node, uploadCerts, usePatch bool, ignorePreflight
 	return nil
 }
 
-func initAfterConfig(boot *cluster.Node) error {
-	KubectlRemoveMasterTaint(boot.Hostname)
-	return boot.RunCmd("mkdir", "-p", boot.Home+"/.kube",
-		"&&", "\\cp", "/etc/kubernetes/admin.conf", boot.Home+"/.kube/config",
-		"&&", "chown", "$(id -u):$(id -g)", boot.Home+"/.kube/config")
+func initAfterConfig(node *cluster.Node) error {
+	KubectlRemoveMasterTaint(node.Hostname)
+	return node.RunCmd("mkdir", "-p", node.Home+"/.kube",
+		"&&", "\\cp", "/etc/kubernetes/admin.conf", node.Home+"/.kube/config",
+		"&&", "chown", "$(id -u):$(id -g)", node.Home+"/.kube/config")
 }
 
 func KubeadmInitCert() (err error) {

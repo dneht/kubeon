@@ -219,22 +219,9 @@ func doInstallPackage(wait *sync.WaitGroup, node *cluster.Node, upgrade bool) {
 			os.Exit(1)
 		}
 	}
-	if current.IsRealLocal() {
-		klog.V(1).Infof("[package] start load local image on [%s]", node.Addr())
-		if err := importImage(node, remoteRes.ImagesPath); nil != err {
-			klog.Errorf("[package] import base image on [%s] failed: %v", node.Addr(), err)
-			os.Exit(1)
-		}
-	} else {
-		if node.FileExist(remoteRes.PausePath) {
-			klog.V(1).Infof("[package] start load pause image on [%s]", node.Addr())
-			if err := importImage(node, remoteRes.PausePath); nil != err {
-				klog.Errorf("[package] import pause image on [%s] failed: %v", node.Addr(), err)
-				os.Exit(1)
-			}
-		} else {
-			klog.V(1).Infof("[package] pause image not exist on [%s]", node.Addr())
-		}
+	if err := ImportImages(current.IsRealLocal(), node); nil != err {
+		klog.Errorf("[package] import container image on [%s] failed: %v", node.Addr(), err)
+		os.Exit(1)
 	}
 	klog.V(1).Infof("[package] start install [%s] on [%s]", define.NetworkPlugin, node.Addr())
 	if _, err := installOnNode(node, define.NetworkPlugin, remoteRes.NetworkPath); nil != err {
@@ -339,32 +326,4 @@ func setupNvidia(node *cluster.Node, nowRuntimeMode string) {
 		klog.Errorf("[package] restart runtime on [%s] failed: %v", node.Addr(), err)
 		return
 	}
-}
-
-func importImage(node *cluster.Node, path string) (err error) {
-	if cluster.Current().RuntimeMode == define.ContainerdRuntime {
-		return containerdLoadImage(node, path)
-	} else {
-		return dockerLoadImage(node, path)
-	}
-}
-
-func containerdLoadImage(node *cluster.Node, path string) (err error) {
-	klog.V(1).Infof("[import] start load images on [%s]", node.Addr())
-	err = node.RunCmd("ctr", "-n=k8s.io", "image", "import", path)
-	if nil != err {
-		klog.Errorf("[import] load images on [%s] failed", node.Addr())
-		return err
-	}
-	return nil
-}
-
-func dockerLoadImage(node *cluster.Node, path string) (err error) {
-	klog.V(1).Infof("[import] start load images on [%s]", node.Addr())
-	err = node.RunCmd("docker", "load", "-i", path)
-	if nil != err {
-		klog.Errorf("[import] load images on [%s] failed", node.Addr())
-		return err
-	}
-	return nil
 }

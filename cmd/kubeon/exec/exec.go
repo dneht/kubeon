@@ -44,7 +44,7 @@ func NewCommand() *cobra.Command {
 			"    cluter@w*			all the worker nodes\n" +
 			"    cluter@name=name		the node hostname\n" +
 			"    cluter@ip=ip		the node ip",
-		Short: "Execute command on remote node",
+		Short: "Execute command on the selected node",
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd, args)

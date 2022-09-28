@@ -27,6 +27,7 @@ import (
 	"github.com/dneht/kubeon/cmd/kubeon/etcd"
 	"github.com/dneht/kubeon/cmd/kubeon/exec"
 	"github.com/dneht/kubeon/cmd/kubeon/module"
+	"github.com/dneht/kubeon/cmd/kubeon/redo"
 	"github.com/dneht/kubeon/cmd/kubeon/upgrade"
 	"github.com/dneht/kubeon/cmd/kubeon/use"
 	"github.com/dneht/kubeon/cmd/kubeon/version"
@@ -79,6 +80,7 @@ func NewCommand() *cobra.Command {
 	cmd.AddCommand(display.NewCommand())
 	cmd.AddCommand(view.NewCommand())
 	cmd.AddCommand(etcd.NewCommand())
+	cmd.AddCommand(redo.NewCommand())
 	cmd.AddCommand(version.NewCommand())
 	return cmd
 }

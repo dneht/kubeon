@@ -27,8 +27,8 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:    cobra.ExactArgs(1),
 		Use:     "component CLUSTER_VERSION",
-		Aliases: []string{"cm"},
-		Short:   "Prints component version",
+		Aliases: []string{"cp"},
+		Short:   "Print component install version",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			version := define.SupportComponentFull[args[0]]
 			if nil == version {

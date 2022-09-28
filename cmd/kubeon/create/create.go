@@ -34,29 +34,30 @@ type flagpole struct {
 	define.DefaultList
 	define.MasterList
 	define.WorkerList
-	MirrorHost       string
-	OnlyCreate       bool
-	UseOffline       bool
-	ClusterLBDomain  string
-	ClusterDNSDomain string
-	ClusterMaxPods   uint32
-	ClusterPortRange string
-	ExternalLBIP     string
-	ExternalLBPort   int32
-	InnerLBMode      string
-	NodeInterface    []string
-	NetworkSVCCIDR   string
-	NetworkPodCIDR   string
-	InputProxyMode   string
-	IPVSScheduler    string
-	InputCRIMode     string
-	InputCNIMode     string
-	CalicoMode       string
-	CalicoMTU        string
-	InputICMode      string
-	WithNvidia       bool
-	WithKata         bool
-	InputCertSANs    []string
+	MirrorHost          string
+	OnlyCreate          bool
+	UseOffline          bool
+	ClusterLBDomain     string
+	ClusterDNSDomain    string
+	ClusterMaxPods      uint32
+	ClusterPortRange    string
+	ClusterFeatureGates string
+	ExternalLBIP        string
+	ExternalLBPort      int32
+	InnerLBMode         string
+	NodeInterface       []string
+	NetworkSVCCIDR      string
+	NetworkPodCIDR      string
+	InputProxyMode      string
+	IPVSScheduler       string
+	InputCRIMode        string
+	InputCNIMode        string
+	CalicoMode          string
+	CalicoMTU           string
+	InputICMode         string
+	WithNvidia          bool
+	WithKata            bool
+	InputCertSANs       []string
 }
 
 func NewCommand() *cobra.Command {
@@ -105,6 +106,11 @@ func NewCommand() *cobra.Command {
 		&flags.ClusterPortRange, "port-range",
 		define.DefaultClusterPortRange,
 		"Service node port range",
+	)
+	cmd.Flags().StringVar(
+		&flags.ClusterFeatureGates, "feature-gates",
+		"",
+		"controller manager feature gates",
 	)
 	cmd.Flags().StringSliceVar(
 		&flags.NodeInterface, "interface",
@@ -340,6 +346,7 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		DnsDomain:     flags.ClusterDNSDomain,
 		MaxPods:       flags.ClusterMaxPods,
 		PortRange:     flags.ClusterPortRange,
+		FeatureGates:  flags.ClusterFeatureGates,
 		SvcCIDR:       flags.NetworkSVCCIDR,
 		PodCIDR:       flags.NetworkPodCIDR,
 		NodeInterface: flags.NodeInterface,

@@ -33,7 +33,7 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:    cobra.ExactArgs(1),
 		Use:     "destroy CLUSTER_NAME [flags]\n",
-		Aliases: []string{"rmr"},
+		Aliases: []string{"D", "rmr"},
 		Short:   "Destroy an exist cluster",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cluster.InitConfig(args[0])

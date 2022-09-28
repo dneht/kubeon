@@ -24,6 +24,7 @@ var (
 		K8S_1_22_x,
 		K8S_1_23_x,
 		K8S_1_24_x,
+		K8S_1_25_x,
 	}
 	supportProxyModes = map[string]bool{
 		IPVSProxy:     true,

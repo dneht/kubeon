@@ -28,7 +28,7 @@ func NewCommand() *cobra.Command {
 		Args:    cobra.NoArgs,
 		Use:     "view VIEW_NAME",
 		Aliases: []string{"v"},
-		Short:   "View some info",
+		Short:   "Print some info",
 	}
 	cmd.AddCommand(viewconfig.NewCommand())
 	cmd.AddCommand(viewsupport.NewCommand())

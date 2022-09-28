@@ -39,7 +39,7 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:    cobra.ExactArgs(2),
 		Use:     "upgrade CLUSTER_NAME CLUSTER_VERSION [flags]\n",
-		Aliases: []string{"u", "up"},
+		Aliases: []string{"U", "up"},
 		Short:   "Upgrade an exist cluster",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cluster.InitConfig(args[0])
@@ -104,6 +104,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		return errors.New("cluster create error")
 	}
 
+	klog.V(1).Info("Ready to check & prepare host, please wait a moment...")
 	err = preUpgrade(current, current.Mirror)
 	if nil != err {
 		return err
