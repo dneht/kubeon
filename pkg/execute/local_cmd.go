@@ -67,6 +67,16 @@ func (c *LocalCmd) RunAndResult() (string, error) {
 	return strings.TrimSpace(string(buff.Bytes())), err
 }
 
+// RunAndBytes executes the inner execute on local and return the output captured during execution
+func (c *LocalCmd) RunAndBytes() ([]byte, error) {
+	var buff bytes.Buffer
+	c.stdout = &buff
+	c.stderr = &buff
+	err := c.runInnerCommand()
+
+	return bytes.TrimSpace(buff.Bytes()), err
+}
+
 // RunAndCapture executes the inner execute on local and return the output captured during execution
 func (c *LocalCmd) RunAndCapture() ([]string, error) {
 	var buff bytes.Buffer

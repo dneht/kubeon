@@ -68,7 +68,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 }
 
 func resetCluster(force bool) (err error) {
-	action.KubeadmResetList(cluster.CurrentNodes(), force)
+	action.KubeadmResetList(cluster.CurrentNodes(), false, force)
 	return nil
 }
 

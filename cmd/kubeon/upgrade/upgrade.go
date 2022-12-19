@@ -81,7 +81,7 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	}
 	current := cluster.Current()
 	if "" == current.Mirror {
-		current.Mirror = onutil.ConvMirror(flags.MirrorHost, define.MirrorImageRepo)
+		current.Mirror = onutil.ConvMirror(flags.MirrorHost, define.MirrorImageRepo, define.DockerImageRepo)
 	}
 	if "" != flags.SetOffline {
 		switch flags.SetOffline {
@@ -93,8 +93,8 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 			break
 		}
 	}
-	current.UseNvidia = (current.UseNvidia || flags.WithNvidia) && current.RuntimeMode == define.ContainerdRuntime && inputVersion.IsSupportNvidia()
-	current.UseKata = (current.UseKata || flags.WithKata) && inputVersion.IsSupportKata()
+	current.UseNvidia = (current.UseNvidia || flags.WithNvidia) && current.RuntimeMode == define.ContainerdRuntime
+	current.UseKata = current.UseKata || flags.WithKata
 	return cluster.InitUpgradeCluster(inputVersion)
 }
 
@@ -158,11 +158,15 @@ func upgradeCluster(current *cluster.Cluster) (err error) {
 	}
 	err = module.InstallExtend()
 	if nil != err {
-		klog.Warningf("Reinstall ingress failed %v", err)
+		klog.Warningf("Reinstall extend failed %v", err)
 	}
 	err = module.UpgradeLoadBalance()
 	if nil != err {
 		return err
+	}
+	err = module.InstallIngress()
+	if nil != err {
+		klog.Warningf("Reinstall ingress failed %v", err)
 	}
 	return cluster.UpgradeCompleteCluster()
 }

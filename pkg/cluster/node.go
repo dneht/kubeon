@@ -236,7 +236,7 @@ func (n *Node) SetConnect() {
 
 func (n *Node) GetResource() *release.ClusterRemoteResource {
 	if nil == n.resource {
-		n.resource = release.RemoteResource(n.Home, current.RuntimeMode)
+		n.resource = release.RemoteResource(n.Home, current.RuntimeMode, current.NetworkMode)
 	}
 	return n.resource
 }

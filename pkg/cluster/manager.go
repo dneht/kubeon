@@ -59,8 +59,9 @@ func InitNewCluster(cluster *Cluster, lb string, base define.DefaultList, master
 	current.HasNvidia = hasNvidia
 	current.ControlPlanes = masterNodes
 	current.Workers = workerNodes
-	current.LocalResource = release.InitResource(current.Version.Full, current.RuntimeMode,
-		current.IsBinary, current.IsOffline, current.HasNvidia, current.UseKata, current.IngressMode)
+	current.LocalResource = release.InitResource(current.Version.Full,
+		current.RuntimeMode, current.NetworkMode, current.IngressMode,
+		current.IsBinary, current.IsOffline, current.HasNvidia, current.UseKata, current.UseKruise)
 	current.AdminConfigPath = define.AppConfDir + "/cluster/" + current.Name + ".yaml"
 
 	initCurrent(current)
@@ -93,10 +94,10 @@ func InitUpgradeCluster(version *define.StdVersion) error {
 		return errors.Errorf("Upgrade version [%s] is less than now version [%s]", version.Full, current.Version.Full)
 	}
 
-	current.Version = version
 	current.ExistResourceVersion = current.LocalResource.InstallVersion
-	current.LocalResource = release.InitResource(version.Full, current.RuntimeMode,
-		current.IsBinary, current.IsOffline, current.HasNvidia, current.UseKata, current.IngressMode)
+	current.LocalResource = release.InitResource(current.Version.Full,
+		current.RuntimeMode, current.NetworkMode, current.IngressMode,
+		current.IsBinary, current.IsOffline, current.HasNvidia, current.UseKata, current.UseKruise)
 	current.Status = StatusUpgrading
 
 	err := InitHost()

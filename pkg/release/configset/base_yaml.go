@@ -16,7 +16,8 @@ limitations under the License.
 
 package configset
 
-const kubeletYaml = `apiVersion: kubelet.config.k8s.io/{{.APIVersion}}
+const kubeletYaml = `---
+apiVersion: kubelet.config.k8s.io/{{.APIVersion}}
 kind: KubeletConfiguration
 address: 0.0.0.0
 authentication:
@@ -69,9 +70,11 @@ serializeImagePulls: true
 streamingConnectionIdleTimeout: 4h0m0s
 syncFrequency: 1m0s
 volumeStatsAggPeriod: 1m0s
+
 `
 
-const kubeadmYaml = `apiVersion: kubeadm.k8s.io/{{.APIVersion}}
+const kubeadmYaml = `---
+apiVersion: kubeadm.k8s.io/{{.APIVersion}}
 kind: ClusterConfiguration
 imageRepository: "{{.ImageRepository}}"
 clusterName: "{{.ClusterName}}"
@@ -97,7 +100,7 @@ apiServer:
     {{- if .ClusterFeatureGates}}
     {{.ClusterFeatureGates}}
     {{- end}}
-    service-node-port-range: {{.ClusterPortRange}}
+    service-node-port-range: "{{.ClusterPortRange}}"
   extraVolumes:
   - name: localtime
     hostPath: /etc/localtime
@@ -105,6 +108,18 @@ apiServer:
     readOnly: true
 controllerManager:
   extraArgs:
+    {{- if .ClusterEnableDual}}
+    {{- if gt .ClusterNodeMaskSize 0}}
+    node-cidr-mask-size-ipv4: "{{.ClusterNodeMaskSize}}"
+    {{- end}}
+    {{- if gt .ClusterNodeMaskSizeV6 0}}
+    node-cidr-mask-size-ipv6: "{{.ClusterNodeMaskSizeV6}}"
+    {{- end}}
+    {{- else}}
+    {{- if gt .ClusterNodeMaskSize 0}}
+    node-cidr-mask-size: "{{.ClusterNodeMaskSize}}"
+    {{- end}}
+    {{- end}}
     {{- if .ClusterFeatureGates}}
     {{.ClusterFeatureGates}}
     {{- end}}
@@ -126,13 +141,17 @@ scheduler:
     mountPath: /etc/localtime
     name: localtime
     readOnly: true
+
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
-mode: {{.KubeProxyMode}}
+mode: {{.ProxyMode}}
 ipvs:
+  scheduler: {{.IPVSScheduler}}
   minSyncPeriod: 0s
-  scheduler: {{.KubeIPVSScheduler}}
+  {{- if .StrictARP}}
+  strictARP: {{.StrictARP}}
+  {{- end}}
   syncPeriod: 15s
   {{- if .IsExternalLB}}
   excludeCIDRs: 
@@ -143,10 +162,11 @@ iptables:
   masqueradeBit: 14
   minSyncPeriod: 0s
   syncPeriod: 30s
----
+
 `
 
-const kubeadmInitYaml = `apiVersion: kubeadm.k8s.io/{{.APIVersion}}
+const kubeadmInitYaml = `---
+apiVersion: kubeadm.k8s.io/{{.APIVersion}}
 kind: InitConfiguration
 bootstrapTokens:
 - token: "{{.Token}}"
@@ -160,10 +180,11 @@ localAPIEndpoint:
   advertiseAddress: "{{.AdvertiseAddress}}"
   bindPort: {{.BindPort}}
 certificateKey: {{.CertificateKey}}
----
+
 `
 
-const kubeadmJoinYaml = `apiVersion: kubeadm.k8s.io/{{.APIVersion}}
+const kubeadmJoinYaml = `---
+apiVersion: kubeadm.k8s.io/{{.APIVersion}}
 kind: JoinConfiguration
 discovery:
   bootstrapToken:
@@ -185,7 +206,7 @@ controlPlane:
   certificateKey: {{.CertificateKey}}
 {{- end}}
 caCertPath: /etc/kubernetes/pki/ca.crt
----
+
 `
 
 const healthzReaderYaml = `apiVersion: rbac.authorization.k8s.io/v1
@@ -215,4 +236,5 @@ rules:
   verbs:
   - get
   - post
+
 `

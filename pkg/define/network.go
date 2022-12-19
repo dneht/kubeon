@@ -15,26 +15,3 @@ limitations under the License.
 */
 
 package define
-
-const LoopbackAddress = "127.0.0.1"
-
-const (
-	IPVSProxy = "ipvs"
-
-	IPTablesProxy = "iptables"
-)
-
-const (
-	CorednsPart = "coredns"
-)
-
-const (
-	NetworkPlugin = "cni"
-
-	NoneNetwork   = "none"
-	CalicoNetwork = "calico"
-	CiliumNetwork = "cilium"
-
-	NoneIngress    = "none"
-	ContourIngress = "contour"
-)

@@ -133,13 +133,26 @@ func writeKubeadmConfig(current *cluster.Cluster, node *cluster.Node, token, sec
 	if nil == current.CertSANs {
 		current.CertSANs = []string{}
 	}
+	svcCIDR := current.SvcCIDR
+	podCIDR := current.PodCIDR
+	if current.EnableDual {
+		if "" != current.SvcV6CIDR {
+			svcCIDR += "," + current.SvcV6CIDR
+		}
+		if "" != current.PodV6CIDR {
+			podCIDR += "," + current.PodV6CIDR
+		}
+	}
 	kubeletTemplate := getKubeletTemplate()
 	kubeadmTemplate := &release.KubeadmTemplate{
 		APIVersion:             current.GetKubeadmAPIVersion(),
 		ImageRepository:        current.GetInitImageRepo(),
 		ClusterName:            current.Name,
 		ClusterVersion:         current.Version.Full,
+		ClusterEnableDual:      current.EnableDual,
 		ClusterPortRange:       current.PortRange,
+		ClusterNodeMaskSize:    current.NodeMaskSize,
+		ClusterNodeMaskSizeV6:  current.NodeMaskSizeV6,
 		ClusterFeatureGates:    current.GetKubeadmFeatureGates(),
 		ClusterSigningDuration: current.GetKubeadmSigningDuration(),
 		ClusterApiIP:           current.ApiIP,
@@ -147,13 +160,14 @@ func writeKubeadmConfig(current *cluster.Cluster, node *cluster.Node, token, sec
 		ClusterLbPort:          current.LbPort,
 		ClusterLbDomain:        current.LbDomain,
 		ClusterDnsDomain:       current.DnsDomain,
-		ClusterSvcCIDR:         current.SvcCIDR,
-		ClusterPodCIDR:         current.PodCIDR,
+		ClusterSvcCIDR:         svcCIDR,
+		ClusterPodCIDR:         podCIDR,
 		IsExternalLB:           current.IsExternalLb,
 		MasterCertSANs:         masterCertSANs,
 		InputCertSANs:          current.CertSANs,
-		KubeProxyMode:          current.ProxyMode,
-		KubeIPVSScheduler:      current.IPVSScheduler,
+		ProxyMode:              current.ProxyMode,
+		IPVSScheduler:          current.IPVSScheduler,
+		StrictARP:              current.StrictARP,
 	}
 	if node.IsBootstrap() {
 		kubeadmTemplate.ClusterLbPort = define.DefaultClusterAPIPort

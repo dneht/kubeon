@@ -20,11 +20,11 @@ import (
 	"strings"
 )
 
-func ConvMirror(input, define string) string {
+func ConvMirror(input, mirror, office string) string {
 	if len(input) == 0 || strings.EqualFold(input, "no") || strings.EqualFold(input, "false") {
-		return "no"
+		return office
 	} else if strings.EqualFold(input, "yes") || strings.EqualFold(input, "true") {
-		return define
+		return mirror
 	} else {
 		if strings.HasSuffix(input, "/") {
 			return input[0 : len(input)-1]

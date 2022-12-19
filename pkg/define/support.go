@@ -29,6 +29,8 @@ var (
 	supportProxyModes = map[string]bool{
 		IPVSProxy:     true,
 		IPTablesProxy: true,
+		CalicoNetwork: true,
+		CiliumNetwork: true,
 	}
 	supportRuntimes = map[string]bool{
 		DockerRuntime:     true,
@@ -37,14 +39,17 @@ var (
 	supportNetworks = map[string]bool{
 		NoneNetwork:   true,
 		CalicoNetwork: true,
+		CiliumNetwork: true,
 	}
 	supportIngresses = map[string]bool{
 		NoneIngress:    true,
 		ContourIngress: true,
+		IstioIngress:   true,
 	}
-	supportCalicoModes = map[string]bool{
-		CalicoIPIP:  true,
-		CalicoVXLan: true,
+	supportCiliumPolicyMode = map[string]bool{
+		CiliumPolicyDefault: true,
+		CiliumPolicyAlways:  true,
+		CiliumPolicyNever:   true,
 	}
 )
 
@@ -97,12 +102,8 @@ func IsSupportProxyMode(mode string) bool {
 	return ok
 }
 
-func SupportCalicoModes() []string {
-	return getMapKeys(supportCalicoModes)
-}
-
-func IsSupportCalicoMode(mode string) bool {
-	_, ok := supportCalicoModes[mode]
+func IsSupportCiliumPolicyMode(mode string) bool {
+	_, ok := supportCiliumPolicyMode[mode]
 	return ok
 }
 

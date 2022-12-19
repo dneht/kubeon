@@ -70,7 +70,7 @@ func preRemove(delNodes cluster.NodeList) (err error) {
 			klog.Warningf("Drain node[%s] failed: %v", node.Addr(), err)
 		}
 	}
-	action.KubeadmResetList(delNodes, false)
+	action.KubeadmResetList(delNodes, true, false)
 	return nil
 }
 

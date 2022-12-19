@@ -19,6 +19,7 @@ package release
 import (
 	"bytes"
 	"github.com/dneht/kubeon/pkg/define"
+	"github.com/dneht/kubeon/pkg/execute"
 	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/dneht/kubeon/pkg/release/configset"
 	"github.com/pkg/errors"
@@ -37,12 +38,15 @@ type KubeadmTemplate struct {
 	ImageRepository        string
 	ClusterName            string
 	ClusterVersion         string
+	ClusterEnableDual      bool
 	ClusterPortRange       string
+	ClusterNodeMaskSize    uint32
+	ClusterNodeMaskSizeV6  uint32
 	ClusterFeatureGates    string
 	ClusterSigningDuration string
 	ClusterApiIP           string
 	ClusterLbIP            string
-	ClusterLbPort          int32
+	ClusterLbPort          uint32
 	ClusterLbDomain        string
 	ClusterDnsDomain       string
 	ClusterSvcCIDR         string
@@ -50,8 +54,9 @@ type KubeadmTemplate struct {
 	IsExternalLB           bool
 	MasterCertSANs         []string
 	InputCertSANs          []string
-	KubeProxyMode          string
-	KubeIPVSScheduler      string
+	ProxyMode              string
+	IPVSScheduler          string
+	StrictARP              bool
 }
 
 type KubeadmInitTemplate struct {
@@ -60,7 +65,7 @@ type KubeadmInitTemplate struct {
 	NodeName         string
 	ImagePullPolicy  string
 	AdvertiseAddress string
-	BindPort         int32
+	BindPort         uint32
 	CertificateKey   string
 }
 
@@ -68,13 +73,13 @@ type KubeadmJoinTemplate struct {
 	APIVersion       string
 	Token            string
 	ClusterLbDomain  string
-	ClusterLbPort    int32
+	ClusterLbPort    uint32
 	CaCertHash       string
 	IsControlPlane   bool
 	NodeName         string
 	ImagePullPolicy  string
 	AdvertiseAddress string
-	BindPort         int32
+	BindPort         uint32
 	CertificateKey   string
 }
 
@@ -84,16 +89,70 @@ type CorednsTemplate struct {
 }
 
 type CalicoTemplate struct {
-	MirrorUrl        string
-	IsSetInterface   bool
-	DefaultInterface string
-	EtcdKeyBase64    string
-	EtcdCertBase64   string
-	EtcdCABase64     string
-	EtcdEndpoints    string
-	CalicoMTU        string
-	IPIPMode         string
-	VXLanMode        string
+	MirrorUrl              string
+	IsSetInterface         bool
+	DefaultInterface       string
+	BackendMode            string
+	EnableBPF              bool
+	EnableWireGuard        bool
+	CalicoMTU              uint32
+	LBMode                 string
+	EnableVXLAN            bool
+	IPIPMode               string
+	VXLANMode              string
+	VXLANv6Mode            string
+	BPFHostConntrackBypass bool
+	ClusterEnableDual      bool
+	ClusterLbDomain        string
+	ClusterLbPort          uint32
+	ClusterPortRange       string
+	ClusterNodeMaskSize    uint32
+	ClusterNodeMaskSizeV6  uint32
+	ClusterPodCIDR         string
+	ClusterPodCIDRV6       string
+}
+
+type CiliumTemplate struct {
+	MirrorUrl                       string
+	IsSetInterface                  bool
+	DefaultInterface                string
+	EnableBGP                       bool
+	EnableBM                        bool
+	EnableBBR                       bool
+	EnableWireGuard                 bool
+	EnableIPv4Masquerade            bool
+	EnableIPv6Masquerade            bool
+	NativeRoutingCIDR               string
+	NativeRoutingCIDRV6             string
+	EnableIPv6BigTCP                bool
+	CiliumMTU                       uint32
+	TunnelMode                      string
+	PolicyMode                      string
+	LBMode                          string
+	LBAcceleration                  string
+	LBAlgorithm                     string
+	LBHostNamespaceOnly             bool
+	AutoDirectNodeRoutes            bool
+	EnableLocalRedirect             bool
+	AutoProtectPortRange            bool
+	BPFMapDynamicSizeRatio          string
+	BPFLBMapMax                     uint32
+	BPFPolicyMapMax                 uint32
+	BPFLBExternalClusterIP          bool
+	BPFLBBypassFIBLookup            bool
+	InstallIptablesRules            bool
+	InstallNoConntrackIptablesRules bool
+	MonitorAggregation              string
+	MonitorInterval                 string
+	MonitorFlags                    string
+	ClusterEnableDual               bool
+	ClusterLbDomain                 string
+	ClusterLbPort                   uint32
+	ClusterPortRange                string
+	ClusterNodeMaskSize             uint32
+	ClusterNodeMaskSizeV6           uint32
+	ClusterPodCIDR                  string
+	ClusterPodCIDRV6                string
 }
 
 type NvidiaTemplate struct {
@@ -105,7 +164,41 @@ type KataTemplate struct {
 }
 
 type ContourTemplate struct {
-	MirrorUrl string
+	MirrorUrl             string
+	DisableMergeSlashes   bool
+	DisablePermitInsecure bool
+}
+
+type IstioTemplate struct {
+	MirrorUrl               string
+	EnableNetworkPlugin     bool
+	ProxyClusterDomain      string
+	EnableAutoInject        bool
+	ServiceEntryExportTo    []string
+	VirtualServiceExportTo  []string
+	DestinationRuleExportTo []string
+	EnableAutoMTLS          bool
+	EnableHttp2AutoUpgrade  bool
+	EnablePrometheusMerge   bool
+	EnableIngressGateway    bool
+	IngressGatewayType      string
+	EnableEgressGateway     bool
+	EgressGatewayType       string
+	EnableSkywalking        bool
+	EnableSkywalkingAll     bool
+	SkywalkingService       string
+	SkywalkingPort          uint32
+	SkywalkingAccessToken   string
+	EnableZipkin            bool
+	ZipkinService           string
+	ZipkinPort              uint32
+	AccessLogServiceAddress string
+	MetricsServiceAddress   string
+}
+
+type KruiseTemplate struct {
+	MirrorUrl    string
+	FeatureGates string
 }
 
 type BalanceHaproxyTemplate struct {
@@ -141,6 +234,28 @@ func RenderCalicoTemplate(input *CalicoTemplate, local bool) ([]byte, error) {
 	}
 }
 
+func RenderCiliumTemplate(input *CiliumTemplate, local bool) ([]byte, error) {
+	if local {
+		return parseFile("/cilium.yaml.tpl", input)
+	} else {
+		return parseFile("/cilium.m.yaml.tpl", input)
+	}
+}
+
+func RenderContourTemplate(input *ContourTemplate, local bool) ([]byte, error) {
+	if local {
+		return parseFile("/contour.yaml.tpl", input)
+	} else {
+		return parseFile("/contour.m.yaml.tpl", input)
+	}
+}
+
+func RenderIstioTemplate(input *IstioTemplate, local bool) ([]byte, error) {
+	istioArgs := BuildIstioctlArgs(input, false, local)
+	istioCmd := execute.NewLocalCmd(define.IstioCommand, istioArgs...)
+	return istioCmd.RunAndBytes()
+}
+
 func RenderNvidiaTemplate(input *NvidiaTemplate, local bool) ([]byte, error) {
 	if local {
 		return parseFile("/nvidia.yaml.tpl", input)
@@ -157,11 +272,11 @@ func RenderKataTemplate(input *KataTemplate, local bool) ([]byte, error) {
 	}
 }
 
-func RenderContourTemplate(input *ContourTemplate, local bool) ([]byte, error) {
+func RenderKruiseTemplate(input *KruiseTemplate, local bool) ([]byte, error) {
 	if local {
-		return parseFile("/contour.yaml.tpl", input)
+		return parseFile("/kruise.yaml.tpl", input)
 	} else {
-		return parseFile("/contour.m.yaml.tpl", input)
+		return parseFile("/kruise.m.yaml.tpl", input)
 	}
 }
 

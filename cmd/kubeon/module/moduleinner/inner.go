@@ -14,26 +14,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package module
+package moduleinner
 
 import (
-	"github.com/dneht/kubeon/cmd/kubeon/module/moduleinner"
-	"github.com/dneht/kubeon/cmd/kubeon/module/moduleinstall"
-	"github.com/dneht/kubeon/cmd/kubeon/module/moduleuninstall"
+	"github.com/dneht/kubeon/pkg/cluster"
+	"github.com/dneht/kubeon/pkg/module"
 	"github.com/spf13/cobra"
 )
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args:    cobra.NoArgs,
-		Use:     "module MODULE_NAME\n",
-		Aliases: []string{"m"},
-		Short:   "Install any module on any node",
-		Long:    "",
-		Example: "",
+		Args:    cobra.ExactArgs(2),
+		Use:     "inner CLUSTER_NAME UNIT_NAME",
+		Aliases: []string{"in"},
+		Short:   "Inner module",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runE(cmd, args)
+		},
 	}
-	cmd.AddCommand(moduleinstall.NewCommand())
-	cmd.AddCommand(moduleuninstall.NewCommand())
-	cmd.AddCommand(moduleinner.NewCommand())
+
 	return cmd
+}
+
+func runE(cmd *cobra.Command, args []string) error {
+	cluster.InitConfig(args[0])
+	_, err := cluster.InitExistCluster()
+	if nil != err {
+		return err
+	}
+
+	moduleName := args[1]
+	return module.InstallInner(moduleName)
 }

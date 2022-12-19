@@ -30,7 +30,9 @@ type ComponentVersion struct {
 	Calico     string `json:"calico,omitempty"`
 	Cilium     string `json:"cilium,omitempty"`
 	Contour    string `json:"contour,omitempty"`
+	Istio      string `json:"istio,omitempty"`
 	Haproxy    string `json:"haproxy,omitempty"`
+	Kruise     string `json:"kruise,omitempty"`
 }
 
 var SupportComponentFull = map[string]*ComponentVersion{}

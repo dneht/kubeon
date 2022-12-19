@@ -187,13 +187,13 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	current := cluster.Current()
 	err = preInstall(newNodes, current.Mirror)
 	if nil != err {
-		klog.Warningf("Prepare input nodes failed, please check: %v", err)
+		klog.Warningf("Prepare install failed, please check: %v", err)
 		return nil
 	}
 	err = joinNodes(newNodes)
 	if nil != err {
 		klog.Errorf("Create nodes failed, reset nodes: %v", err)
-		action.KubeadmResetList(newNodes, false)
+		action.KubeadmResetList(newNodes, true, false)
 	}
 	return nil
 }
@@ -233,5 +233,9 @@ func joinNodes(newNodes cluster.NodeList) (err error) {
 		return err
 	}
 	module.LabelDevice()
+	err = module.InstallIngress()
+	if nil != err {
+		klog.Warningf("reinstall ingress failed %v", err)
+	}
 	return cluster.AddCompleteCluster()
 }

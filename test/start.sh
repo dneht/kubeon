@@ -1,5 +1,5 @@
 num=$1
-ver=v1.24.3
+ver=v1.23.12
 pwd=123456
 echo "start node ${num} with password: ${pwd}"
 sudo echo root:${pwd} | chpasswd
@@ -9,21 +9,22 @@ sudo echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 sudo systemctl restart sshd
 export DEBIAN_FRONTEND=noninteractive
 sudo echo "apt_preserve_sources_list: true" >> /etc/cloud/cloud.cfg
-sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal main restricted" > /etc/apt/sources.list
-sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted" >> /etc/apt/sources.list
-sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal universe" >> /etc/apt/sources.list
-sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-updates universe" >> /etc/apt/sources.list
-sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal multiverse" >> /etc/apt/sources.list
-sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-updates multiverse" >> /etc/apt/sources.list
-sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse" >> /etc/apt/sources.list
-sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-security main restricted" >> /etc/apt/sources.list
-sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-security universe" >> /etc/apt/sources.list
+#sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal main restricted" > /etc/apt/sources.list
+#sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted" >> /etc/apt/sources.list
+#sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal universe" >> /etc/apt/sources.list
+#sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-updates universe" >> /etc/apt/sources.list
+#sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal multiverse" >> /etc/apt/sources.list
+#sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-updates multiverse" >> /etc/apt/sources.list
+#sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse" >> /etc/apt/sources.list
+#sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-security main restricted" >> /etc/apt/sources.list
+#sudo echo "deb http://mirrors.aliyun.com/ubuntu/ focal-security universe" >> /etc/apt/sources.list
 sudo apt-get update
 sudo apt-get install -y chrony
 sudo systemctl start chrony
 sudo sh -c "$(wget https://back.pub/kubeon/install.sh -q -O -)"
 if [ $num = 5 ]; then
   kubeon create test ${ver} \
+      --mirror docker.io \
       -m 192.168.60.21 \
       -m 192.168.60.22 \
       -m 192.168.60.23 \
@@ -33,7 +34,8 @@ if [ $num = 5 ]; then
       -w 192.168.60.24 \
       --worker-name test40 \
       --default-passwd ${pwd} \
-      --ic contour \
+      --calico-enable-dsr \
+      --ic istio \
       --interface enp0s8 \
       --v 6
   sleep 2s
@@ -42,12 +44,12 @@ if [ $num = 5 ]; then
       -m 192.168.60.25 \
       --master-name test50 \
       --default-passwd ${pwd} \
-      --v 4
+      --v 6
   sleep 4s
   kubeon display test
   kubeon del test \
       ip=192.168.60.25 \
-      --v 4
+      --v 6
   sleep 4s
   kubeon display test
 

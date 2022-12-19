@@ -19,7 +19,6 @@ package action
 import (
 	"fmt"
 	"github.com/dneht/kubeon/pkg/cluster"
-	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/onutil/log"
 	"github.com/pkg/errors"
 	"time"
@@ -30,7 +29,7 @@ func KubeadmInitStart(boot *cluster.Node, uploadCerts, usePatch bool, ignorePref
 	if usePatch && !current.Version.IsSupportPatch() {
 		return errors.New("--patches can't be used with kubeadm older than v1.19")
 	}
-	err = kubeadmInit(boot, uploadCerts, usePatch, ignorePreflightErrors)
+	err = kubeadmInit(boot, current.EnableBPF, uploadCerts, usePatch, ignorePreflightErrors)
 	if nil != err {
 		return err
 	}
@@ -43,14 +42,11 @@ func KubeadmInitWait(wait time.Duration) (err error) {
 	if nil != err {
 		return err
 	}
-	current := cluster.Current()
-	if current.Version.GreaterEqual(define.K8S_1_21_0) {
-		return KubectlPatchCorednsRole()
-	}
+	_ = KubectlPatchCorednsRole()
 	return waitNewControlPlaneNodeReady(cluster.Current(), boot, wait)
 }
 
-func kubeadmInit(boot *cluster.Node, uploadCerts, usePatch bool, ignorePreflightErrors string) (err error) {
+func kubeadmInit(boot *cluster.Node, enableBPF, uploadCerts, usePatch bool, ignorePreflightErrors string) (err error) {
 	initArgs := []string{
 		"init",
 		fmt.Sprintf("--config=%s", boot.GetResource().ClusterConf.KubeadmInitPath),
@@ -58,6 +54,9 @@ func kubeadmInit(boot *cluster.Node, uploadCerts, usePatch bool, ignorePreflight
 		"--skip-token-print",
 		"--skip-certificate-key-print",
 		fmt.Sprintf("--v=%d", log.Level()),
+	}
+	if enableBPF {
+		initArgs = append(initArgs, "--skip-phases=addon/kube-proxy")
 	}
 	if uploadCerts {
 		initArgs = append(initArgs, "--upload-certs")
@@ -77,7 +76,6 @@ func kubeadmInit(boot *cluster.Node, uploadCerts, usePatch bool, ignorePreflight
 }
 
 func initAfterConfig(node *cluster.Node) error {
-	KubectlRemoveMasterTaint(node.Hostname)
 	return node.RunCmd("mkdir", "-p", node.Home+"/.kube",
 		"&&", "\\cp", "/etc/kubernetes/admin.conf", node.Home+"/.kube/config",
 		"&&", "chown", "$(id -u):$(id -g)", node.Home+"/.kube/config")

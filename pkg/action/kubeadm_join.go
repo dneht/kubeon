@@ -75,6 +75,7 @@ func KubeadmJoinControlPlane(nodes cluster.NodeList, usePatch bool, ignorePrefli
 			return nil, err
 		}
 	}
+	KubectlRemoveAllMasterTaint()
 	return nil, nil
 }
 

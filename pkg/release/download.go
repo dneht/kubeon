@@ -43,10 +43,14 @@ const (
 	OfflineResource    = "kubeon/install-offline"
 	DockerResource     = "kubeon/runtime-docker"
 	ContainerdResource = "kubeon/runtime-containerd"
-	NetworkResource    = "kubeon/network-plugins"
 	NvidiaResource     = "kubeon/extend-nvidia"
 	KataResource       = "kubeon/extend-kata"
+	NetworkResource    = "kubeon/network-plugins"
+	CalicoResource     = "kubeon/network-calico"
+	CiliumResource     = "kubeon/network-cilium"
 	ContourResource    = "kubeon/extend-contour"
+	IstioResource      = "kubeon/extend-istio"
+	KruiseResource     = "kubeon/extend-kruise"
 )
 
 var (
@@ -59,8 +63,8 @@ type ProcessModule struct {
 	Module   string
 }
 
-func ProcessDownload(resource *ClusterResource, version, runtime, mirror string,
-	isLocal, isBinary, isOffline, useNvidia, useKata bool, ingressMode string) error {
+func ProcessDownload(resource *ClusterResource, version, runtime, network, ingress, mirror string,
+	isLocal, isBinary, isOffline, useNvidia, useKata, useKruise bool) error {
 	klog.V(1).Infof("Start download binary package, version=%s, runtime=%s", version, runtime)
 	if nil == resource {
 		return errors.New("cluster not init")
@@ -107,6 +111,38 @@ func ProcessDownload(resource *ClusterResource, version, runtime, mirror string,
 		if extVersion, extExist := define.SupportComponentFull[version]; !extExist {
 			return errors.New("extend resource not exist, please enter newer version")
 		} else {
+			switch network {
+			case define.CalicoNetwork:
+				{
+					if !onutil.PathExists(resource.CalicoPath) || execute.FileSum(resource.CalicoPath) != resource.CalicoSum {
+						tasks = append(tasks, &ProcessModule{extVersion.Calico, CalicoResource, define.CalicoNetwork})
+					}
+					break
+				}
+			case define.CiliumNetwork:
+				{
+					if !onutil.PathExists(resource.CiliumPath) || execute.FileSum(resource.CiliumPath) != resource.CiliumSum {
+						tasks = append(tasks, &ProcessModule{extVersion.Cilium, CiliumResource, define.CiliumNetwork})
+					}
+					break
+				}
+			}
+			switch ingress {
+			case define.ContourIngress:
+				{
+					if !onutil.PathExists(resource.ContourPath) || execute.FileSum(resource.ContourPath) != resource.ContourSum {
+						tasks = append(tasks, &ProcessModule{extVersion.Contour, ContourResource, define.ContourIngress})
+					}
+					break
+				}
+			case define.IstioIngress:
+				{
+					if !onutil.PathExists(resource.IstioPath) || execute.FileSum(resource.IstioPath) != resource.IstioSum {
+						tasks = append(tasks, &ProcessModule{extVersion.Istio, IstioResource, define.IstioIngress})
+					}
+					break
+				}
+			}
 			if useNvidia {
 				if !onutil.PathExists(resource.NvidiaPath) || execute.FileSum(resource.NvidiaPath) != resource.NvidiaSum {
 					tasks = append(tasks, &ProcessModule{extVersion.Nvidia, NvidiaResource, define.NvidiaRuntime})
@@ -118,11 +154,9 @@ func ProcessDownload(resource *ClusterResource, version, runtime, mirror string,
 					tasks = append(tasks, &ProcessModule{extVersion.Kata, KataResource, define.KataRuntime})
 				}
 			}
-			switch ingressMode {
-			case define.ContourIngress:
-				{
-					tasks = append(tasks, &ProcessModule{extVersion.Contour, ContourResource, define.ContourIngress})
-					break
+			if useKruise {
+				if !onutil.PathExists(resource.KruisePath) || execute.FileSum(resource.KruisePath) != resource.KruiseSum {
+					tasks = append(tasks, &ProcessModule{extVersion.Kruise, KruiseResource, define.KruisePlugin})
 				}
 			}
 		}

@@ -35,29 +35,40 @@ type Cluster struct {
 	IsBinary             bool                     `json:"binary"`
 	IsOffline            bool                     `json:"offline"`
 	UsePatch             bool                     `json:"usePatch"`
+	EnableDual           bool                     `json:"enableDual"`
 	ApiIP                string                   `json:"apiIP"`
 	DnsIP                string                   `json:"dnsIP"`
 	LbIP                 string                   `json:"lbIP"`
-	LbPort               int32                    `json:"lbPort"`
+	LbPort               uint32                   `json:"lbPort"`
 	LbDomain             string                   `json:"lbDomain"`
 	LbMode               string                   `json:"lbMode"`
 	DnsDomain            string                   `json:"dnsDomain"`
 	MaxPods              uint32                   `json:"maxPods"`
 	PortRange            string                   `json:"portRange"`
+	NodeMaskSize         uint32                   `json:"nodeMaskSize"`
+	NodeMaskSizeV6       uint32                   `json:"nodeMaskSizeV6"`
 	FeatureGates         string                   `json:"featureGates"`
 	SvcCIDR              string                   `json:"svcCIDR"`
+	SvcV6CIDR            string                   `json:"svcV6CIDR"`
 	PodCIDR              string                   `json:"podCIDR"`
+	PodV6CIDR            string                   `json:"podV6CIDR"`
 	NodeInterface        []string                 `json:"nodeInterface"`
 	ProxyMode            string                   `json:"proxyMode"`
 	IPVSScheduler        string                   `json:"ipvsScheduler"`
+	StrictARP            bool                     `json:"strictARP"`
 	RuntimeMode          string                   `json:"runtimeMode"`
 	NetworkMode          string                   `json:"networkMode"`
-	CalicoMode           string                   `json:"calicoMode"`
-	CalicoMTU            string                   `json:"calicoMTU"`
+	EnableBPF            bool                     `json:"enableBPF"`
+	CalicoConf           *CalicoConf              `json:"calicoConf,omitempty"`
+	CiliumConf           *CiliumConf              `json:"ciliumConf,omitempty"`
 	IngressMode          string                   `json:"ingressMode"`
+	ContourConf          *ContourConf             `json:"contourConf,omitempty"`
+	IstioConf            *IstioConf               `json:"istioConf,omitempty"`
 	UseNvidia            bool                     `json:"useNvidia"`
 	HasNvidia            bool                     `json:"hasNvidia"`
 	UseKata              bool                     `json:"useKata"`
+	UseKruise            bool                     `json:"useKruise"`
+	KruiseConf           *KruiseConf              `json:"kruiseConf,omitempty"`
 	ControlPlanes        NodeList                 `json:"controlPlanes"`
 	Workers              NodeList                 `json:"workers"`
 	AllNodes             NodeList                 `json:"-"`
@@ -69,6 +80,81 @@ type Cluster struct {
 	ExistResourceVersion *map[string]string       `json:"-"`
 	AdminConfigPath      string                   `json:"adminConfigPath,omitempty"`
 	Status               RunStatus                `json:"status"`
+}
+
+type CalicoConf struct {
+	CalicoMTU          uint32 `json:"calicoMTU"`
+	EnableVXLAN        bool   `json:"enableVXLAN"`
+	EnableBPF          bool   `json:"enableBPF"`
+	EnableDSR          bool   `json:"enableDSR"`
+	EnableBGP          bool   `json:"enableBGP"`
+	EnableWireGuard    bool   `json:"enableWireGuard"`
+	EnableCrossSubnet  bool   `json:"enableCrossSubnet"`
+	BPFBypassConntrack bool   `json:"bpfBypassConntrack"`
+}
+
+type CiliumConf struct {
+	CiliumMTU                       uint32 `json:"ciliumMTU"`
+	EnableGENEVE                    bool   `json:"enableGENEVE"`
+	EnableNR                        bool   `json:"enableNR"`
+	EnableDSR                       bool   `json:"enableDSR"`
+	EnableBGP                       bool   `json:"enableBGP"`
+	EnableBM                        bool   `json:"enableBM"`
+	EnableBBR                       bool   `json:"enableBBR"`
+	EnableWireGuard                 bool   `json:"enableWireGuard"`
+	NativeRoutingCIDR               string `json:"nativeRoutingCIDR"`
+	NativeRoutingCIDRV6             string `json:"nativeRoutingCIDRV6"`
+	EnableIPv6BigTCP                bool   `json:"enableIPv6BigTCP"`
+	MonitorAggregation              string `json:"monitorAggregation"`
+	MonitorFlags                    string `json:"monitorFlags"`
+	MonitorInterval                 string `json:"monitorInterval"`
+	PolicyMode                      string `json:"policyMode"`
+	MapDynamicSizeRatio             string `json:"mapDynamicSizeRatio"`
+	PolicyMapMax                    uint32 `json:"policyMapMax"`
+	LBMapMax                        uint32 `json:"lbMapMax"`
+	EnableLocalRedirect             bool   `json:"enableLocalRedirect"`
+	AutoProtectPortRange            bool   `json:"autoProtectPortRange"`
+	LBNativeAcceleration            bool   `json:"lbNativeAcceleration"`
+	LBMaglevAlgorithm               bool   `json:"lbMaglevAlgorithm"`
+	EnableExternalClusterIP         bool   `json:"enableExternalClusterIP"`
+	BPFHostNamespaceOnly            bool   `json:"bpfHostNamespaceOnly"`
+	BPFBypassFIBLookup              bool   `json:"bpfBypassFIBLookup"`
+	InstallIptablesRules            bool   `json:"installIptablesRules"`
+	InstallNoConntrackIptablesRules bool   `json:"installNoConntrackIptablesRules"`
+}
+
+type ContourConf struct {
+	DisableInsecure     bool `json:"disableInsecure"`
+	DisableMergeSlashes bool `json:"disableMergeSlashes"`
+}
+
+type IstioConf struct {
+	EnableNetworkPlugin     bool     `json:"enableNetworkPlugin"`
+	EnableAutoInject        bool     `json:"enableAutoInject"`
+	ServiceEntryExportTo    []string `json:"serviceEntryExportTo"`
+	VirtualServiceExportTo  []string `json:"virtualServiceExportTo"`
+	DestinationRuleExportTo []string `json:"destinationRuleExportTo"`
+	EnableAutoMTLS          bool     `json:"enableAutoMTLS"`
+	EnableHttp2AutoUpgrade  bool     `json:"enableHttp2AutoUpgrade"`
+	EnablePrometheusMerge   bool     `json:"enablePrometheusMerge"`
+	EnableIngressGateway    bool     `json:"enableIngressGateway"`
+	IngressGatewayType      string   `json:"ingressGatewayType"`
+	EnableEgressGateway     bool     `json:"enableEgressGateway"`
+	EgressGatewayType       string   `json:"egressGatewayType"`
+	EnableSkywalking        bool     `json:"enableSkywalking"`
+	EnableSkywalkingAll     bool     `json:"enableSkywalkingAll"`
+	SkywalkingService       string   `json:"skywalkingService"`
+	SkywalkingPort          uint32   `json:"skywalkingPort"`
+	SkywalkingAccessToken   string   `json:"skywalkingAccessToken"`
+	EnableZipkin            bool     `json:"enableZipkin"`
+	ZipkinService           string   `json:"zipkinService"`
+	ZipkinPort              uint32   `json:"zipkinPort"`
+	AccessLogServiceAddress string   `json:"accessLogServiceAddress"`
+	MetricsServiceAddress   string   `json:"metricsServiceAddress"`
+}
+
+type KruiseConf struct {
+	FeatureGates string `json:"featureGates"`
 }
 
 type RunStatus string
@@ -178,7 +264,7 @@ func (c *Cluster) GetCertHash() (string, error) {
 }
 
 func (c *Cluster) IsRealLocal() bool {
-	return c.IsOffline || c.Version.LessThen(define.K8S_1_22_0)
+	return c.IsOffline || c.Version.LessThen(define.K8S_1_19_0)
 }
 
 func (c *Cluster) GetInitImageRepo() string {
@@ -240,19 +326,19 @@ func (c *Cluster) GetKubeadmAPIVersion() string {
 func (c *Cluster) GetKubeadmFeatureGates() string {
 	if "" == c.FeatureGates {
 		if c.Version.LessThen(define.K8S_1_23_0) {
-			return "feature-gates: TTLAfterFinished=true"
+			return "feature-gates: \"TTLAfterFinished=true\""
 		} else {
 			return ""
 		}
 	} else {
-		return "feature-gates: " + c.FeatureGates
+		return "feature-gates: \"" + c.FeatureGates + "\""
 	}
 }
 
 func (c *Cluster) GetKubeadmSigningDuration() string {
-	if c.Version.LessThen(define.K8S_1_25_0) {
-		return "experimental-cluster-signing-duration: 876000h"
+	if c.Version.LessThen(define.K8S_1_19_0) {
+		return "experimental-cluster-signing-duration: \"876000h\""
 	} else {
-		return "cluster-signing-duration: 876000h"
+		return "cluster-signing-duration: \"876000h\""
 	}
 }

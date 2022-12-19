@@ -19,6 +19,7 @@ package action
 import (
 	"fmt"
 	"github.com/dneht/kubeon/pkg/cluster"
+	"github.com/dneht/kubeon/pkg/define"
 	"k8s.io/klog/v2"
 	"strings"
 	time "time"
@@ -26,6 +27,10 @@ import (
 
 // nodeIsReady implement a function that test when a node is ready
 func nodeIsReady(current *cluster.Cluster, node *cluster.Node) bool {
+	if current.NetworkMode == define.NoneNetwork {
+		klog.V(1).Info("Skip node ready check as cni is not installed")
+		return true
+	}
 	output, _ := KubectlGetQuiet(
 		"nodes",
 		// check for the selected node

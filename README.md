@@ -15,6 +15,9 @@ v1.23.1-v1.23.12
 v1.24.1-v1.24.6
 v1.25.1-v1.25.2
 ```
+
+v1.19.4-v1.19.15
+
 ## Component
 
 > kubeon view component v1.25.2

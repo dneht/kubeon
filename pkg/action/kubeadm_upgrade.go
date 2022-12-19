@@ -58,9 +58,7 @@ func KubeadmUpgradeApply(boot *cluster.Node, usePatch bool, ignorePreflightError
 	if err != nil {
 		return err
 	}
-	if current.Version.GreaterEqual(define.K8S_1_21_0) {
-		return KubectlPatchCorednsRole()
-	}
+	_ = KubectlPatchCorednsRole()
 	return waitControlPlaneUpgraded(current, boot, current.Version, wait)
 }
 

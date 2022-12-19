@@ -1,7 +1,7 @@
 /*
 Copyright 2020 Dasheng.
 
-Licensed under the Apache License, Full 2.0 (the "License");
+Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
@@ -14,9 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package define
+package action
 
-const (
-	CalicoIPIP  = "ipip"
-	CalicoVXLan = "vxlan"
+import (
+	"github.com/dneht/kubeon/pkg/cluster"
+	"github.com/dneht/kubeon/pkg/execute"
 )
+
+func KubectlCreateNamespace(name string) error {
+	return execute.NewLocalCmd("kubectl", "create",
+		"--kubeconfig="+cluster.Current().AdminConfigPath, "ns", name).RunWithEcho()
+}

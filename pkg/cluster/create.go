@@ -38,10 +38,10 @@ type CreateConfig struct {
 
 func CreateResource(mirror string) error {
 	return release.ProcessDownload(
-		current.LocalResource, current.Version.Full, current.RuntimeMode, mirror,
+		current.LocalResource, current.Version.Full,
+		current.RuntimeMode, current.NetworkMode, current.IngressMode, mirror,
 		current.IsRealLocal(), current.IsBinary, current.IsOffline,
-		current.UseNvidia && current.HasNvidia, current.UseKata,
-		current.IngressMode)
+		current.UseNvidia && current.HasNvidia, current.UseKata, current.UseKruise)
 }
 
 func CreateCompleteCluster() error {
@@ -109,17 +109,13 @@ func loadCreateConfig() string {
 	return adminConfigBase64
 }
 
-func writeKubeConfig(caCert string) error {
-	caData, err := base64.StdEncoding.DecodeString(caCert)
+func writeKubeConfig(base64Data string) error {
+	decodeData, err := base64.StdEncoding.DecodeString(base64Data)
 	if nil != err {
 		return err
 	}
-
-	// create the directory to contain the KUBECONFIG file.
-	// 0755 is taken from client-go's config handling logic: https://github.com/kubernetes/client-go/blob/5d107d4ebc00ee0ea606ad7e39fd6ce4b0d9bf9e/tools/clientcmd/loader.go#L412
-	err = os.MkdirAll(filepath.Dir(current.AdminConfigPath), 0755)
-	if err != nil {
+	if err = os.MkdirAll(filepath.Dir(current.AdminConfigPath), 0755); err != nil {
 		return errors.Wrap(err, "failed to create kubeconfig output directory")
 	}
-	return os.WriteFile(current.AdminConfigPath, caData, 0600)
+	return os.WriteFile(current.AdminConfigPath, decodeData, 0600)
 }

@@ -41,6 +41,24 @@ const (
 )
 
 const (
+	DefaultImageRepo = "k8s.gcr.io"
+	DockerImageRepo  = "docker.io"
+	MirrorImageRepo  = "registry.cn-hangzhou.aliyuncs.com"
+)
+
+const (
+	ImagePullPolicyAlways     = "Always"
+	ImagePullPolicyNotPresent = "IfNotPresent"
+	ImagePullPolicyNever      = "Never"
+)
+
+const (
+	ServiceClusterIP    = "ClusterIP"
+	ServiceNodePort     = "NodePort"
+	ServiceLoadBalancer = "LoadBalancer"
+)
+
+const (
 	ImagesPackage = "images"
 	PausePackage  = "pause"
 )
@@ -53,28 +71,102 @@ const (
 	OfflineModule = "offline"
 )
 
-const InstallScript = "script"
-
 const (
 	HealthzReader    = "healthz"
 	LocalHaproxy     = "haproxy"
 	ApiserverUpdater = "updater"
 	ApiserverStartup = "startup"
 	ApiserverService = "apiserver-startup"
+	BPFMountService  = "sys-bpf-mount"
 )
 
-func (v *StdVersion) IsSupportPatch() bool {
-	return v.GreaterEqual(K8S_1_19_0)
-}
+const InstallScript = "script"
 
-func (v *StdVersion) IsSupportContour() bool {
-	return v.GreaterThen(K8S_1_21_0)
-}
+const (
+	DockerRuntime     = "docker"
+	ContainerdRuntime = "containerd"
+	NvidiaRuntime     = "nvidia"
+	KataRuntime       = "kata"
+)
 
-func (v *StdVersion) IsSupportNvidia() bool {
-	return v.GreaterThen(K8S_1_22_0)
-}
+const (
+	CorednsPart = "coredns"
+)
 
-func (v *StdVersion) IsSupportKata() bool {
-	return v.GreaterThen(K8S_1_22_0)
-}
+const (
+	IPTablesProxy = "iptables"
+	IPVSProxy     = "ipvs"
+)
+
+const (
+	NetworkPlugin = "cni"
+
+	NoneNetwork   = "none"
+	CalicoNetwork = "calico"
+	CiliumNetwork = "cilium"
+
+	NoneIngress    = "none"
+	IstioIngress   = "istio"
+	ContourIngress = "contour"
+)
+
+const (
+	KruisePlugin = "kruise"
+)
+
+const (
+	CalicoBackendBIRD  = "bird"
+	CalicoBackendVXLAN = "vxlan"
+
+	CalicoTunnelIPIP  = "ipip"
+	CalicoTunnelVXLAN = "vxlan"
+
+	CalicoLBModeDSR     = "DSR"
+	CalicoLBModeDefault = "Tunnel"
+
+	CalicoTunModeNever       = "Never"
+	CalicoTunModeAlways      = "Always"
+	CalicoTunModeCrossSubnet = "CrossSubnet"
+)
+
+const (
+	CiliumPolicyDefault = "default"
+	CiliumPolicyAlways  = "always"
+	CiliumPolicyNever   = "never"
+
+	CiliumTunnelDisabled = "disabled"
+	CiliumTunnelVXLAN    = "vxlan"
+	CiliumTunnelGENEVE   = "geneve"
+
+	CiliumLBModeDSR    = "dsr"
+	CiliumLBModeSNAT   = "snat"
+	CiliumLBModeHybrid = "hybrid"
+
+	CiliumLBAlgorithmMaglev = "maglev"
+	CiliumLBAlgorithmRandom = "random"
+
+	CiliumLBAccelerationDisabled = "disabled"
+	CiliumLBAccelerationNative   = "native"
+)
+
+const (
+	ContourNamespace = "projectcontour"
+)
+
+const (
+	IstioNamespace = "istio-system"
+
+	IstioCommand = "/opt/cni/bin/istioctl"
+
+	IstioImagePrefix       = "/istio"
+	IstioMirrorImagePrefix = "/kubeon"
+	IstioProxyImage        = "istio-proxyv2"
+	IstioPilotImage        = "istio-pilot"
+	IstioCNIImage          = "istio-install-cni"
+
+	IstioProxyAutoInjectEnable  = "enabled"
+	IstioProxyAutoInjectDisable = "disabled"
+
+	IstioHttp2AutoUpgrade     = "UPGRADE"
+	IstioHttp2DontAutoUpgrade = "DO_NOT_UPGRADE"
+)

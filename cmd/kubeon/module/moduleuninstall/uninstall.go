@@ -27,7 +27,7 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:    cobra.ExactArgs(2),
 		Use:     "uninstall NODE_SELECTOR UNIT_NAME",
-		Aliases: []string{"u"},
+		Aliases: []string{"rm"},
 		Short:   "Uninstall module",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(cmd, args)

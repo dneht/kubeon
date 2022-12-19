@@ -54,6 +54,10 @@ func NewStdVersion(version string) (*StdVersion, error) {
 	return k8sVersion, nil
 }
 
+func (v *StdVersion) IsSupportPatch() bool {
+	return v.GreaterEqual(K8S_1_19_0)
+}
+
 func (v *StdVersion) GreaterThen(in *StdVersion) bool {
 	return v.Number > in.Number
 }

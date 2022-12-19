@@ -25,17 +25,18 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func InitResource(clusterVersion, runtimeMode string, isBinary, isOffline, hasNvidia, useKata bool, ingressMode string) *ClusterResource {
-	return initResource(clusterVersion, runtimeMode, isBinary, isOffline, hasNvidia, useKata, ingressMode)
+func InitResource(clusterVersion, runtimeMode, networkMode, ingressMode string,
+	isBinary, isOffline, hasNvidia, useKata, useKruise bool) *ClusterResource {
+	return initResource(clusterVersion, runtimeMode, networkMode, ingressMode, isBinary, isOffline, hasNvidia, useKata, useKruise)
 }
 
-func RemoteResource(homeDir, runtimeMode string) *ClusterRemoteResource {
+func RemoteResource(homeDir, runtimeMode, networkMode string) *ClusterRemoteResource {
 	basePath := homeDir + "/.kubeon"
-	return remoteResource(basePath, runtimeMode)
+	return remoteResource(basePath, runtimeMode, networkMode)
 }
 
-func initResource(clusterVersion, runtimeMode string, isBinary, isOffline,
-	hasNvidia, useKata bool, ingressMode string) *ClusterResource {
+func initResource(clusterVersion, runtimeMode, networkMode, ingressMode string,
+	isBinary, isOffline, hasNvidia, useKata, useKruise bool) *ClusterResource {
 	distPath := define.AppDistDir
 	localResource := &ClusterResource{
 		ImagesPath:     distPath + "/" + define.ImagesPackage + ".tar",
@@ -47,6 +48,7 @@ func initResource(clusterVersion, runtimeMode string, isBinary, isOffline,
 		DockerSum:      onutil.GetRemoteSum(clusterVersion, define.DockerRuntime),
 		ContainerdPath: distPath + "/" + define.ContainerdRuntime + ".tar",
 		ContainerdSum:  onutil.GetRemoteSum(clusterVersion, define.ContainerdRuntime),
+		NetworkType:    networkMode,
 		NetworkPath:    distPath + "/" + define.NetworkPlugin + ".tar",
 		NetworkSum:     onutil.GetRemoteSum(clusterVersion, define.NetworkPlugin),
 		ClusterConf: &ClusterConfResource{
@@ -75,6 +77,22 @@ func initResource(clusterVersion, runtimeMode string, isBinary, isOffline,
 	}
 	extVersion, ok := define.SupportComponentFull[clusterVersion]
 	if ok {
+		if networkMode == define.CalicoNetwork {
+			localResource.CalicoPath = distPath + "/" + define.CalicoNetwork + ".tar"
+			localResource.CalicoSum = onutil.GetRemoteSum(extVersion.Calico, define.CalicoNetwork)
+		}
+		if networkMode == define.CiliumNetwork {
+			localResource.CiliumPath = distPath + "/" + define.CiliumNetwork + ".tar"
+			localResource.CiliumSum = onutil.GetRemoteSum(extVersion.Cilium, define.CiliumNetwork)
+		}
+		if ingressMode == define.ContourIngress {
+			localResource.ContourPath = distPath + "/" + define.ContourIngress + ".tar"
+			localResource.ContourSum = onutil.GetRemoteSum(extVersion.Contour, define.ContourIngress)
+		}
+		if ingressMode == define.IstioIngress {
+			localResource.IstioPath = distPath + "/" + define.IstioIngress + ".tar"
+			localResource.IstioSum = onutil.GetRemoteSum(extVersion.Istio, define.IstioIngress)
+		}
 		if hasNvidia {
 			localResource.NvidiaPath = distPath + "/" + define.NvidiaRuntime + ".tar"
 			localResource.NvidiaSum = onutil.GetRemoteSum(extVersion.Nvidia, define.NvidiaRuntime)
@@ -83,9 +101,9 @@ func initResource(clusterVersion, runtimeMode string, isBinary, isOffline,
 			localResource.KataPath = distPath + "/" + define.KataRuntime + ".tar"
 			localResource.KataSum = onutil.GetRemoteSum(extVersion.Kata, define.KataRuntime)
 		}
-		if ingressMode == define.ContourIngress {
-			localResource.ContourPath = distPath + "/" + define.ContourIngress + ".tar"
-			localResource.ContourSum = onutil.GetRemoteSum(extVersion.Contour, define.ContourIngress)
+		if useKruise {
+			localResource.KruisePath = distPath + "/" + define.KruisePlugin + ".tar"
+			localResource.KruiseSum = onutil.GetRemoteSum(extVersion.Kruise, define.KruisePlugin)
 		}
 	}
 	if isOffline {
@@ -133,7 +151,7 @@ func writeScript(localScript *ClusterScriptResource) {
 	}
 }
 
-func remoteResource(basePath, runtimeMode string) *ClusterRemoteResource {
+func remoteResource(basePath, runtimeMode, networkMode string) *ClusterRemoteResource {
 	distPath := basePath + "/dist"
 	scriptPath := basePath + "/script"
 	return &ClusterRemoteResource{
@@ -148,14 +166,19 @@ func remoteResource(basePath, runtimeMode string) *ClusterRemoteResource {
 		PausePath:      distPath + "/" + define.PausePackage + ".tar",
 		BinaryPath:     distPath + "/" + define.BinaryModule + ".tar",
 		KubeletPath:    distPath + "/" + define.KubeletModule + ".tar",
+		OfflinePath:    distPath + "/" + define.OfflineModule + ".tar",
 		RuntimeType:    runtimeMode,
 		DockerPath:     distPath + "/" + define.DockerRuntime + ".tar",
 		ContainerdPath: distPath + "/" + define.ContainerdRuntime + ".tar",
+		NetworkType:    networkMode,
+		NetworkPath:    distPath + "/" + define.NetworkPlugin + ".tar",
+		CalicoPath:     distPath + "/" + define.CalicoNetwork + ".tar",
+		CiliumPath:     distPath + "/" + define.CiliumNetwork + ".tar",
+		ContourPath:    distPath + "/" + define.ContourIngress + ".tar",
+		IstioPath:      distPath + "/" + define.IstioIngress + ".tar",
 		NvidiaPath:     distPath + "/" + define.NvidiaRuntime + ".tar",
 		KataPath:       distPath + "/" + define.KataRuntime + ".tar",
-		NetworkPath:    distPath + "/" + define.NetworkPlugin + ".tar",
-		ContourPath:    distPath + "/" + define.ContourIngress + ".tar",
-		OfflinePath:    distPath + "/" + define.OfflineModule + ".tar",
+		KruisePath:     distPath + "/" + define.KruisePlugin + ".tar",
 		ClusterConf: &ClusterRemoteConfResource{
 			KubeletInitPath:    "/var/lib/kubelet/config.yaml",
 			KubeadmInitPath:    "/etc/kubeadm.yaml",
@@ -175,8 +198,10 @@ func remoteResource(basePath, runtimeMode string) *ClusterRemoteResource {
 }
 
 func PrepareLocal(resource *ClusterResource) (use bool, err error) {
+	createKubeonNeedDirs()
+
 	localTmpDir := define.AppTmpDir + "/local"
-	mkNeedDir(localTmpDir)
+	onutil.MkDir(localTmpDir)
 	err = execute.UnpackTar(resource.KubeletPath, localTmpDir)
 	if nil != err {
 		return false, err
@@ -197,12 +222,26 @@ func PrepareLocal(resource *ClusterResource) (use bool, err error) {
 	onutil.ChmodFile("/usr/local/bin/kubeadm", 755)
 	use = onutil.IsEmptyDir(localTmpDir + "/patch")
 	onutil.RmDir(localTmpDir)
+
+	cniTmpDir := define.AppTmpDir + "/cni"
+	onutil.MkDir(cniTmpDir)
+	err = execute.UnpackTar(resource.NetworkPath, cniTmpDir)
+	if nil != err {
+		return false, err
+	}
+	err = execute.NewLocalCmd("bash", cniTmpDir+"/install.sh").Run()
+	if nil != err {
+		return false, err
+	}
+	onutil.RmDir(cniTmpDir)
 	return use, nil
 }
 
 func ReinstallLocal(resource *ClusterResource) {
+	createKubeonNeedDirs()
+
 	localTmpDir := define.AppTmpDir + "/local"
-	mkNeedDir(localTmpDir)
+	onutil.MkDir(localTmpDir)
 	err := execute.UnpackTar(resource.KubeletPath, localTmpDir)
 	if nil != err {
 		klog.Warningf("Unpack resource failed: %s", err)
@@ -217,8 +256,7 @@ func ReinstallLocal(resource *ClusterResource) {
 	AddLocalAutoCompletion()
 }
 
-func mkNeedDir(localTmpDir string) {
-	onutil.MkDir(localTmpDir)
+func createKubeonNeedDirs() {
 	onutil.MkDir(define.AppTmpDir)
 	onutil.MkDir(define.AppConfDir)
 	onutil.MkDir(define.AppPatchDir)
@@ -240,6 +278,7 @@ func DestroyLocal() {
 	onutil.RmFile("/usr/local/bin/kubectl")
 	onutil.RmFile("/usr/local/bin/kubeadm")
 	onutil.RmDir(onutil.BaseDir())
+	_ = execute.NewLocalCmd("bash", define.AppScriptDir+"/uninstall_cni.sh").Run()
 }
 
 func DelLocalAutoCompletion() {

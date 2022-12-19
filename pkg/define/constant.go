@@ -19,7 +19,7 @@ package define
 import "github.com/dneht/kubeon/pkg/onutil"
 
 const (
-	AppVersion = "0.12.0"
+	AppVersion = "0.13.0"
 )
 
 var (
@@ -41,7 +41,7 @@ var (
 const (
 	DefaultClusterAPIDomain = "apiserver.cluster.local"
 
-	DefaultClusterAPIPort = int32(6443)
+	DefaultClusterAPIPort = uint32(6443)
 
 	DefaultClusterLBMode = LocalHaproxy
 
@@ -57,10 +57,6 @@ const (
 	// DefaultPodSubnet defines the default pod subnet
 	DefaultPodSubnet = "10.96.0.0/12"
 
-	// DefaultImageRepo defines the default image repo
-	DefaultImageRepo = "k8s.gcr.io"
-	MirrorImageRepo  = "registry.cn-hangzhou.aliyuncs.com"
-
 	DefaultProxyMode = IPVSProxy
 
 	DefaultIPVSScheduler = "rr"
@@ -68,10 +64,6 @@ const (
 	DefaultRuntimeMode = ContainerdRuntime
 
 	DefaultNetworkMode = CalicoNetwork
-
-	DefaultCalicoMode = CalicoIPIP
-
-	DefaultCalicoMTU = "1440"
 
 	DefaultIngressMode = NoneIngress
 

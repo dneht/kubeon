@@ -100,8 +100,10 @@ func sendPackage(prog *mpb.Progress, nodes cluster.NodeList, isUpgrade bool) {
 		copyQueues[node] = doQueuedPackage(node, prog)
 	}
 
+	lch := make(chan struct{}, 6)
 	for node, queue := range copyQueues {
-		go doTransPackage(node, queue)
+		lch <- struct{}{}
+		go doTransPackage(node, queue, lch)
 	}
 }
 
@@ -122,11 +124,23 @@ func doQueuedPackage(node *cluster.Node, prog *mpb.Progress) []*PrepareModule {
 		if current.IsOffline {
 			doAppendPackage(4, node, prog, barQueue, copyQueue, define.OfflineModule, remoteRes.OfflinePath, localRes.OfflinePath, localRes.OfflineSum)
 		}
-		if current.UseKata {
-			doAppendPackage(5, node, prog, barQueue, copyQueue, define.KataRuntime, remoteRes.KataPath, localRes.KataPath, localRes.KataSum)
-		}
 		if current.UseNvidia && node.HasNvidia {
-			doAppendPackage(6, node, prog, barQueue, copyQueue, define.NvidiaRuntime, remoteRes.NvidiaPath, localRes.NvidiaPath, localRes.NvidiaSum)
+			doAppendPackage(5, node, prog, barQueue, copyQueue, define.NvidiaRuntime, remoteRes.NvidiaPath, localRes.NvidiaPath, localRes.NvidiaSum)
+		}
+		if current.UseKata {
+			doAppendPackage(6, node, prog, barQueue, copyQueue, define.KataRuntime, remoteRes.KataPath, localRes.KataPath, localRes.KataSum)
+		}
+		switch current.NetworkMode {
+		case define.CalicoNetwork:
+			{
+				doAppendPackage(8, node, prog, barQueue, copyQueue, define.CalicoNetwork, remoteRes.CalicoPath, localRes.CalicoPath, localRes.CalicoSum)
+				break
+			}
+		case define.CiliumNetwork:
+			{
+				doAppendPackage(9, node, prog, barQueue, copyQueue, define.CiliumNetwork, remoteRes.CiliumPath, localRes.CiliumPath, localRes.CiliumSum)
+				break
+			}
 		}
 		switch current.IngressMode {
 		case define.ContourIngress:
@@ -134,6 +148,14 @@ func doQueuedPackage(node *cluster.Node, prog *mpb.Progress) []*PrepareModule {
 				doAppendPackage(12, node, prog, barQueue, copyQueue, define.ContourIngress, remoteRes.ContourPath, localRes.ContourPath, localRes.ContourSum)
 				break
 			}
+		case define.IstioIngress:
+			{
+				doAppendPackage(13, node, prog, barQueue, copyQueue, define.IstioIngress, remoteRes.IstioPath, localRes.IstioPath, localRes.IstioSum)
+				break
+			}
+		}
+		if current.UseKruise {
+			doAppendPackage(15, node, prog, barQueue, copyQueue, define.KruisePlugin, remoteRes.KruisePath, localRes.KruisePath, localRes.KruiseSum)
 		}
 	} else {
 		doAppendPackage(3, node, prog, barQueue, copyQueue, define.PausePackage, remoteRes.PausePath, localRes.PausePath, localRes.PauseSum)
@@ -166,12 +188,13 @@ func doAppendPackage(idx int, node *cluster.Node, prog *mpb.Progress, barQueue [
 	}
 }
 
-func doTransPackage(node *cluster.Node, queue []*PrepareModule) {
+func doTransPackage(node *cluster.Node, queue []*PrepareModule, lch chan struct{}) {
 	for _, task := range queue {
 		if nil != task {
 			node.CopyToWithBar(task.LocalPath, task.RemotePath, task.LocalSum, task.CopyBar)
 		}
 	}
+	<-lch
 }
 
 func handlePackage(nodes cluster.NodeList, upgrade bool) {
@@ -229,6 +252,42 @@ func doInstallPackage(wait *sync.WaitGroup, node *cluster.Node, upgrade bool) {
 		os.Exit(1)
 	}
 	if current.IsRealLocal() {
+		switch current.NetworkMode {
+		case define.CalicoNetwork:
+			{
+				if err := importOnNode(node, define.CalicoNetwork, remoteRes.CalicoPath); nil != err {
+					klog.Errorf("[package] import calico image on [%s] failed: %v", node.Addr(), err)
+					os.Exit(1)
+				}
+				break
+			}
+		case define.CiliumNetwork:
+			{
+				if err := importOnNode(node, define.CiliumNetwork, remoteRes.CiliumPath); nil != err {
+					klog.Errorf("[package] import cilium image on [%s] failed: %v", node.Addr(), err)
+					os.Exit(1)
+				}
+				break
+			}
+		}
+		switch current.IngressMode {
+		case define.ContourIngress:
+			{
+				if err := importOnNode(node, define.ContourIngress, remoteRes.ContourPath); nil != err {
+					klog.Errorf("[package] import contour image on [%s] failed: %v", node.Addr(), err)
+					os.Exit(1)
+				}
+				break
+			}
+		case define.IstioIngress:
+			{
+				if err := importOnNode(node, define.IstioIngress, remoteRes.IstioPath); nil != err {
+					klog.Errorf("[package] import istio image on [%s] failed: %v", node.Addr(), err)
+					os.Exit(1)
+				}
+				break
+			}
+		}
 		if current.UseNvidia && node.HasNvidia {
 			if err := importOnNode(node, define.NvidiaRuntime, remoteRes.NvidiaPath); nil != err {
 				klog.Errorf("[package] import nvidia image on [%s] failed: %v", node.Addr(), err)
@@ -242,14 +301,10 @@ func doInstallPackage(wait *sync.WaitGroup, node *cluster.Node, upgrade bool) {
 				os.Exit(1)
 			}
 		}
-		switch current.IngressMode {
-		case define.ContourIngress:
-			{
-				if err := importOnNode(node, define.ContourIngress, remoteRes.ContourPath); nil != err {
-					klog.Errorf("[package] import contour image on [%s] failed: %v", node.Addr(), err)
-					os.Exit(1)
-				}
-				break
+		if current.UseKruise {
+			if err := importOnNode(node, define.KruisePlugin, remoteRes.KruisePath); nil != err {
+				klog.Errorf("[package] import kruise image on [%s] failed: %v", node.Addr(), err)
+				os.Exit(1)
 			}
 		}
 	} else {

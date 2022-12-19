@@ -40,7 +40,7 @@ func checkSupport(flags *flagpole, clusterVersion string) bool {
 	}
 	isSupport = define.IsSupportIngress(flags.InputICMode)
 	if !isSupport {
-		klog.Errorf("[check] Input ic[%s] not support", flags.InputICMode)
+		klog.Errorf("[check] Input ingress[%s] not support", flags.InputICMode)
 		return false
 	}
 	isSupport = define.IsSupportProxyMode(flags.InputProxyMode)
@@ -48,9 +48,9 @@ func checkSupport(flags *flagpole, clusterVersion string) bool {
 		klog.Errorf("[check] Input proxy mode[%s] not support", flags.InputProxyMode)
 		return false
 	}
-	isSupport = define.IsSupportCalicoMode(flags.CalicoMode)
+	isSupport = define.IsSupportCiliumPolicyMode(flags.CiliumPolicyMode)
 	if !isSupport {
-		klog.Errorf("[check] Input calico mode[%s] not support", flags.CalicoMode)
+		klog.Errorf("[check] Input cilium policy mode[%s] not support", flags.CiliumPolicyMode)
 		return false
 	}
 	return true

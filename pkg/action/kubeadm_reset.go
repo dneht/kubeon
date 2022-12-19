@@ -24,7 +24,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func KubeadmResetOne(node *cluster.Node, force bool) {
+func KubeadmResetOne(node *cluster.Node, delete, force bool) {
 	var err error
 	current := cluster.Current()
 	if force {
@@ -51,16 +51,18 @@ func KubeadmResetOne(node *cluster.Node, force bool) {
 	} else if current.ProxyMode == define.IPTablesProxy {
 		klog.Warningf("Please clean the iptables rules yourself")
 	}
-	err = KubectlDeleteNode(node.Hostname)
-	if nil != err {
-		klog.Warningf("Delete node[%s] failed: %v", node.Addr(), err)
+	if delete {
+		err = KubectlDeleteNode(node.Hostname)
+		if nil != err {
+			klog.Warningf("Delete node[%s] failed: %v", node.Addr(), err)
+		}
 	}
 }
 
-func KubeadmResetList(list cluster.NodeList, force bool) {
+func KubeadmResetList(list cluster.NodeList, delete, force bool) {
 	for _, node := range list {
 		if node.IsWorker() {
-			KubeadmResetOne(node, false)
+			KubeadmResetOne(node, delete, false)
 		}
 	}
 	var boot *cluster.Node = nil
@@ -70,10 +72,10 @@ func KubeadmResetList(list cluster.NodeList, force bool) {
 			continue
 		}
 		if node.IsControlPlane() {
-			KubeadmResetOne(node, false)
+			KubeadmResetOne(node, delete, false)
 		}
 	}
 	if nil != boot {
-		KubeadmResetOne(boot, force)
+		KubeadmResetOne(boot, delete, force)
 	}
 }

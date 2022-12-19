@@ -28,10 +28,12 @@ type flagpole struct {
 	ForceLocal   bool
 	UseOffline   bool
 	InputCRIMode string
+	InputCNIMode string
 	InputICMode  string
 	WithBinary   bool
 	WithNvidia   bool
 	WithKata     bool
+	WithKruise   bool
 }
 
 func NewCommand() *cobra.Command {
@@ -71,9 +73,14 @@ func NewCommand() *cobra.Command {
 		"Runtime interface, only docker or containerd",
 	)
 	cmd.Flags().StringVar(
+		&flags.InputCNIMode, "cni",
+		define.DefaultNetworkMode,
+		"Network plugin, only none, calico or cilium",
+	)
+	cmd.Flags().StringVar(
 		&flags.InputICMode, "ic",
 		define.DefaultIngressMode,
-		"Ingress controller, only none or contour",
+		"Ingress controller, only none, contour or istio",
 	)
 	cmd.Flags().BoolVar(
 		&flags.WithNvidia, "with-nvidia",
@@ -83,14 +90,21 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().BoolVar(
 		&flags.WithKata, "with-kata",
 		false,
-		"Install kata with Kata-deploy",
+		"Install kata",
+	)
+	cmd.Flags().BoolVar(
+		&flags.WithKruise, "with-kruise",
+		false,
+		"Install kruise",
 	)
 	return cmd
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	version, runtime, ingress := args[0], flags.InputCRIMode, flags.InputICMode
-	resource := release.InitResource(version, runtime, flags.WithBinary, flags.UseOffline, flags.WithNvidia, flags.WithKata, ingress)
-	return release.ProcessDownload(resource, version, runtime, onutil.ConvMirror(flags.MirrorHost, define.MirrorImageRepo),
-		flags.ForceLocal, flags.WithBinary, flags.UseOffline, flags.WithNvidia, flags.WithKata, ingress)
+	version, runtime, network, ingress := args[0], flags.InputCRIMode, flags.InputCNIMode, flags.InputICMode
+	resource := release.InitResource(version, runtime, network, ingress,
+		flags.WithBinary, flags.UseOffline, flags.WithNvidia, flags.WithKata, flags.WithKruise)
+	return release.ProcessDownload(resource, version, runtime, network, ingress,
+		onutil.ConvMirror(flags.MirrorHost, define.MirrorImageRepo, define.DockerImageRepo),
+		flags.ForceLocal, flags.WithBinary, flags.UseOffline, flags.WithNvidia, flags.WithKata, flags.WithKruise)
 }

@@ -1,7 +1,7 @@
 Vagrant.configure("2") do |config|
     # 设置虚拟机的Box
-    config.vm.box = "ubuntu/jammy64"
-    config.vm.box_url = "https://mirrors.ustc.edu.cn/ubuntu-cloud-images/jammy/current/jammy-server-cloudimg-amd64-vagrant.box"
+    config.vm.box = "ubuntu/focal64"
+    config.vm.box_url = "https://mirrors.ustc.edu.cn/ubuntu-cloud-images/focal/current/focal-server-cloudimg-amd64-vagrant.box"
     #config.disksize.size = "50GB"
 	(1..5).each do |i|
 		config.vm.define "node#{i}" do |node|
