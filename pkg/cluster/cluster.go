@@ -283,19 +283,27 @@ func (c *Cluster) GetInitImagePullPolicy() string {
 	}
 }
 
-func (c *Cluster) GetHaproxyResource() string {
-	if c.IsRealLocal() {
-		return define.HaproxyResource
+func (c *Cluster) GetPauseImageAddr() string {
+	if ver, ok := define.SupportComponentFull[c.Version.Full]; ok {
+		return c.GetInitImageRepo() + "/" + define.PausePackage + ":" + ver.Pause
 	} else {
-		return c.Mirror + "/" + define.HaproxyResource
+		return ""
 	}
 }
 
-func (c *Cluster) GetUpdaterResource() string {
+func (c *Cluster) GetHaproxyImageAddr() string {
 	if c.IsRealLocal() {
-		return define.UpdaterResource
+		return define.HaproxyResource + ":" + c.Version.Full
 	} else {
-		return c.Mirror + "/" + define.UpdaterResource
+		return c.Mirror + "/" + define.HaproxyResource + ":" + c.Version.Full
+	}
+}
+
+func (c *Cluster) GetUpdaterImageAddr() string {
+	if c.IsRealLocal() {
+		return define.UpdaterResource + ":" + c.Version.Full
+	} else {
+		return c.Mirror + "/" + define.UpdaterResource + ":" + c.Version.Full
 	}
 }
 

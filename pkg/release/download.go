@@ -102,15 +102,15 @@ func ProcessDownload(resource *ClusterResource, version, runtime, network, ingre
 		if !onutil.PathExists(resource.ImagesPath) || execute.FileSum(resource.ImagesPath) != resource.ImagesSum {
 			tasks = append(tasks, &ProcessModule{version, ImagesResource, define.ImagesPackage})
 		}
-		if isOffline {
-			if !onutil.PathExists(resource.OfflinePath) || execute.FileSum(resource.OfflinePath) != resource.OfflineSum {
-				tasks = append(tasks, &ProcessModule{version, OfflineResource, define.OfflineModule})
-			}
-		}
 
 		if extVersion, extExist := define.SupportComponentFull[version]; !extExist {
 			return errors.New("extend resource not exist, please enter newer version")
 		} else {
+			if isOffline {
+				if !onutil.PathExists(resource.OfflinePath) || execute.FileSum(resource.OfflinePath) != resource.OfflineSum {
+					tasks = append(tasks, &ProcessModule{extVersion.Offline, OfflineResource, define.OfflineModule})
+				}
+			}
 			switch network {
 			case define.CalicoNetwork:
 				{

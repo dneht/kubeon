@@ -230,6 +230,13 @@ func doInstallPackage(wait *sync.WaitGroup, node *cluster.Node, upgrade bool) {
 			klog.Errorf("[package] install containerd on [%s] failed: %v", node.Addr(), err)
 			os.Exit(1)
 		}
+		pauseImageAddr := current.GetPauseImageAddr()
+		if "" != pauseImageAddr {
+			err := node.RunCmd("sed", "-i", "-E", "\"s#sandbox_image\\s+=\\s+\\\"[0-9a-zA-Z\\/+-.:]+\\\"#sandbox_image = \\\""+pauseImageAddr+"\\\"#g\"", "/etc/containerd/config.toml")
+			if nil != err {
+				klog.Errorf("[package] modify containerd infra image on [%s] failed: %v", node.Addr(), err)
+			}
+		}
 	} else {
 		if _, err := installOnNode(node, define.DockerRuntime, remoteRes.DockerPath); nil != err {
 			klog.Errorf("[package] install docker on [%s] failed: %v", node.Addr(), err)

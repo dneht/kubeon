@@ -18,6 +18,7 @@ package define
 
 type ComponentVersion struct {
 	Kubernetes string `json:"kubernetes"`
+	Pause      string `json:"pause"`
 	Etcd       string `json:"etcd"`
 	Coredns    string `json:"coredns"`
 	Crictl     string `json:"crictl,omitempty"`
@@ -33,6 +34,7 @@ type ComponentVersion struct {
 	Istio      string `json:"istio,omitempty"`
 	Haproxy    string `json:"haproxy,omitempty"`
 	Kruise     string `json:"kruise,omitempty"`
+	Offline    string `json:"offline"`
 }
 
 var SupportComponentFull = map[string]*ComponentVersion{}

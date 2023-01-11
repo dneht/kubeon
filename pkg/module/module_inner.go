@@ -275,7 +275,7 @@ func ShowInner(moduleName string) ([]byte, error) {
 	case define.LocalHaproxy:
 		return release.RenderHaproxyTemplate(&release.BalanceHaproxyTemplate{
 			MasterHosts: current.MasterAPIs(),
-			ImageUrl:    current.GetHaproxyResource() + ":" + current.Version.Full,
+			ImageUrl:    current.GetHaproxyImageAddr(),
 		})
 	case define.ApiserverStartup:
 		return release.RenderStartupService(&release.ApiserverScriptTemplate{
@@ -287,7 +287,7 @@ func ShowInner(moduleName string) ([]byte, error) {
 		return release.RenderUpdaterTemplate(&release.ApiserverUpdaterTemplate{
 			ClusterLbIP: current.LbIP,
 			MasterIPs:   current.MasterIPs(),
-			ImageUrl:    current.GetUpdaterResource() + ":" + current.Version.Full,
+			ImageUrl:    current.GetUpdaterImageAddr(),
 		})
 	default:
 		klog.Warningf("Not support inner module[%s]", moduleName)
