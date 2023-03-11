@@ -18,6 +18,7 @@ package destroy
 
 import (
 	"github.com/dneht/kubeon/pkg/action"
+	"github.com/dneht/kubeon/pkg/cloud"
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/module"
 	"github.com/spf13/cobra"
@@ -56,11 +57,12 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	current := cluster.Current()
 	err = resetCluster(flags.ForceReset)
 	if nil != err {
 		klog.Warningf("Reset cluster failed, continue uninstall: %v", err)
 	}
-	err = doUninstall()
+	err = doUninstall(current)
 	if nil != err {
 		klog.Warningf("Uninstall module failed, please check: %v", err)
 	}
@@ -72,11 +74,13 @@ func resetCluster(force bool) (err error) {
 	return nil
 }
 
-func doUninstall() (err error) {
+func doUninstall(current *cluster.Cluster) (err error) {
 	err = module.AllUninstall(cluster.CurrentNodes(), true)
 	if nil != err {
 		return err
 	}
-
+	if current.IsOnCloud() {
+		cloud.DeleteRouterNow(current.AllNodes)
+	}
 	return cluster.DestroyCompleteCluster()
 }

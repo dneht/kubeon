@@ -51,7 +51,6 @@ type ClusterResource struct {
 	KruiseSum      string                 `json:"kruiseSum,omitempty"`
 	ClusterConf    *ClusterConfResource   `json:"clusterConf,omitempty"`
 	ClusterScript  *ClusterScriptResource `json:"clusterScript,omitempty"`
-	InstallVersion *map[string]string     `json:"installVersion,omitempty"`
 }
 
 type ClusterConfResource struct {
@@ -70,6 +69,7 @@ type ClusterScriptResource struct {
 	PrepareUbuntuPath  string `json:"prepareUbuntuPath"`
 	DiscoverPath       string `json:"discoverPath"`
 	DiscoverNvidiaPath string `json:"discoverNvidiaPath"`
+	SystemVersionPath  string `json:"systemVersionPath"`
 }
 
 type ClusterRemoteResource struct {
@@ -116,4 +116,5 @@ type ClusterRemoteScriptResource struct {
 	PrepareUbuntuPath  string `json:"prepareUbuntuPath"`
 	DiscoverPath       string `json:"discoverPath"`
 	DiscoverNvidiaPath string `json:"discoverNvidiaPath"`
+	SystemVersionPath  string `json:"systemVersionPath"`
 }

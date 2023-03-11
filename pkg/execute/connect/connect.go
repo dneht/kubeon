@@ -95,9 +95,6 @@ func sshClient(addr string) (*ssh.Client, error) {
 		User:    config.User,
 		Auth:    auth,
 		Timeout: clientTimeout,
-		Config: ssh.Config{
-			Ciphers: []string{"aes128-ctr", "aes192-ctr", "aes256-ctr", "aes128-gcm@openssh.com", "arcfour256", "arcfour128", "aes128-cbc", "3des-cbc", "aes192-cbc", "aes256-cbc"},
-		},
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 			return nil
 		},
@@ -117,8 +114,7 @@ func sshClient(addr string) (*ssh.Client, error) {
 func sshAuthMethod(passwd, pkFile, pkPasswd string) (auth []ssh.AuthMethod) {
 	isSet := false
 	if "" != pkFile && onutil.PathExists(pkFile) {
-		am, err := sshPrivateKeyMethod(pkFile, pkPasswd)
-		if err == nil {
+		if am, err := sshPrivateKeyMethod(pkFile, pkPasswd); nil == err {
 			auth = append(auth, am)
 			isSet = true
 		}
@@ -128,9 +124,17 @@ func sshAuthMethod(passwd, pkFile, pkPasswd string) (auth []ssh.AuthMethod) {
 		isSet = true
 	}
 	if !isSet {
-		am, err := sshPrivateKeyMethod(onutil.Home()+"/.ssh/id_rsa", pkPasswd)
-		if err == nil {
-			auth = append(auth, am)
+		rsaFile := onutil.Home() + "/.ssh/id_rsa"
+		if onutil.PathExists(rsaFile) {
+			if am, err := sshPrivateKeyMethod(rsaFile, pkPasswd); nil == err {
+				auth = append(auth, am)
+			}
+		}
+		ed25519File := onutil.Home() + "/.ssh/id_ed25519"
+		if onutil.PathExists(ed25519File) {
+			if am, err := sshPrivateKeyMethod(ed25519File, pkPasswd); nil == err {
+				auth = append(auth, am)
+			}
 		}
 	}
 	return auth

@@ -69,6 +69,11 @@ func ProcessDownload(resource *ClusterResource, version, runtime, network, ingre
 	if nil == resource {
 		return errors.New("cluster not init")
 	}
+	extVersion, extExist := define.SupportComponentFull[version]
+	if !extExist {
+		return errors.New("extend resource not exist, please enter newer version")
+	}
+
 	tasks := make([]*ProcessModule, 0, 16)
 	if isBinary {
 		if !onutil.PathExists(resource.BinaryPath) || execute.FileSum(resource.BinaryPath) != resource.BinarySum {
@@ -83,81 +88,73 @@ func ProcessDownload(resource *ClusterResource, version, runtime, network, ingre
 	if define.DockerRuntime == runtime {
 		if !onutil.PathExists(resource.ContainerdPath) || execute.FileSum(resource.ContainerdPath) != resource.ContainerdSum {
 			IsUpdateRuntime = true
-			tasks = append(tasks, &ProcessModule{version, ContainerdResource, define.ContainerdRuntime})
+			tasks = append(tasks, &ProcessModule{extVersion.Containerd, ContainerdResource, define.ContainerdRuntime})
 		}
 		if !onutil.PathExists(resource.DockerPath) || execute.FileSum(resource.DockerPath) != resource.DockerSum {
 			IsUpdateRuntime = true
-			tasks = append(tasks, &ProcessModule{version, DockerResource, define.DockerRuntime})
+			tasks = append(tasks, &ProcessModule{extVersion.Docker, DockerResource, define.DockerRuntime})
 		}
 	} else {
 		if !onutil.PathExists(resource.ContainerdPath) || execute.FileSum(resource.ContainerdPath) != resource.ContainerdSum {
 			IsUpdateRuntime = true
-			tasks = append(tasks, &ProcessModule{version, ContainerdResource, define.ContainerdRuntime})
+			tasks = append(tasks, &ProcessModule{extVersion.Containerd, ContainerdResource, define.ContainerdRuntime})
 		}
 	}
 	if !onutil.PathExists(resource.NetworkPath) || execute.FileSum(resource.NetworkPath) != resource.NetworkSum {
-		tasks = append(tasks, &ProcessModule{version, NetworkResource, define.NetworkPlugin})
+		tasks = append(tasks, &ProcessModule{extVersion.RealNetwork(), NetworkResource, define.NetworkPlugin})
 	}
 	if isLocal {
 		if !onutil.PathExists(resource.ImagesPath) || execute.FileSum(resource.ImagesPath) != resource.ImagesSum {
 			tasks = append(tasks, &ProcessModule{version, ImagesResource, define.ImagesPackage})
 		}
 
-		if extVersion, extExist := define.SupportComponentFull[version]; !extExist {
-			return errors.New("extend resource not exist, please enter newer version")
-		} else {
-			if isOffline {
-				if !onutil.PathExists(resource.OfflinePath) || execute.FileSum(resource.OfflinePath) != resource.OfflineSum {
-					tasks = append(tasks, &ProcessModule{extVersion.Offline, OfflineResource, define.OfflineModule})
+		if isOffline {
+			if !onutil.PathExists(resource.OfflinePath) || execute.FileSum(resource.OfflinePath) != resource.OfflineSum {
+				tasks = append(tasks, &ProcessModule{extVersion.Offline, OfflineResource, define.OfflineModule})
+			}
+		}
+		switch network {
+		case define.CalicoNetwork:
+			{
+				if !onutil.PathExists(resource.CalicoPath) || execute.FileSum(resource.CalicoPath) != resource.CalicoSum {
+					tasks = append(tasks, &ProcessModule{extVersion.Calico, CalicoResource, define.CalicoNetwork})
 				}
 			}
-			switch network {
-			case define.CalicoNetwork:
-				{
-					if !onutil.PathExists(resource.CalicoPath) || execute.FileSum(resource.CalicoPath) != resource.CalicoSum {
-						tasks = append(tasks, &ProcessModule{extVersion.Calico, CalicoResource, define.CalicoNetwork})
-					}
-					break
-				}
-			case define.CiliumNetwork:
-				{
-					if !onutil.PathExists(resource.CiliumPath) || execute.FileSum(resource.CiliumPath) != resource.CiliumSum {
-						tasks = append(tasks, &ProcessModule{extVersion.Cilium, CiliumResource, define.CiliumNetwork})
-					}
-					break
+		case define.CiliumNetwork:
+			{
+				if !onutil.PathExists(resource.CiliumPath) || execute.FileSum(resource.CiliumPath) != resource.CiliumSum {
+					tasks = append(tasks, &ProcessModule{extVersion.Cilium, CiliumResource, define.CiliumNetwork})
 				}
 			}
-			switch ingress {
-			case define.ContourIngress:
-				{
-					if !onutil.PathExists(resource.ContourPath) || execute.FileSum(resource.ContourPath) != resource.ContourSum {
-						tasks = append(tasks, &ProcessModule{extVersion.Contour, ContourResource, define.ContourIngress})
-					}
-					break
-				}
-			case define.IstioIngress:
-				{
-					if !onutil.PathExists(resource.IstioPath) || execute.FileSum(resource.IstioPath) != resource.IstioSum {
-						tasks = append(tasks, &ProcessModule{extVersion.Istio, IstioResource, define.IstioIngress})
-					}
-					break
+		}
+		switch ingress {
+		case define.ContourIngress:
+			{
+				if !onutil.PathExists(resource.ContourPath) || execute.FileSum(resource.ContourPath) != resource.ContourSum {
+					tasks = append(tasks, &ProcessModule{extVersion.Contour, ContourResource, define.ContourIngress})
 				}
 			}
-			if useNvidia {
-				if !onutil.PathExists(resource.NvidiaPath) || execute.FileSum(resource.NvidiaPath) != resource.NvidiaSum {
-					tasks = append(tasks, &ProcessModule{extVersion.Nvidia, NvidiaResource, define.NvidiaRuntime})
+		case define.IstioIngress:
+			{
+				if !onutil.PathExists(resource.IstioPath) || execute.FileSum(resource.IstioPath) != resource.IstioSum {
+					tasks = append(tasks, &ProcessModule{extVersion.Istio, IstioResource, define.IstioIngress})
+				}
+			}
+		}
+		if useNvidia {
+			if !onutil.PathExists(resource.NvidiaPath) || execute.FileSum(resource.NvidiaPath) != resource.NvidiaSum {
+				tasks = append(tasks, &ProcessModule{extVersion.Nvidia, NvidiaResource, define.NvidiaRuntime})
 
-				}
 			}
-			if useKata {
-				if !onutil.PathExists(resource.KataPath) || execute.FileSum(resource.KataPath) != resource.KataSum {
-					tasks = append(tasks, &ProcessModule{extVersion.Kata, KataResource, define.KataRuntime})
-				}
+		}
+		if useKata {
+			if !onutil.PathExists(resource.KataPath) || execute.FileSum(resource.KataPath) != resource.KataSum {
+				tasks = append(tasks, &ProcessModule{extVersion.Kata, KataResource, define.KataRuntime})
 			}
-			if useKruise {
-				if !onutil.PathExists(resource.KruisePath) || execute.FileSum(resource.KruisePath) != resource.KruiseSum {
-					tasks = append(tasks, &ProcessModule{extVersion.Kruise, KruiseResource, define.KruisePlugin})
-				}
+		}
+		if useKruise {
+			if !onutil.PathExists(resource.KruisePath) || execute.FileSum(resource.KruisePath) != resource.KruiseSum {
+				tasks = append(tasks, &ProcessModule{extVersion.Kruise, KruiseResource, define.KruisePlugin})
 			}
 		}
 	} else {

@@ -183,7 +183,7 @@ func importOnNode(node *cluster.Node, moduleName, remotePath string) (err error)
 	if nil != err {
 		return err
 	}
-	err = importImages(node, remoteTmpDir+"/image.tar")
+	err = importImages(node, moduleName, remoteTmpDir+"/image.tar")
 	_ = node.RunCmd("rm", "-rf", remoteTmpDir)
 	return nil
 }

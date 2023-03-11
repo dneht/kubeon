@@ -24,13 +24,14 @@ var (
 	K8S_1_22_0, _ = NewStdVersion("v1.22.0")
 	K8S_1_23_0, _ = NewStdVersion("v1.23.0")
 	K8S_1_25_0, _ = NewStdVersion("v1.25.0")
-	K8S_1_19_x, _ = NewRngVersion("v1.19.4", "v1.19.16")
-	K8S_1_20_x, _ = NewRngVersion("v1.20.1", "v1.20.15")
-	K8S_1_21_x, _ = NewRngVersion("v1.21.1", "v1.21.14")
-	K8S_1_22_x, _ = NewRngVersion("v1.22.1", "v1.22.15")
-	K8S_1_23_x, _ = NewRngVersion("v1.23.1", "v1.23.12")
-	K8S_1_24_x, _ = NewRngVersion("v1.24.1", "v1.24.6")
-	K8S_1_25_x, _ = NewRngVersion("v1.25.1", "v1.25.2")
+	K8S_1_19_x, _ = NewRngVersion("v1.19.16", "v1.19.16")
+	K8S_1_20_x, _ = NewRngVersion("v1.20.15", "v1.20.15")
+	K8S_1_21_x, _ = NewRngVersion("v1.21.14", "v1.21.14")
+	K8S_1_22_x, _ = NewRngVersion("v1.22.15", "v1.22.17")
+	K8S_1_23_x, _ = NewRngVersion("v1.23.11", "v1.23.17")
+	K8S_1_24_x, _ = NewRngVersion("v1.24.1", "v1.24.11")
+	K8S_1_25_x, _ = NewRngVersion("v1.25.1", "v1.25.7")
+	K8S_1_26_x, _ = NewRngVersion("v1.26.1", "v1.26.2")
 	ETCD_3_4_0, _ = NewStdVersion("3.4.0")
 )
 
@@ -41,9 +42,11 @@ const (
 )
 
 const (
-	DefaultImageRepo = "k8s.gcr.io"
+	DefaultImageRepo = "registry.k8s.io"
 	DockerImageRepo  = "docker.io"
-	MirrorImageRepo  = "registry.cn-hangzhou.aliyuncs.com"
+	QuayImageRepo    = "quay.io"
+	MirrorImageRepo  = "uhub.service.ucloud.cn"
+	AliyunImageRepo  = "registry.cn-hangzhou.aliyuncs.com"
 )
 
 const (
@@ -96,6 +99,7 @@ const (
 const (
 	IPTablesProxy = "iptables"
 	IPVSProxy     = "ipvs"
+	BPFProxy      = "bpf"
 )
 
 const (
@@ -104,6 +108,7 @@ const (
 	NoneNetwork   = "none"
 	CalicoNetwork = "calico"
 	CiliumNetwork = "cilium"
+	CiliumHubble  = "hubble"
 
 	NoneIngress    = "none"
 	IstioIngress   = "istio"
@@ -130,6 +135,17 @@ const (
 )
 
 const (
+	CiliumCommand = "/opt/cni/bin/cilium"
+
+	CiliumImagePrefix         = "/cilium"
+	CiliumMirrorImagePrefix   = "/kubeon"
+	CiliumAgentImage          = "cilium"
+	CiliumOperatorImage       = "operator-generic"
+	CiliumOperatorMirrorImage = "cilium-operator-generic"
+	HubbleRelayImage          = "hubble-relay"
+	HubbleUIImage             = "hubble-ui"
+	HubbleUIBackendImage      = "hubble-ui-backend"
+
 	CiliumPolicyDefault = "default"
 	CiliumPolicyAlways  = "always"
 	CiliumPolicyNever   = "never"
@@ -160,9 +176,12 @@ const (
 
 	IstioImagePrefix       = "/istio"
 	IstioMirrorImagePrefix = "/kubeon"
-	IstioProxyImage        = "istio-proxyv2"
-	IstioPilotImage        = "istio-pilot"
-	IstioCNIImage          = "istio-install-cni"
+	IstioProxyImage        = "proxyv2"
+	IstioMirrorProxyImage  = "istio-proxyv2"
+	IstioPilotImage        = "pilot"
+	IstioMirrorPilotImage  = "istio-pilot"
+	IstioCNIImage          = "install-cni"
+	IstioMirrorCNIImage    = "istio-install-cni"
 
 	IstioProxyAutoInjectEnable  = "enabled"
 	IstioProxyAutoInjectDisable = "disabled"

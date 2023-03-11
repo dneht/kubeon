@@ -25,10 +25,12 @@ var (
 		K8S_1_23_x,
 		K8S_1_24_x,
 		K8S_1_25_x,
+		K8S_1_26_x,
 	}
 	supportProxyModes = map[string]bool{
 		IPVSProxy:     true,
 		IPTablesProxy: true,
+		BPFProxy:      true,
 		CalicoNetwork: true,
 		CiliumNetwork: true,
 	}
@@ -38,6 +40,7 @@ var (
 	}
 	supportNetworks = map[string]bool{
 		NoneNetwork:   true,
+		BPFProxy:      true,
 		CalicoNetwork: true,
 		CiliumNetwork: true,
 	}

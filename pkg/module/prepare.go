@@ -168,6 +168,7 @@ func doQueuedPackage(node *cluster.Node, prog *mpb.Progress) []*PrepareModule {
 	doAppendPackage(19, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.PrepareUbuntuPath, localScript.PrepareUbuntuPath, execute.FileSum(localScript.PrepareUbuntuPath))
 	doAppendPackage(20, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.DiscoverPath, localScript.DiscoverPath, execute.FileSum(localScript.DiscoverPath))
 	doAppendPackage(21, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.DiscoverNvidiaPath, localScript.DiscoverNvidiaPath, execute.FileSum(localScript.DiscoverNvidiaPath))
+	doAppendPackage(22, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.SystemVersionPath, localScript.SystemVersionPath, execute.FileSum(localScript.SystemVersionPath))
 	return copyQueue
 }
 

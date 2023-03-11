@@ -101,7 +101,7 @@ func getAddHosts(hosts map[string]string) (run string) {
 		sb.WriteString(" && ")
 		sb.WriteString("echo '")
 		sb.WriteString(hosts[key])
-		sb.WriteString("  ")
+		sb.WriteString("\t")
 		sb.WriteString(key)
 		sb.WriteString("' >>/etc/hosts")
 		sb.WriteString(" && ")
@@ -112,7 +112,7 @@ func getAddHosts(hosts map[string]string) (run string) {
 
 func getDelHosts(hosts map[string]string) (run string) {
 	var sb strings.Builder
-	for key, _ := range hosts {
+	for key := range hosts {
 		sb.WriteString("sed -i -E '/^[0-9a-f.:]+\\s+")
 		sb.WriteString(key)
 		sb.WriteString(".*$'/d /etc/hosts")
@@ -125,7 +125,7 @@ func getDelHosts(hosts map[string]string) (run string) {
 func setLocalHost() (err error) {
 	if !onutil.IsLocalIPv4InCluster(current.AllIPs()) {
 		err = execute.NewLocalCmd("sh", "-c",
-			fmt.Sprintf("sed -i -E '/^[0-9a-f.:]+\\s+%s.*$'/d /etc/hosts && echo '%s  %s' >> /etc/hosts",
+			fmt.Sprintf("sed -i -E '/^[0-9a-f.:]+\\s+%s.*$'/d /etc/hosts && echo '%s\t%s' >> /etc/hosts",
 				current.LbDomain, BootstrapNode().IPv4, current.LbDomain)).Run()
 		if nil != err {
 			klog.Warningf("Set local lb domain ip failed: %v", err)
@@ -137,7 +137,7 @@ func setLocalHost() (err error) {
 func resetLocalHost(node *Node) {
 	if onutil.IsLocalIPv4(node.IPv4) {
 		err := execute.NewLocalCmd("sh", "-c",
-			fmt.Sprintf("sed -i -E '/^[0-9a-f.:]+\\s+%s.*$'/d /etc/hosts && echo '%s  %s' >> /etc/hosts",
+			fmt.Sprintf("sed -i -E '/^[0-9a-f.:]+\\s+%s.*$'/d /etc/hosts && echo '%s\t%s' >> /etc/hosts",
 				current.LbDomain, BootstrapNode().IPv4, current.LbDomain)).Run()
 		if nil != err {
 			klog.Warningf("Reset local lb domain ip failed: %v", err)

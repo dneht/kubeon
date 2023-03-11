@@ -18,11 +18,13 @@ package release
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/execute"
 	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/dneht/kubeon/pkg/release/configset"
 	"github.com/pkg/errors"
+	"strings"
 	"text/template"
 )
 
@@ -84,119 +86,106 @@ type KubeadmJoinTemplate struct {
 }
 
 type CorednsTemplate struct {
+	CPVersion    string
 	MirrorUrl    string
 	ClusterDnsIP string
 }
 
 type CalicoTemplate struct {
-	MirrorUrl              string
-	IsSetInterface         bool
-	DefaultInterface       string
-	BackendMode            string
-	EnableBPF              bool
-	EnableWireGuard        bool
-	CalicoMTU              uint32
-	LBMode                 string
-	EnableVXLAN            bool
-	IPIPMode               string
-	VXLANMode              string
-	VXLANv6Mode            string
-	BPFHostConntrackBypass bool
-	ClusterEnableDual      bool
-	ClusterLbDomain        string
-	ClusterLbPort          uint32
-	ClusterPortRange       string
-	ClusterNodeMaskSize    uint32
-	ClusterNodeMaskSizeV6  uint32
-	ClusterPodCIDR         string
-	ClusterPodCIDRV6       string
+	CPVersion             string
+	MirrorUrl             string
+	IsSetInterface        bool
+	DefaultInterface      string
+	BackendMode           string
+	EnableBPF             bool
+	EnableWireGuard       bool
+	CalicoMTU             uint32
+	LBMode                string
+	EnableVXLAN           bool
+	IPIPMode              string
+	VXLANMode             string
+	VXLANv6Mode           string
+	EnablePassConntrack   bool
+	ClusterEnableDual     bool
+	ClusterLbDomain       string
+	ClusterLbPort         uint32
+	ClusterPortRange      string
+	ClusterNodeMaskSize   uint32
+	ClusterNodeMaskSizeV6 uint32
+	ClusterPodCIDR        string
+	ClusterPodCIDRV6      string
 }
 
 type CiliumTemplate struct {
-	MirrorUrl                       string
-	IsSetInterface                  bool
-	DefaultInterface                string
-	EnableBGP                       bool
-	EnableBM                        bool
-	EnableBBR                       bool
-	EnableWireGuard                 bool
-	EnableIPv4Masquerade            bool
-	EnableIPv6Masquerade            bool
-	NativeRoutingCIDR               string
-	NativeRoutingCIDRV6             string
-	EnableIPv6BigTCP                bool
-	CiliumMTU                       uint32
-	TunnelMode                      string
-	PolicyMode                      string
-	LBMode                          string
-	LBAcceleration                  string
-	LBAlgorithm                     string
-	LBHostNamespaceOnly             bool
-	AutoDirectNodeRoutes            bool
-	EnableLocalRedirect             bool
-	AutoProtectPortRange            bool
-	BPFMapDynamicSizeRatio          string
-	BPFLBMapMax                     uint32
-	BPFPolicyMapMax                 uint32
-	BPFLBExternalClusterIP          bool
-	BPFLBBypassFIBLookup            bool
-	InstallIptablesRules            bool
-	InstallNoConntrackIptablesRules bool
-	MonitorAggregation              string
-	MonitorInterval                 string
-	MonitorFlags                    string
-	ClusterEnableDual               bool
-	ClusterLbDomain                 string
-	ClusterLbPort                   uint32
-	ClusterPortRange                string
-	ClusterNodeMaskSize             uint32
-	ClusterNodeMaskSizeV6           uint32
-	ClusterPodCIDR                  string
-	ClusterPodCIDRV6                string
+	CPVersion               string
+	MirrorUrl               string
+	IsSetInterface          bool
+	DefaultInterface        string
+	EnableBGP               bool
+	EnableBM                bool
+	EnableBBR               bool
+	EnableWireGuard         bool
+	EnableIPv4Masquerade    bool
+	EnableIPv6Masquerade    bool
+	NativeRoutingCIDR       string
+	NativeRoutingCIDRV6     string
+	CiliumMTU               uint32
+	PolicyMode              string
+	TunnelMode              string
+	LBMode                  string
+	EnableEndpointRoutes    bool
+	EnableLocalRedirect     bool
+	EnableHostnsOnly        bool
+	AutoDirectNodeRoutes    bool
+	EnableEndpointSlice     bool
+	EnableExternalClusterIP bool
+	AutoProtectPortRange    bool
+	HubbleVersion           string
+	EnableHubbleTLS         bool
+	CustomConfigs           []string
+	ClusterEnableDual       bool
+	ClusterLbDomain         string
+	ClusterLbPort           uint32
+	ClusterPortRange        string
+	ClusterNodeMaskSize     uint32
+	ClusterNodeMaskSizeV6   uint32
+	ClusterPodCIDR          string
+	ClusterPodCIDRV6        string
 }
 
 type NvidiaTemplate struct {
+	CPVersion string
 	MirrorUrl string
 }
 
 type KataTemplate struct {
+	CPVersion string
 	MirrorUrl string
 }
 
 type ContourTemplate struct {
+	CPVersion             string
 	MirrorUrl             string
 	DisableMergeSlashes   bool
 	DisablePermitInsecure bool
 }
 
 type IstioTemplate struct {
+	CPVersion               string
 	MirrorUrl               string
-	EnableNetworkPlugin     bool
-	ProxyClusterDomain      string
 	EnableAutoInject        bool
 	ServiceEntryExportTo    []string
 	VirtualServiceExportTo  []string
 	DestinationRuleExportTo []string
-	EnableAutoMTLS          bool
-	EnableHttp2AutoUpgrade  bool
-	EnablePrometheusMerge   bool
-	EnableIngressGateway    bool
 	IngressGatewayType      string
 	EnableEgressGateway     bool
 	EgressGatewayType       string
-	EnableSkywalking        bool
-	EnableSkywalkingAll     bool
-	SkywalkingService       string
-	SkywalkingPort          uint32
-	SkywalkingAccessToken   string
-	EnableZipkin            bool
-	ZipkinService           string
-	ZipkinPort              uint32
-	AccessLogServiceAddress string
-	MetricsServiceAddress   string
+	CustomConfigs           []string
+	ProxyClusterDomain      string
 }
 
 type KruiseTemplate struct {
+	CPVersion    string
 	MirrorUrl    string
 	FeatureGates string
 }
@@ -235,11 +224,11 @@ func RenderCalicoTemplate(input *CalicoTemplate, local bool) ([]byte, error) {
 }
 
 func RenderCiliumTemplate(input *CiliumTemplate, local bool) ([]byte, error) {
-	if local {
-		return parseFile("/cilium.yaml.tpl", input)
-	} else {
-		return parseFile("/cilium.m.yaml.tpl", input)
-	}
+	ciliumArgs := buildCiliumInstallArgs(input, false, local)
+	hubbleArgs := buildHubbleInstallArgs(input, false, local)
+	return []byte(fmt.Sprintf("%s %s\n%s %s",
+		define.CiliumCommand, strings.Join(ciliumArgs, " "),
+		define.CiliumCommand, strings.Join(hubbleArgs, " "))), nil
 }
 
 func RenderContourTemplate(input *ContourTemplate, local bool) ([]byte, error) {
@@ -251,7 +240,7 @@ func RenderContourTemplate(input *ContourTemplate, local bool) ([]byte, error) {
 }
 
 func RenderIstioTemplate(input *IstioTemplate, local bool) ([]byte, error) {
-	istioArgs := BuildIstioctlArgs(input, false, local)
+	istioArgs := buildIstioInstallArgs(input, false, local)
 	istioCmd := execute.NewLocalCmd(define.IstioCommand, istioArgs...)
 	return istioCmd.RunAndBytes()
 }

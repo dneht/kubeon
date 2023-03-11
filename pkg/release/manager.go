@@ -21,7 +21,6 @@ import (
 	"github.com/dneht/kubeon/pkg/execute"
 	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/dneht/kubeon/pkg/release/scriptset"
-	"github.com/mitchellh/mapstructure"
 	"k8s.io/klog/v2"
 )
 
@@ -39,18 +38,12 @@ func initResource(clusterVersion, runtimeMode, networkMode, ingressMode string,
 	isBinary, isOffline, hasNvidia, useKata, useKruise bool) *ClusterResource {
 	distPath := define.AppDistDir
 	localResource := &ClusterResource{
-		ImagesPath:     distPath + "/" + define.ImagesPackage + ".tar",
-		ImagesSum:      onutil.GetRemoteSum(clusterVersion, define.ImagesPackage),
-		PausePath:      distPath + "/" + define.PausePackage + ".tar",
-		PauseSum:       onutil.GetRemoteSum(clusterVersion, define.PausePackage),
-		RuntimeType:    runtimeMode,
-		DockerPath:     distPath + "/" + define.DockerRuntime + ".tar",
-		DockerSum:      onutil.GetRemoteSum(clusterVersion, define.DockerRuntime),
-		ContainerdPath: distPath + "/" + define.ContainerdRuntime + ".tar",
-		ContainerdSum:  onutil.GetRemoteSum(clusterVersion, define.ContainerdRuntime),
-		NetworkType:    networkMode,
-		NetworkPath:    distPath + "/" + define.NetworkPlugin + ".tar",
-		NetworkSum:     onutil.GetRemoteSum(clusterVersion, define.NetworkPlugin),
+		ImagesPath:  distPath + "/" + define.ImagesPackage + ".tar",
+		ImagesSum:   onutil.GetRemoteSum(clusterVersion, define.ImagesPackage),
+		PausePath:   distPath + "/" + define.PausePackage + ".tar",
+		PauseSum:    onutil.GetRemoteSum(clusterVersion, define.PausePackage),
+		RuntimeType: runtimeMode,
+		NetworkType: networkMode,
 		ClusterConf: &ClusterConfResource{
 			KubeadmInitDir:     define.AppConfDir + "/kubeadm/",
 			KubeletServicePath: define.AppConfDir + "/kubelet.service",
@@ -66,6 +59,7 @@ func initResource(clusterVersion, runtimeMode, networkMode, ingressMode string,
 			PrepareUbuntuPath:  define.AppScriptDir + "/prepare_ubuntu.sh",
 			DiscoverPath:       define.AppScriptDir + "/discover.sh",
 			DiscoverNvidiaPath: define.AppScriptDir + "/discover_nvidia.sh",
+			SystemVersionPath:  define.AppScriptDir + "/system_version.sh",
 		},
 	}
 	if isBinary {
@@ -75,48 +69,46 @@ func initResource(clusterVersion, runtimeMode, networkMode, ingressMode string,
 		localResource.KubeletPath = distPath + "/" + define.KubeletModule + ".tar"
 		localResource.KubeletSum = onutil.GetRemoteSum(clusterVersion, define.KubeletModule)
 	}
-	extVersion, ok := define.SupportComponentFull[clusterVersion]
-	if ok {
-		if networkMode == define.CalicoNetwork {
-			localResource.CalicoPath = distPath + "/" + define.CalicoNetwork + ".tar"
-			localResource.CalicoSum = onutil.GetRemoteSum(extVersion.Calico, define.CalicoNetwork)
-		}
-		if networkMode == define.CiliumNetwork {
-			localResource.CiliumPath = distPath + "/" + define.CiliumNetwork + ".tar"
-			localResource.CiliumSum = onutil.GetRemoteSum(extVersion.Cilium, define.CiliumNetwork)
-		}
-		if ingressMode == define.ContourIngress {
-			localResource.ContourPath = distPath + "/" + define.ContourIngress + ".tar"
-			localResource.ContourSum = onutil.GetRemoteSum(extVersion.Contour, define.ContourIngress)
-		}
-		if ingressMode == define.IstioIngress {
-			localResource.IstioPath = distPath + "/" + define.IstioIngress + ".tar"
-			localResource.IstioSum = onutil.GetRemoteSum(extVersion.Istio, define.IstioIngress)
-		}
-		if hasNvidia {
-			localResource.NvidiaPath = distPath + "/" + define.NvidiaRuntime + ".tar"
-			localResource.NvidiaSum = onutil.GetRemoteSum(extVersion.Nvidia, define.NvidiaRuntime)
-		}
-		if useKata {
-			localResource.KataPath = distPath + "/" + define.KataRuntime + ".tar"
-			localResource.KataSum = onutil.GetRemoteSum(extVersion.Kata, define.KataRuntime)
-		}
-		if useKruise {
-			localResource.KruisePath = distPath + "/" + define.KruisePlugin + ".tar"
-			localResource.KruiseSum = onutil.GetRemoteSum(extVersion.Kruise, define.KruisePlugin)
-		}
+	extVersion, _ := define.SupportComponentFull[clusterVersion]
+	localResource.ContainerdPath = distPath + "/" + define.ContainerdRuntime + ".tar"
+	localResource.ContainerdSum = onutil.GetRemoteSum(extVersion.Containerd, define.ContainerdRuntime)
+	if runtimeMode == define.DockerRuntime {
+		localResource.DockerPath = distPath + "/" + define.DockerRuntime + ".tar"
+		localResource.DockerSum = onutil.GetRemoteSum(extVersion.Docker, define.DockerRuntime)
+	}
+	localResource.NetworkPath = distPath + "/" + define.NetworkPlugin + ".tar"
+	localResource.NetworkSum = onutil.GetRemoteSum(extVersion.RealNetwork(), define.NetworkPlugin)
+	if networkMode == define.CalicoNetwork {
+		localResource.CalicoPath = distPath + "/" + define.CalicoNetwork + ".tar"
+		localResource.CalicoSum = onutil.GetRemoteSum(extVersion.Calico, define.CalicoNetwork)
+	}
+	if networkMode == define.CiliumNetwork {
+		localResource.CiliumPath = distPath + "/" + define.CiliumNetwork + ".tar"
+		localResource.CiliumSum = onutil.GetRemoteSum(extVersion.Cilium, define.CiliumNetwork)
+	}
+	if ingressMode == define.ContourIngress {
+		localResource.ContourPath = distPath + "/" + define.ContourIngress + ".tar"
+		localResource.ContourSum = onutil.GetRemoteSum(extVersion.Contour, define.ContourIngress)
+	}
+	if ingressMode == define.IstioIngress {
+		localResource.IstioPath = distPath + "/" + define.IstioIngress + ".tar"
+		localResource.IstioSum = onutil.GetRemoteSum(extVersion.Istio, define.IstioIngress)
+	}
+	if hasNvidia {
+		localResource.NvidiaPath = distPath + "/" + define.NvidiaRuntime + ".tar"
+		localResource.NvidiaSum = onutil.GetRemoteSum(extVersion.Nvidia, define.NvidiaRuntime)
+	}
+	if useKata {
+		localResource.KataPath = distPath + "/" + define.KataRuntime + ".tar"
+		localResource.KataSum = onutil.GetRemoteSum(extVersion.Kata, define.KataRuntime)
+	}
+	if useKruise {
+		localResource.KruisePath = distPath + "/" + define.KruisePlugin + ".tar"
+		localResource.KruiseSum = onutil.GetRemoteSum(extVersion.Kruise, define.KruisePlugin)
 	}
 	if isOffline {
 		localResource.OfflinePath = distPath + "/" + define.OfflineModule + ".tar"
-		localResource.OfflineSum = onutil.GetRemoteSum(clusterVersion, define.OfflineModule)
-	}
-	installVer := define.SupportComponentFull[clusterVersion]
-	if nil != installVer {
-		installVerMap := map[string]string{}
-		err := mapstructure.Decode(installVer, &installVerMap)
-		if nil != err {
-			localResource.InstallVersion = &installVerMap
-		}
+		localResource.OfflineSum = onutil.GetRemoteSum(extVersion.Offline, define.OfflineModule)
 	}
 	writeScript(localResource.ClusterScript)
 	return localResource
@@ -146,6 +138,10 @@ func writeScript(localScript *ClusterScriptResource) {
 		panic(err)
 	}
 	err = onutil.WriteFile(localScript.DiscoverNvidiaPath, []byte(scriptset.DiscoverNvidia))
+	if nil != err {
+		panic(err)
+	}
+	err = onutil.WriteFile(localScript.SystemVersionPath, []byte(scriptset.SystemVersion))
 	if nil != err {
 		panic(err)
 	}
@@ -193,6 +189,7 @@ func remoteResource(basePath, runtimeMode, networkMode string) *ClusterRemoteRes
 			PrepareUbuntuPath:  scriptPath + "/prepare_ubuntu.sh",
 			DiscoverPath:       scriptPath + "/discover.sh",
 			DiscoverNvidiaPath: scriptPath + "/discover_nvidia.sh",
+			SystemVersionPath:  scriptPath + "/system_version.sh",
 		},
 	}
 }
@@ -265,11 +262,19 @@ func createKubeonNeedDirs() {
 
 func AddLocalAutoCompletion() {
 	onutil.MkDir("/etc/profile.d")
-	localAutoPath := "/etc/profile.d/kubelet.sh"
-	if !onutil.PathExists(localAutoPath) {
-		err := execute.NewLocalCmd("sh", "-c", "echo 'source <(kubectl completion bash)' >>"+localAutoPath).Run()
-		if nil != err {
+	kubeAutoPath := "/etc/profile.d/kubelet.sh"
+	if !onutil.PathExists(kubeAutoPath) {
+		if err := execute.NewLocalCmd("sh", "-c", "echo 'source <(kubectl completion bash)' >"+kubeAutoPath).Run(); nil != err {
 			klog.Warningf("Set local kubectl completion failed")
+		}
+		if err := execute.NewLocalCmd("sh", "-c", "echo 'source <(crictl completion bash)' >>"+kubeAutoPath).Run(); nil != err {
+			klog.Warningf("Set local crictl completion failed")
+		}
+	}
+	kubeonAutoPath := "/etc/profile.d/kubeon.sh"
+	if !onutil.PathExists(kubeonAutoPath) {
+		if err := execute.NewLocalCmd("sh", "-c", "echo 'source <(kubeon completion bash)' >"+kubeonAutoPath).Run(); nil != err {
+			klog.Warningf("Set local kubeon completion failed")
 		}
 	}
 }
@@ -283,4 +288,5 @@ func DestroyLocal() {
 
 func DelLocalAutoCompletion() {
 	onutil.RmFile("/etc/profile.d/kubelet.sh")
+	onutil.RmFile("/etc/profile.d/kubeon.sh")
 }

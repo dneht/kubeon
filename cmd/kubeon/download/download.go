@@ -53,7 +53,7 @@ func NewCommand() *cobra.Command {
 	}
 	cmd.Flags().StringVar(
 		&flags.MirrorHost, "mirror",
-		"yes", "default yes will use aliyun mirror, like: xxx.mirror.aliyuncs.com",
+		"yes", "default yes will use cn mirror",
 	)
 	cmd.Flags().BoolVarP(
 		&flags.ForceLocal, "force-local", "F",

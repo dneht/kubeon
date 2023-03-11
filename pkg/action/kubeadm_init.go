@@ -33,6 +33,7 @@ func KubeadmInitStart(boot *cluster.Node, uploadCerts, usePatch bool, ignorePref
 	if nil != err {
 		return err
 	}
+	KubectlRemoveMasterTaint(boot.Hostname)
 	return nil
 }
 

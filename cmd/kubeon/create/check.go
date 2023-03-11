@@ -19,6 +19,7 @@ package create
 import (
 	"github.com/dneht/kubeon/pkg/define"
 	"k8s.io/klog/v2"
+	"strings"
 )
 
 func checkSupport(flags *flagpole, clusterVersion string) bool {
@@ -54,4 +55,12 @@ func checkSupport(flags *flagpole, clusterVersion string) bool {
 		return false
 	}
 	return true
+}
+
+func checkConfigs(config string) []string {
+	config = strings.TrimSpace(config)
+	if "" == config {
+		return []string{}
+	}
+	return strings.Split(config, ",")
 }

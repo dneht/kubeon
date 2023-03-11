@@ -113,7 +113,9 @@ func (c *LocalCmd) runInnerCommand() error {
 		cmd.Stderr = c.stderr
 	}
 
-	klog.V(8).Infof("[local] running %s", cmd.Args)
+	if c.debug {
+		klog.V(8).Infof("[local] running %s", cmd.Args)
+	}
 	if err := cmd.Run(); nil != err && c.debug {
 		klog.Warningf("[local] running %s failed: %s", cmd.String(), err)
 		return err

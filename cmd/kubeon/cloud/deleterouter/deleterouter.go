@@ -1,7 +1,7 @@
 /*
 Copyright 2020 Dasheng.
 
-Licensed under the Apache License, Full 2.0 (the "License");
+Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
@@ -14,35 +14,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package moduleinner
+package deleterouter
 
 import (
+	"github.com/dneht/kubeon/pkg/cloud"
 	"github.com/dneht/kubeon/pkg/cluster"
-	"github.com/dneht/kubeon/pkg/module"
 	"github.com/spf13/cobra"
 )
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args:    cobra.ExactArgs(2),
-		Use:     "inner CLUSTER_NAME UNIT_NAME",
-		Aliases: []string{"in"},
-		Short:   "Inner module",
+		Args:    cobra.ExactArgs(1),
+		Use:     "delete-router CLUSTER_NAME",
+		Aliases: []string{"dr"},
+		Short:   "Delete router for cloud vpc",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(cmd, args)
+			clusterName := args[0]
+			cluster.InitConfig(clusterName)
+			_, err := cluster.InitExistCluster()
+			if nil != err {
+				return err
+			}
+			current := cluster.Current()
+			cloud.DeleteRouterNow(current.AllNodes)
+			return nil
 		},
 	}
-
 	return cmd
-}
-
-func runE(cmd *cobra.Command, args []string) error {
-	cluster.InitConfig(args[0])
-	_, err := cluster.InitExistCluster()
-	if nil != err {
-		return err
-	}
-
-	moduleName := args[1]
-	return module.InstallInner(moduleName, false)
 }

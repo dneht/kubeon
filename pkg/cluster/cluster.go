@@ -69,6 +69,8 @@ type Cluster struct {
 	UseKata              bool                     `json:"useKata"`
 	UseKruise            bool                     `json:"useKruise"`
 	KruiseConf           *KruiseConf              `json:"kruiseConf,omitempty"`
+	CloudProvider        string                   `json:"cloudProvider"`
+	CloudConf            *CloudConf               `json:"cloudConf,omitempty"`
 	ControlPlanes        NodeList                 `json:"controlPlanes"`
 	Workers              NodeList                 `json:"workers"`
 	AllNodes             NodeList                 `json:"-"`
@@ -83,44 +85,38 @@ type Cluster struct {
 }
 
 type CalicoConf struct {
-	CalicoMTU          uint32 `json:"calicoMTU"`
-	EnableVXLAN        bool   `json:"enableVXLAN"`
-	EnableBPF          bool   `json:"enableBPF"`
-	EnableDSR          bool   `json:"enableDSR"`
-	EnableBGP          bool   `json:"enableBGP"`
-	EnableWireGuard    bool   `json:"enableWireGuard"`
-	EnableCrossSubnet  bool   `json:"enableCrossSubnet"`
-	BPFBypassConntrack bool   `json:"bpfBypassConntrack"`
+	CalicoMTU           uint32 `json:"calicoMTU"`
+	EnableVXLAN         bool   `json:"enableVXLAN"`
+	EnableBPF           bool   `json:"enableBPF"`
+	EnableDSR           bool   `json:"enableDSR"`
+	EnableBGP           bool   `json:"enableBGP"`
+	EnableWireGuard     bool   `json:"enableWireGuard"`
+	EnableCrossSubnet   bool   `json:"enableCrossSubnet"`
+	EnablePassConntrack bool   `json:"enablePassConntrack"`
 }
 
 type CiliumConf struct {
-	CiliumMTU                       uint32 `json:"ciliumMTU"`
-	EnableGENEVE                    bool   `json:"enableGENEVE"`
-	EnableNR                        bool   `json:"enableNR"`
-	EnableDSR                       bool   `json:"enableDSR"`
-	EnableBGP                       bool   `json:"enableBGP"`
-	EnableBM                        bool   `json:"enableBM"`
-	EnableBBR                       bool   `json:"enableBBR"`
-	EnableWireGuard                 bool   `json:"enableWireGuard"`
-	NativeRoutingCIDR               string `json:"nativeRoutingCIDR"`
-	NativeRoutingCIDRV6             string `json:"nativeRoutingCIDRV6"`
-	EnableIPv6BigTCP                bool   `json:"enableIPv6BigTCP"`
-	MonitorAggregation              string `json:"monitorAggregation"`
-	MonitorFlags                    string `json:"monitorFlags"`
-	MonitorInterval                 string `json:"monitorInterval"`
-	PolicyMode                      string `json:"policyMode"`
-	MapDynamicSizeRatio             string `json:"mapDynamicSizeRatio"`
-	PolicyMapMax                    uint32 `json:"policyMapMax"`
-	LBMapMax                        uint32 `json:"lbMapMax"`
-	EnableLocalRedirect             bool   `json:"enableLocalRedirect"`
-	AutoProtectPortRange            bool   `json:"autoProtectPortRange"`
-	LBNativeAcceleration            bool   `json:"lbNativeAcceleration"`
-	LBMaglevAlgorithm               bool   `json:"lbMaglevAlgorithm"`
-	EnableExternalClusterIP         bool   `json:"enableExternalClusterIP"`
-	BPFHostNamespaceOnly            bool   `json:"bpfHostNamespaceOnly"`
-	BPFBypassFIBLookup              bool   `json:"bpfBypassFIBLookup"`
-	InstallIptablesRules            bool   `json:"installIptablesRules"`
-	InstallNoConntrackIptablesRules bool   `json:"installNoConntrackIptablesRules"`
+	CiliumMTU               uint32   `json:"ciliumMTU"`
+	EnableGENEVE            bool     `json:"enableGENEVE"`
+	EnableNR                bool     `json:"enableNR"`
+	EnableDSR               bool     `json:"enableDSR"`
+	EnableBGP               bool     `json:"enableBGP"`
+	EnableBM                bool     `json:"enableBM"`
+	EnableBBR               bool     `json:"enableBBR"`
+	EnableWireGuard         bool     `json:"enableWireGuard"`
+	EnableIPv4Masquerade    bool     `json:"enableIPv4Masquerade"`
+	EnableIPv6Masquerade    bool     `json:"enableIPv6Masquerade"`
+	NativeRoutingCIDR       string   `json:"nativeRoutingCIDR"`
+	NativeRoutingCIDRV6     string   `json:"nativeRoutingCIDRV6"`
+	EnableEndpointRoutes    bool     `json:"enableEndpointRoutes"`
+	EnableLocalRedirect     bool     `json:"enableLocalRedirect"`
+	EnableHostnsOnly        bool     `json:"enableHostnsOnly"`
+	AutoDirectNodeRoutes    bool     `json:"autoDirectNodeRoutes"`
+	EnableEndpointSlice     bool     `json:"enableEndpointSlice"`
+	EnableExternalClusterIP bool     `json:"enableExternalClusterIP"`
+	AutoProtectPortRange    bool     `json:"autoProtectPortRange"`
+	PolicyMode              string   `json:"policyMode"`
+	CustomConfigs           []string `json:"customConfigs"`
 }
 
 type ContourConf struct {
@@ -129,32 +125,23 @@ type ContourConf struct {
 }
 
 type IstioConf struct {
-	EnableNetworkPlugin     bool     `json:"enableNetworkPlugin"`
 	EnableAutoInject        bool     `json:"enableAutoInject"`
 	ServiceEntryExportTo    []string `json:"serviceEntryExportTo"`
 	VirtualServiceExportTo  []string `json:"virtualServiceExportTo"`
 	DestinationRuleExportTo []string `json:"destinationRuleExportTo"`
-	EnableAutoMTLS          bool     `json:"enableAutoMTLS"`
-	EnableHttp2AutoUpgrade  bool     `json:"enableHttp2AutoUpgrade"`
-	EnablePrometheusMerge   bool     `json:"enablePrometheusMerge"`
-	EnableIngressGateway    bool     `json:"enableIngressGateway"`
 	IngressGatewayType      string   `json:"ingressGatewayType"`
 	EnableEgressGateway     bool     `json:"enableEgressGateway"`
 	EgressGatewayType       string   `json:"egressGatewayType"`
-	EnableSkywalking        bool     `json:"enableSkywalking"`
-	EnableSkywalkingAll     bool     `json:"enableSkywalkingAll"`
-	SkywalkingService       string   `json:"skywalkingService"`
-	SkywalkingPort          uint32   `json:"skywalkingPort"`
-	SkywalkingAccessToken   string   `json:"skywalkingAccessToken"`
-	EnableZipkin            bool     `json:"enableZipkin"`
-	ZipkinService           string   `json:"zipkinService"`
-	ZipkinPort              uint32   `json:"zipkinPort"`
-	AccessLogServiceAddress string   `json:"accessLogServiceAddress"`
-	MetricsServiceAddress   string   `json:"metricsServiceAddress"`
+	CustomConfigs           []string `json:"customConfigs"`
 }
 
 type KruiseConf struct {
 	FeatureGates string `json:"featureGates"`
+}
+
+type CloudConf struct {
+	Endpoint       string   `json:"endpoint,omitempty"`
+	RouterTableIds []string `json:"routerTableIds,omitempty"`
 }
 
 type RunStatus string
@@ -267,6 +254,10 @@ func (c *Cluster) IsRealLocal() bool {
 	return c.IsOffline || c.Version.LessThen(define.K8S_1_19_0)
 }
 
+func (c *Cluster) IsOnCloud() bool {
+	return "" != c.CloudProvider
+}
+
 func (c *Cluster) GetInitImageRepo() string {
 	if c.IsRealLocal() {
 		return define.DefaultImageRepo
@@ -307,7 +298,7 @@ func (c *Cluster) GetUpdaterImageAddr() string {
 	}
 }
 
-func (c *Cluster) GetExistVer(mod string) string {
+func (c *Cluster) GetModuleVersion(mod string) string {
 	return (*c.ExistResourceVersion)[mod]
 }
 

@@ -54,7 +54,7 @@ func GetRemoteSumRetry(version, moduleName string, retry int) string {
 		os.Exit(1)
 	}
 
-	response, err := http.Get(baseDlUrl + version + "/" + moduleName + ".sum")
+	response, err := http.Get(baseDlUrl + moduleName + "/" + version + ".sum")
 	if nil != err {
 		klog.V(4).Infof("Get remote[%s -- %s] err is %s", version, moduleName, err)
 		return GetRemoteSumRetry(version, moduleName, retry+1)

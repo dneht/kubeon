@@ -18,6 +18,7 @@ package addon
 
 import (
 	"github.com/dneht/kubeon/pkg/action"
+	"github.com/dneht/kubeon/pkg/cloud"
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/module"
@@ -190,7 +191,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		klog.Warningf("Prepare install failed, please check: %v", err)
 		return nil
 	}
-	err = joinNodes(newNodes)
+	err = joinNodes(newNodes, current.IsOnCloud())
 	if nil != err {
 		klog.Errorf("Create nodes failed, reset nodes: %v", err)
 		action.KubeadmResetList(newNodes, true, false)
@@ -211,20 +212,23 @@ func preInstall(newNodes cluster.NodeList, mirror string) (err error) {
 	return nil
 }
 
-func joinNodes(newNodes cluster.NodeList) (err error) {
+func joinNodes(newNodes cluster.NodeList, onCloud bool) (err error) {
 	err = module.SetupAddsKubeadm(newNodes)
 	if nil != err {
 		return err
 	}
+	if onCloud {
+		cloud.ModifyRouterNow()
+	}
 	newMasters := cluster.GetMasterFromList(newNodes)
 	isNewMaster := len(newMasters) > 0
 	if isNewMaster {
-		err = module.InstallNetwork()
+		err = module.InstallNetwork(true)
 		if nil != err {
 			klog.Warningf("reinstall network failed %v", err)
 		}
 	}
-	err = module.InstallExtend()
+	err = module.InstallExtend(false)
 	if nil != err {
 		klog.Warningf("reinstall extend failed %v", err)
 	}
@@ -233,7 +237,7 @@ func joinNodes(newNodes cluster.NodeList) (err error) {
 		return err
 	}
 	module.LabelDevice()
-	err = module.InstallIngress()
+	err = module.InstallIngress(false)
 	if nil != err {
 		klog.Warningf("reinstall ingress failed %v", err)
 	}

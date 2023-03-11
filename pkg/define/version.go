@@ -58,6 +58,14 @@ func (v *StdVersion) IsSupportPatch() bool {
 	return v.GreaterEqual(K8S_1_19_0)
 }
 
+func (v *StdVersion) IsSupportNvidia() bool {
+	return v.GreaterEqual(K8S_1_22_0)
+}
+
+func (v *StdVersion) IsSupportKata() bool {
+	return v.GreaterEqual(K8S_1_22_0)
+}
+
 func (v *StdVersion) GreaterThen(in *StdVersion) bool {
 	return v.Number > in.Number
 }

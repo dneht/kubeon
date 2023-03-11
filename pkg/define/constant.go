@@ -19,7 +19,7 @@ package define
 import "github.com/dneht/kubeon/pkg/onutil"
 
 const (
-	AppVersion = "0.13.0"
+	AppVersion = "0.15.0"
 )
 
 var (

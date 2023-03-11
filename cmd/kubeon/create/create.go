@@ -18,6 +18,7 @@ package create
 
 import (
 	"github.com/dneht/kubeon/pkg/action"
+	"github.com/dneht/kubeon/pkg/cloud"
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/module"
@@ -70,7 +71,7 @@ type flagpole struct {
 	CalicoEnableDSR                       bool
 	CalicoEnableWireGuard                 bool
 	CalicoEnableCrossSubnet               bool
-	CalicoBPFBypassConntrack              bool
+	CalicoEnablePassConntrack             bool
 	CiliumMTU                             uint32
 	CiliumEnableGENEVE                    bool
 	CiliumEnableNR                        bool
@@ -79,50 +80,33 @@ type flagpole struct {
 	CiliumEnableBM                        bool
 	CiliumEnableBBR                       bool
 	CiliumEnableWireGuard                 bool
+	CiliumDisableIpMasq                   bool
+	CiliumDisableIpMasqV6                 bool
 	CiliumNativeRoutingCIDR               string
 	CiliumNativeRoutingCIDRV6             string
-	CiliumEnableIPv6BigTCP                bool
-	CiliumMonitorAggregation              string
-	CiliumMonitorInterval                 string
-	CiliumMonitorFlags                    string
+	CiliumDisableEndpointRoutes           bool
+	CiliumDisableLocalRedirect            bool
+	CiliumDisableHostnsOnly               bool
+	CiliumDisableAutoDirectNodeRoutes     bool
+	CiliumDisableEndpointSlice            bool
+	CiliumDisableExternalClusterIP        bool
+	CiliumDisableAutoProtectNodePortRange bool
 	CiliumPolicyMode                      string
-	CiliumEnableLocalRedirect             bool
-	CiliumAutoProtectPortRange            bool
-	CiliumLBNativeAcceleration            bool
-	CiliumLBMaglevAlgorithm               bool
-	CiliumEnableExternalClusterIP         bool
-	CiliumBPFMapDynamicSizeRatio          string
-	CiliumBPFLBMapMax                     uint32
-	CiliumBPFPolicyMapMax                 uint32
-	CiliumBPFHostNamespaceOnly            bool
-	CiliumBPFBypassFIBLookup              bool
-	CiliumInstallIptablesRules            bool
-	CiliumInstallNoConntrackIptablesRules bool
+	CiliumConfig                          string
 	ContourDisableInsecure                bool
 	ContourDisableMergeSlashes            bool
-	IstioEnableAutoInject                 bool
+	IstioDisableAutoInject                bool
 	IstioServiceEntryExportTo             []string
 	IstioVirtualServiceExportTo           []string
 	IstioDestinationRuleExportTo          []string
-	IstioEnableAutoMTLS                   bool
-	IstioEnableHttp2AutoUpgrade           bool
-	IstioEnablePrometheusMerge            bool
-	IstioEnableNetworkPlugin              bool
-	IstioEnableIngressGateway             bool
 	IstioIngressGatewayType               string
 	IstioEnableEgressGateway              bool
 	IstioEgressGatewayType                string
-	IstioEnableSkywalking                 bool
-	IstioEnableSkywalkingAll              bool
-	IstioSkywalkingService                string
-	IstioSkywalkingPort                   uint32
-	IstioSkywalkingAccessToken            string
-	IstioEnableZipkin                     bool
-	IstioZipkinService                    string
-	IstioZipkinPort                       uint32
-	IstioAccessLogServiceAddress          string
-	IstioMetricsServiceAddress            string
+	IstioConfig                           string
 	KruiseFeatureGates                    string
+	CloudProvider                         string
+	CloudEndpoint                         string
+	CloudRouterTableIds                   []string
 }
 
 func NewCommand() *cobra.Command {
@@ -142,7 +126,7 @@ func NewCommand() *cobra.Command {
 	}
 	cmd.Flags().StringVar(
 		&flags.MirrorHost, "mirror",
-		"yes", "default yes will use aliyun mirror, like: xxx.mirror.aliyuncs.com",
+		"yes", "default yes will use cn mirror",
 	)
 	cmd.Flags().BoolVarP(
 		&flags.OnlyCreate, "only-create", "C",
@@ -263,7 +247,7 @@ func NewCommand() *cobra.Command {
 	)
 	cmd.Flags().BoolVar(
 		&flags.WithNvidia, "with-nvidia",
-		true,
+		false,
 		"Install nvidia",
 	)
 	cmd.Flags().BoolVar(
@@ -272,7 +256,7 @@ func NewCommand() *cobra.Command {
 		"Install kata with Kata-deploy",
 	)
 	cmd.Flags().BoolVar(
-		&flags.WithKata, "with-kruise",
+		&flags.WithKruise, "with-kruise",
 		false,
 		"Install kruise",
 	)
@@ -312,13 +296,13 @@ func NewCommand() *cobra.Command {
 		"Calico with wireguard",
 	)
 	cmd.Flags().BoolVar(
-		&flags.CalicoEnableCrossSubnet, "calico-cross-subnet",
+		&flags.CalicoEnableCrossSubnet, "calico-enable-cross-subnet",
 		false,
 		"If true, tunnel mode: Always -> CrossSubnet",
 	)
 	cmd.Flags().BoolVar(
-		&flags.CalicoBPFBypassConntrack, "calico-bpf-bypass-conntrack",
-		true,
+		&flags.CalicoEnablePassConntrack, "calico-enable-pass-conntrack",
+		false,
 		"Calico BPF bypass conntrack",
 	)
 	cmd.Flags().Uint32Var(
@@ -354,12 +338,22 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().BoolVar(
 		&flags.CiliumEnableBBR, "cilium-enable-bbr",
 		false,
-		"Cilium use bbr",
+		"Cilium use bbr, if kernel >= 5.18",
 	)
 	cmd.Flags().BoolVar(
 		&flags.CiliumEnableWireGuard, "cilium-enable-wireguard",
 		false,
 		"Cilium with wireguard",
+	)
+	cmd.Flags().BoolVar(
+		&flags.CiliumDisableIpMasq, "cilium-disable-ip-masq",
+		false,
+		"Cilium enable ipv4 masquerade",
+	)
+	cmd.Flags().BoolVar(
+		&flags.CiliumDisableIpMasqV6, "cilium-disable-ipv6-masq",
+		false,
+		"Cilium enable ipv6 masquerade",
 	)
 	cmd.Flags().StringVar(
 		&flags.CiliumNativeRoutingCIDR, "cilium-nr-cidr",
@@ -367,94 +361,54 @@ func NewCommand() *cobra.Command {
 		"Native-Routing is required, unless bgp is enabled",
 	)
 	cmd.Flags().StringVar(
-		&flags.CiliumNativeRoutingCIDRV6, "cilium-nr-cidr-ipv6",
+		&flags.CiliumNativeRoutingCIDRV6, "cilium-nr-ipv6-cidr",
 		"",
 		"Native-Routing and ipv6 is required, unless bgp is enabled",
 	)
 	cmd.Flags().BoolVar(
-		&flags.CiliumEnableIPv6BigTCP, "cilium-enable-ipv6-bigtcp",
+		&flags.CiliumDisableEndpointRoutes, "cilium-disable-endpoint-routes",
 		false,
-		"Cilium enable ipv6 big tcp",
+		"Cilium disable endpoint routes",
 	)
-	cmd.Flags().StringVar(
-		&flags.CiliumMonitorAggregation, "cilium-monitor-aggregation",
-		"medium",
-		"Cilium monitor aggregation, only: low, medium, maximum",
+	cmd.Flags().BoolVar(
+		&flags.CiliumDisableLocalRedirect, "cilium-disable-local-redirect",
+		false,
+		"Cilium disable local redirect",
 	)
-	cmd.Flags().StringVar(
-		&flags.CiliumMonitorInterval, "cilium-monitor-interval",
-		"5s",
-		"Only effective when monitor aggregation is set to medium or higher",
+	cmd.Flags().BoolVar(
+		&flags.CiliumDisableHostnsOnly, "cilium-disable-hostns-only",
+		false,
+		"Cilium disable hostns only",
 	)
-	cmd.Flags().StringVar(
-		&flags.CiliumMonitorFlags, "cilium-monitor-flags",
-		"all",
-		"Only effective when monitor aggregation is set to medium or higher",
+	cmd.Flags().BoolVar(
+		&flags.CiliumDisableAutoDirectNodeRoutes, "cilium-disable-auto-direct-node-routes",
+		false,
+		"Cilium disable auto direct node routes",
+	)
+	cmd.Flags().BoolVar(
+		&flags.CiliumDisableEndpointSlice, "cilium-disable-endpoint-slice",
+		false,
+		"If true, cilium will not create CiliumEndpoint",
+	)
+	cmd.Flags().BoolVar(
+		&flags.CiliumDisableExternalClusterIP, "cilium-disable-external-clusterip",
+		false,
+		"If true, cilium will deny external access to cluster ip ",
+	)
+	cmd.Flags().BoolVar(
+		&flags.CiliumDisableAutoProtectNodePortRange, "cilium-disable-auto-protect-node-port-range",
+		false,
+		"If true, cilium will not add the NodePort range ports to the kernel parameters to avoid the occupation of other applications",
 	)
 	cmd.Flags().StringVar(
 		&flags.CiliumPolicyMode, "cilium-policy",
 		"default",
 		"Cilium policy mode, only: default, always, never",
 	)
-	cmd.Flags().BoolVar(
-		&flags.CiliumEnableLocalRedirect, "cilium-enable-local-redirect",
-		true,
-		"Cilium enable local redirect",
-	)
-	cmd.Flags().BoolVar(
-		&flags.CiliumAutoProtectPortRange, "cilium-enable-protect-port-range",
-		true,
-		"Cilium auto protect nodePort range",
-	)
-	cmd.Flags().BoolVar(
-		&flags.CiliumLBNativeAcceleration, "cilium-lb-acc-native",
-		false,
-		"Cilium lb native acceleration",
-	)
-	cmd.Flags().BoolVar(
-		&flags.CiliumLBMaglevAlgorithm, "cilium-lb-use-maglev",
-		false,
-		"Cilium lb use maglev algorithm",
-	)
-	cmd.Flags().BoolVar(
-		&flags.CiliumEnableExternalClusterIP, "cilium-enable-external-cluster-ip",
-		true,
-		"Cilium lb enable external clusterIP",
-	)
 	cmd.Flags().StringVar(
-		&flags.CiliumBPFMapDynamicSizeRatio, "cilium-bpf-map-dynamic-size-ratio",
-		"0.0025",
-		"CiliumB bpf map dynamic size ratio",
-	)
-	cmd.Flags().Uint32Var(
-		&flags.CiliumBPFLBMapMax, "cilium-bpf-lb-map-max",
-		65536,
-		"CiliumB bpf lb map max",
-	)
-	cmd.Flags().Uint32Var(
-		&flags.CiliumBPFPolicyMapMax, "cilium-bpf-policy-map-max",
-		16384,
-		"CiliumB bpf policy map max",
-	)
-	cmd.Flags().BoolVar(
-		&flags.CiliumBPFHostNamespaceOnly, "cilium-bpf-hostns-only",
-		false,
-		"CiliumB bpf host namespace only",
-	)
-	cmd.Flags().BoolVar(
-		&flags.CiliumBPFBypassFIBLookup, "cilium-bpf-bypass-fib-lookup",
-		false,
-		"Cilium bpf bypass fib lookup",
-	)
-	cmd.Flags().BoolVar(
-		&flags.CiliumInstallIptablesRules, "cilium-install-iptables-rules",
-		true,
-		"Cilium install iptables rules",
-	)
-	cmd.Flags().BoolVar(
-		&flags.CiliumInstallNoConntrackIptablesRules, "cilium-install-no-conntrack-iptables-rules",
-		true,
-		"Cilium install no-conntrack iptables rules",
+		&flags.CiliumConfig, "cilium-config",
+		"",
+		"Set ConfigMap entries { key=value[,key=value,..] }",
 	)
 	cmd.Flags().BoolVar(
 		&flags.ContourDisableInsecure, "contour-disable-insecure",
@@ -467,13 +421,8 @@ func NewCommand() *cobra.Command {
 		"Contour disable envoy's non-standard merge_slashes path transformation option",
 	)
 	cmd.Flags().BoolVar(
-		&flags.IstioEnableNetworkPlugin, "istio-enable-cni",
+		&flags.IstioDisableAutoInject, "istio-disable-auto-inject",
 		false,
-		"Istio install cni plugin",
-	)
-	cmd.Flags().BoolVar(
-		&flags.IstioEnableAutoInject, "istio-enable-auto-inject",
-		true,
 		"Istio enable sidecar auto inject",
 	)
 	cmd.Flags().StringSliceVar(
@@ -491,26 +440,6 @@ func NewCommand() *cobra.Command {
 		[]string{},
 		"Istio DestinationRule export to namespace",
 	)
-	cmd.Flags().BoolVar(
-		&flags.IstioEnableAutoMTLS, "istio-enable-auto-mtls",
-		true,
-		"Istio enable auto mTLS",
-	)
-	cmd.Flags().BoolVar(
-		&flags.IstioEnableHttp2AutoUpgrade, "istio-enable-http2-auto-upgrade",
-		true,
-		"Istio enable HTTP2 auto upgrade",
-	)
-	cmd.Flags().BoolVar(
-		&flags.IstioEnablePrometheusMerge, "istio-enable-prometheus-merge",
-		true,
-		"Istio agent will merge metrics exposed by the application with metrics from Envoy and Istio agent",
-	)
-	cmd.Flags().BoolVar(
-		&flags.IstioEnableIngressGateway, "istio-enable-ingress",
-		true,
-		"Istio enable ingress gateway",
-	)
 	cmd.Flags().StringVar(
 		&flags.IstioIngressGatewayType, "istio-ingress-gateway-type",
 		"ClusterIP",
@@ -526,60 +455,30 @@ func NewCommand() *cobra.Command {
 		"ClusterIP",
 		"Istio egress gateway load balance type",
 	)
-	cmd.Flags().BoolVar(
-		&flags.IstioEnableSkywalking, "istio-enable-skywalking",
-		false,
-		"Istio enable skywalking tracer",
-	)
-	cmd.Flags().BoolVar(
-		&flags.IstioEnableSkywalkingAll, "istio-enable-skywalking-all",
-		false,
-		"Istio enable skywalking tracer and metrics",
-	)
 	cmd.Flags().StringVar(
-		&flags.IstioSkywalkingService, "istio-skywalking-svc",
+		&flags.IstioConfig, "istio-config",
 		"",
-		"Istio skywalking tracer service, not ip",
-	)
-	cmd.Flags().Uint32Var(
-		&flags.IstioSkywalkingPort, "istio-skywalking-port",
-		11800,
-		"Istio skywalking tracer port",
-	)
-	cmd.Flags().StringVar(
-		&flags.IstioSkywalkingAccessToken, "istio-skywalking-access-token",
-		"",
-		"Istio skywalking tracer access token",
-	)
-	cmd.Flags().BoolVar(
-		&flags.IstioEnableZipkin, "istio-enable-zipkin",
-		false,
-		"Istio enable zipkin tracer",
-	)
-	cmd.Flags().StringVar(
-		&flags.IstioSkywalkingService, "istio-zipkin-svc",
-		"",
-		"Istio zipkin tracer service, not ip",
-	)
-	cmd.Flags().Uint32Var(
-		&flags.IstioSkywalkingPort, "istio-zipkin-port",
-		9411,
-		"Istio zipkin tracer port",
-	)
-	cmd.Flags().StringVar(
-		&flags.IstioAccessLogServiceAddress, "istio-access-log-service-addr",
-		"",
-		"Istio accessLog service address",
-	)
-	cmd.Flags().StringVar(
-		&flags.IstioMetricsServiceAddress, "istio-metrics-service-addr",
-		"",
-		"Istio metrics service address",
+		"Set IstioOperator value { key=value[,key=value,..] }",
 	)
 	cmd.Flags().StringVar(
 		&flags.KruiseFeatureGates, "kruise-feature-gates",
 		"",
 		"Kruise feature gates, like: g1,g2,g3...",
+	)
+	cmd.Flags().StringVar(
+		&flags.CloudProvider, "cloud-provider",
+		"",
+		"Cloud provider",
+	)
+	cmd.Flags().StringVar(
+		&flags.CloudEndpoint, "cloud-endpoint",
+		"",
+		"Cloud endpoint",
+	)
+	cmd.Flags().StringSliceVar(
+		&flags.CloudRouterTableIds, "cloud-router-table-id",
+		[]string{},
+		"Cloud router table id",
 	)
 	cmd.Flags().UintVar(
 		&flags.DefaultPort, "default-port",
@@ -718,7 +617,7 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		!flags.MasterList.CheckMatch() || !flags.WorkerList.CheckMatch() {
 		os.Exit(1)
 	}
-	proxyReplace := preFlags(flags)
+	proxyReplace := preFlags(flags, inputVersion)
 	klog.V(1).Infof("Create cluster with cri=%s, cni=%s, proxy=%s, ingress=%s, nvidia=%v, kata=%v, kruise=%v",
 		flags.InputCRIMode, flags.InputCNIMode, flags.InputProxyMode, flags.InputICMode,
 		flags.WithNvidia, flags.WithKata, flags.WithKruise)
@@ -749,43 +648,37 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		NetworkMode:    flags.InputCNIMode,
 		EnableBPF:      proxyReplace,
 		CalicoConf: &cluster.CalicoConf{
-			CalicoMTU:          flags.CalicoMTU,
-			EnableVXLAN:        flags.CalicoEnableVXLAN,
-			EnableBPF:          flags.CalicoEnableBPF,
-			EnableDSR:          flags.CalicoEnableDSR,
-			EnableBGP:          flags.CalicoEnableBGP,
-			EnableWireGuard:    flags.CalicoEnableWireGuard,
-			EnableCrossSubnet:  flags.CalicoEnableCrossSubnet,
-			BPFBypassConntrack: flags.CalicoBPFBypassConntrack,
+			CalicoMTU:           flags.CalicoMTU,
+			EnableVXLAN:         flags.CalicoEnableVXLAN,
+			EnableBPF:           flags.CalicoEnableBPF,
+			EnableDSR:           flags.CalicoEnableDSR,
+			EnableBGP:           flags.CalicoEnableBGP,
+			EnableWireGuard:     flags.CalicoEnableWireGuard,
+			EnableCrossSubnet:   flags.CalicoEnableCrossSubnet,
+			EnablePassConntrack: flags.CalicoEnablePassConntrack,
 		},
 		CiliumConf: &cluster.CiliumConf{
-			CiliumMTU:                       flags.CiliumMTU,
-			EnableGENEVE:                    flags.CiliumEnableGENEVE,
-			EnableNR:                        flags.CiliumEnableNR,
-			EnableDSR:                       flags.CiliumEnableDSR,
-			EnableBGP:                       flags.CiliumEnableBGP,
-			EnableBM:                        flags.CiliumEnableBM,
-			EnableBBR:                       flags.CiliumEnableBBR,
-			EnableWireGuard:                 flags.CiliumEnableWireGuard,
-			NativeRoutingCIDR:               flags.CiliumNativeRoutingCIDR,
-			NativeRoutingCIDRV6:             flags.CiliumNativeRoutingCIDRV6,
-			EnableIPv6BigTCP:                flags.CiliumEnableIPv6BigTCP,
-			MonitorAggregation:              flags.CiliumMonitorAggregation,
-			MonitorFlags:                    flags.CiliumMonitorFlags,
-			MonitorInterval:                 flags.CiliumMonitorInterval,
-			PolicyMode:                      flags.CiliumPolicyMode,
-			MapDynamicSizeRatio:             flags.CiliumBPFMapDynamicSizeRatio,
-			PolicyMapMax:                    flags.CiliumBPFPolicyMapMax,
-			LBMapMax:                        flags.CiliumBPFLBMapMax,
-			EnableLocalRedirect:             flags.CiliumEnableLocalRedirect,
-			AutoProtectPortRange:            flags.CiliumAutoProtectPortRange,
-			LBNativeAcceleration:            flags.CiliumLBNativeAcceleration,
-			LBMaglevAlgorithm:               flags.CiliumLBMaglevAlgorithm,
-			EnableExternalClusterIP:         flags.CiliumEnableExternalClusterIP,
-			BPFHostNamespaceOnly:            flags.CiliumBPFHostNamespaceOnly,
-			BPFBypassFIBLookup:              flags.CiliumBPFBypassFIBLookup,
-			InstallIptablesRules:            flags.CiliumInstallIptablesRules,
-			InstallNoConntrackIptablesRules: flags.CiliumInstallNoConntrackIptablesRules,
+			CiliumMTU:               flags.CiliumMTU,
+			EnableGENEVE:            flags.CiliumEnableGENEVE,
+			EnableNR:                flags.CiliumEnableNR,
+			EnableDSR:               flags.CiliumEnableDSR,
+			EnableBGP:               flags.CiliumEnableBGP,
+			EnableBM:                flags.CiliumEnableBM,
+			EnableBBR:               flags.CiliumEnableBBR,
+			EnableWireGuard:         flags.CiliumEnableWireGuard,
+			EnableIPv4Masquerade:    !flags.CiliumDisableIpMasq,
+			EnableIPv6Masquerade:    !flags.CiliumDisableIpMasqV6,
+			NativeRoutingCIDR:       flags.CiliumNativeRoutingCIDR,
+			NativeRoutingCIDRV6:     flags.CiliumNativeRoutingCIDRV6,
+			EnableEndpointRoutes:    !flags.CiliumDisableEndpointRoutes,
+			EnableLocalRedirect:     !flags.CiliumDisableLocalRedirect,
+			EnableHostnsOnly:        !flags.CiliumDisableHostnsOnly,
+			AutoDirectNodeRoutes:    !flags.CiliumDisableAutoDirectNodeRoutes,
+			EnableEndpointSlice:     !flags.CiliumDisableEndpointSlice,
+			EnableExternalClusterIP: !flags.CiliumDisableExternalClusterIP,
+			AutoProtectPortRange:    !flags.CiliumDisableAutoProtectNodePortRange,
+			PolicyMode:              flags.CiliumPolicyMode,
+			CustomConfigs:           checkConfigs(flags.CiliumConfig),
 		},
 		IngressMode: flags.InputICMode,
 		ContourConf: &cluster.ContourConf{
@@ -793,34 +686,25 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 			DisableMergeSlashes: flags.ContourDisableMergeSlashes,
 		},
 		IstioConf: &cluster.IstioConf{
-			EnableNetworkPlugin:     flags.IstioEnableNetworkPlugin,
-			EnableAutoInject:        flags.IstioEnableAutoInject,
+			EnableAutoInject:        !flags.IstioDisableAutoInject,
 			ServiceEntryExportTo:    flags.IstioServiceEntryExportTo,
 			VirtualServiceExportTo:  flags.IstioVirtualServiceExportTo,
 			DestinationRuleExportTo: flags.IstioDestinationRuleExportTo,
-			EnableAutoMTLS:          flags.IstioEnableAutoMTLS,
-			EnableHttp2AutoUpgrade:  flags.IstioEnableHttp2AutoUpgrade,
-			EnablePrometheusMerge:   flags.IstioEnablePrometheusMerge,
-			EnableIngressGateway:    flags.IstioEnableIngressGateway,
 			IngressGatewayType:      flags.IstioIngressGatewayType,
 			EnableEgressGateway:     flags.IstioEnableEgressGateway,
 			EgressGatewayType:       flags.IstioEgressGatewayType,
-			EnableSkywalking:        flags.IstioEnableSkywalking,
-			EnableSkywalkingAll:     flags.IstioEnableSkywalkingAll,
-			SkywalkingService:       flags.IstioSkywalkingService,
-			SkywalkingPort:          flags.IstioSkywalkingPort,
-			SkywalkingAccessToken:   flags.IstioSkywalkingAccessToken,
-			EnableZipkin:            flags.IstioEnableZipkin,
-			ZipkinService:           flags.IstioZipkinService,
-			ZipkinPort:              flags.IstioZipkinPort,
-			AccessLogServiceAddress: flags.IstioAccessLogServiceAddress,
-			MetricsServiceAddress:   flags.IstioMetricsServiceAddress,
+			CustomConfigs:           checkConfigs(flags.IstioConfig),
 		},
 		UseNvidia: flags.WithNvidia,
 		UseKata:   flags.WithKata,
 		UseKruise: flags.WithKruise,
 		KruiseConf: &cluster.KruiseConf{
 			FeatureGates: flags.KruiseFeatureGates,
+		},
+		CloudProvider: flags.CloudProvider,
+		CloudConf: &cluster.CloudConf{
+			Endpoint:       flags.CloudEndpoint,
+			RouterTableIds: flags.CloudRouterTableIds,
 		},
 		CertSANs: flags.InputCertSANs,
 		Status:   cluster.StatusCreating,
@@ -829,54 +713,52 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	return cluster.InitNewCluster(current, flags.ExternalLBIP, flags.DefaultList, flags.MasterList, flags.WorkerList)
 }
 
-func preFlags(flags *flagpole) bool {
+func preFlags(flags *flagpole, version *define.StdVersion) bool {
 	if "" == flags.NetworkSVCCIDRV6 || "" == flags.NetworkPodCIDRV6 {
 		flags.EnableIPv6 = false
 	}
-	flags.WithNvidia = flags.WithNvidia && flags.InputCRIMode == define.ContainerdRuntime
+	flags.WithNvidia = flags.WithNvidia && flags.InputCRIMode == define.ContainerdRuntime && version.IsSupportNvidia()
+	flags.WithKata = flags.WithKata && version.IsSupportKata()
 
-	if flags.CiliumEnableGENEVE || flags.CiliumEnableNR || flags.CiliumEnableDSR || flags.CiliumEnableBM || flags.CiliumEnableBBR {
-		flags.InputCNIMode = define.CiliumNetwork
+	proxyReplace := false
+	if flags.InputCNIMode == define.BPFProxy {
+		proxyReplace = true
+		flags.InputCNIMode = define.NoneNetwork
+		flags.InputProxyMode = define.BPFProxy
 	}
-	if flags.InputICMode == define.IstioIngress {
-		flags.CiliumBPFHostNamespaceOnly = true
-	}
-	if flags.CiliumEnableNR {
-		flags.CiliumEnableGENEVE = false
-	}
-	if flags.CiliumEnableDSR {
-		flags.CiliumEnableGENEVE = false
-		flags.CiliumEnableNR = true
-	} else {
-		flags.CiliumInstallNoConntrackIptablesRules = false
-	}
+	if flags.InputCNIMode != define.NoneNetwork {
+		if flags.CiliumEnableGENEVE || flags.CiliumEnableNR || flags.CiliumEnableDSR || flags.CiliumEnableBM || flags.CiliumEnableBBR {
+			flags.InputCNIMode = define.CiliumNetwork
+		}
+		if flags.InputICMode == define.IstioIngress {
+			flags.CiliumDisableHostnsOnly = false
+		}
+		if flags.CiliumEnableNR {
+			flags.CiliumEnableGENEVE = false
+		}
+		if flags.CiliumEnableDSR {
+			flags.CiliumEnableGENEVE = false
+			flags.CiliumEnableNR = true
+		}
+		if flags.CiliumEnableBBR {
+			flags.CiliumEnableBM = true
+		}
 
-	if flags.CalicoEnableVXLAN || flags.CalicoEnableBPF || flags.CalicoEnableBGP || flags.CalicoEnableDSR {
-		flags.InputCNIMode = define.CalicoNetwork
-	}
-	if flags.CalicoEnableBGP {
-		flags.CalicoEnableVXLAN = false
-	}
-	if flags.CalicoEnableDSR {
-		flags.CalicoEnableVXLAN = false
-		flags.CalicoEnableBPF = true
-	}
+		if flags.CalicoEnableVXLAN || flags.CalicoEnableBPF || flags.CalicoEnableBGP || flags.CalicoEnableDSR {
+			flags.InputCNIMode = define.CalicoNetwork
+		}
+		if flags.CalicoEnableBGP {
+			flags.CalicoEnableVXLAN = false
+		}
+		if flags.CalicoEnableDSR {
+			flags.CalicoEnableVXLAN = false
+			flags.CalicoEnableBPF = true
+		}
 
-	if "" == flags.IstioSkywalkingService || flags.IstioSkywalkingPort == 0 {
-		flags.IstioEnableSkywalking = false
-		flags.IstioEnableSkywalkingAll = false
-	}
-	if "" == flags.IstioZipkinService || flags.IstioZipkinPort == 0 {
-		flags.IstioEnableZipkin = false
-	}
-
-	if flags.CiliumEnableNR && "" == flags.CiliumNativeRoutingCIDR {
-		klog.Error("If native routing is used, the cilium-nr-cidr must be set")
-		os.Exit(1)
-	}
-	proxyReplace := flags.CalicoEnableBPF || flags.InputCNIMode == define.CiliumNetwork
-	if proxyReplace {
-		flags.InputProxyMode = flags.InputCNIMode
+		proxyReplace = flags.CalicoEnableBPF || flags.InputCNIMode == define.CiliumNetwork
+		if proxyReplace {
+			flags.InputProxyMode = flags.InputCNIMode
+		}
 	}
 	return proxyReplace
 }
@@ -922,15 +804,15 @@ func initCluster(current *cluster.Cluster) (err error) {
 	if nil != err {
 		return err
 	}
-	err = module.InstallInner(define.HealthzReader)
+	err = module.InstallInner(define.HealthzReader, false)
 	if nil != err {
 		return err
 	}
-	err = module.InstallNetwork()
+	err = module.InstallNetwork(false)
 	if nil != err {
 		return err
 	}
-	err = module.InstallExtend()
+	err = module.InstallExtend(false)
 	if nil != err {
 		return err
 	}
@@ -944,12 +826,15 @@ func initCluster(current *cluster.Cluster) (err error) {
 	if nil != err {
 		return err
 	}
+	if current.IsOnCloud() {
+		cloud.ModifyRouterNow()
+	}
 	err = module.InstallLoadBalance(current.Workers)
 	if nil != err {
 		return err
 	}
 	module.LabelDevice()
-	err = module.InstallIngress()
+	err = module.InstallIngress(false)
 	if nil != err {
 		klog.V(1).Info("Cluster has been installed, but the ingress installation failed, please use `kubeon view conf` to generate a configuration file to retry")
 	}

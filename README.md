@@ -7,37 +7,43 @@
 > kubeon view support
 
 ```text
-v1.19.4-v1.19.16
-v1.20.1-v1.20.15
-v1.21.1-v1.21.14
-v1.22.1-v1.22.15
-v1.23.1-v1.23.12
-v1.24.1-v1.24.6
-v1.25.1-v1.25.2
+v1.19.16
+v1.20.15
+v1.21.14
+v1.22.15-v1.22.17
+v1.23.11-v1.23.17
+v1.24.1-v1.24.11
+v1.25.1-v1.25.7
+v1.26.1-v1.26.2
 ```
 
-v1.19.4-v1.19.15
+PS. Some versions(like: v1.20.1..v1.20.14, v1.23.1..v1.23.10) are too old and no longer maintained
 
 ## Component
 
-> kubeon view component v1.25.2
+> kubeon view component v1.26.2
 
 ```json
 {
-  "kubernetes": "v1.25.2",
-  "etcd": "3.5.4",
+  "kubernetes": "v1.26.2",
+  "pause": "3.9",
+  "etcd": "3.5.6",
   "coredns": "1.9.4",
-  "crictl": "v1.25.0",
+  "crictl": "v1.26.0",
   "runc": "v1.1.4",
-  "containerd": "1.6.8",
-  "docker": "20.10.18",
-  "nvidia": "v3.11.0",
-  "kata": "2.5.1",
-  "cni": "v1.1.1",
-  "calico": "v3.23.3",
-  "cilium": "v1.12.2",
-  "contour": "v1.22.1",
-  "haproxy": "2.6.5"
+  "containerd": "1.6.19",
+  "docker": "20.10.23",
+  "nvidia": "v3.12.0",
+  "kata": "3.0.2",
+  "cni": "v1.2.0",
+  "calico": "v3.24.5",
+  "cilium": "v1.12.7",
+  "hubble": "v0.10.0",
+  "contour": "v1.24.1",
+  "istio": "1.16.3",
+  "haproxy": "2.6.9",
+  "kruise": "v1.3.0",
+  "offline": "20230308"
 }
 ```
 
@@ -66,14 +72,14 @@ other images such as etcd remain the same
 
 ## Offline
 
-online mode is the default and uses `registry.cn-hangzhou.aliyuncs.com` as the default mirror source, you can set `--mirror=no` to use `k8s.gcr.io` source
+online mode is the default and uses `uhub.service.ucloud.cn` as the default mirror source, you can set `--mirror=no` to use `registry.k8s.io` source
 
 offline mode(**--offline**) will download all images on the central machine and import them on each machine
 
 you can try setting the **--mirror** parameter like:
 
-- yes or true: use `registry.cn-hangzhou.aliyuncs.com`, **default**
-- no or false: use `k8s.gcr.io`, if you can access directly
+- yes or true: use `uhub.service.ucloud.cn`, **default**
+- no or false: use `registry.k8s.io`, if you can access directly
 - any other docker mirror address, like `mirror.ccs.tencentyun.com` if tencent is used
 
 ## Usage

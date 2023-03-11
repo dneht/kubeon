@@ -16,6 +16,8 @@ limitations under the License.
 
 package define
 
+import "strings"
+
 type ComponentVersion struct {
 	Kubernetes string `json:"kubernetes"`
 	Pause      string `json:"pause"`
@@ -30,11 +32,19 @@ type ComponentVersion struct {
 	Network    string `json:"cni,omitempty"`
 	Calico     string `json:"calico,omitempty"`
 	Cilium     string `json:"cilium,omitempty"`
+	Hubble     string `json:"hubble,omitempty"`
 	Contour    string `json:"contour,omitempty"`
 	Istio      string `json:"istio,omitempty"`
 	Haproxy    string `json:"haproxy,omitempty"`
 	Kruise     string `json:"kruise,omitempty"`
 	Offline    string `json:"offline"`
+}
+
+func (cv *ComponentVersion) RealNetwork() string {
+	if "" == cv.Kubernetes {
+		return ""
+	}
+	return cv.Kubernetes[:strings.LastIndex(cv.Kubernetes, ".")]
 }
 
 var SupportComponentFull = map[string]*ComponentVersion{}

@@ -40,7 +40,7 @@ func InstallLoadBalance(nodes cluster.NodeList) (err error) {
 		if nil != err {
 			return err
 		}
-		return InstallInner(define.ApiserverUpdater)
+		return InstallInner(define.ApiserverUpdater, false)
 	} else {
 		err = SetupWorkersHaproxy(nodes)
 		if nil != err {

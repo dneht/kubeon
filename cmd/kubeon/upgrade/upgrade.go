@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"os"
 )
 
 type flagpole struct {
@@ -74,6 +75,10 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	inputVersion, err := define.NewStdVersion(args[1])
 	if nil != err {
 		return err
+	}
+	version := inputVersion.Full
+	if !checkSupport(version) {
+		os.Exit(1)
 	}
 	_, err = cluster.InitExistCluster()
 	if nil != err {
@@ -152,11 +157,11 @@ func upgradeCluster(current *cluster.Cluster) (err error) {
 			return err
 		}
 	}
-	err = module.InstallNetwork()
+	err = module.InstallNetwork(true)
 	if nil != err {
 		klog.Warningf("Reinstall network failed %v", err)
 	}
-	err = module.InstallExtend()
+	err = module.InstallExtend(true)
 	if nil != err {
 		klog.Warningf("Reinstall extend failed %v", err)
 	}
@@ -164,7 +169,7 @@ func upgradeCluster(current *cluster.Cluster) (err error) {
 	if nil != err {
 		return err
 	}
-	err = module.InstallIngress()
+	err = module.InstallIngress(true)
 	if nil != err {
 		klog.Warningf("Reinstall ingress failed %v", err)
 	}

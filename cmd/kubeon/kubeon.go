@@ -18,6 +18,7 @@ package kubeon
 
 import (
 	"github.com/dneht/kubeon/cmd/kubeon/addon"
+	"github.com/dneht/kubeon/cmd/kubeon/cloud"
 	"github.com/dneht/kubeon/cmd/kubeon/copy"
 	"github.com/dneht/kubeon/cmd/kubeon/create"
 	"github.com/dneht/kubeon/cmd/kubeon/delon"
@@ -69,6 +70,7 @@ func NewCommand() *cobra.Command {
 	// add kubeon commands
 	cmd.AddCommand(copy.NewCommand())
 	cmd.AddCommand(exec.NewCommand())
+	cmd.AddCommand(cloud.NewCommand())
 	cmd.AddCommand(download.NewCommand())
 	cmd.AddCommand(module.NewCommand())
 	cmd.AddCommand(create.NewCommand())

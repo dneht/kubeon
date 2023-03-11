@@ -18,6 +18,7 @@ package delon
 
 import (
 	"github.com/dneht/kubeon/pkg/action"
+	"github.com/dneht/kubeon/pkg/cloud"
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/module"
 	"github.com/spf13/cobra"
@@ -51,12 +52,13 @@ func runE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	current := cluster.Current()
 	err = preRemove(delNodes)
 	if nil != err {
 		klog.Warningf("Prepare remove nodes failed, please check: %v", err)
 		return nil
 	}
-	err = removeNodes(delNodes)
+	err = removeNodes(delNodes, current.IsOnCloud())
 	if nil != err {
 		klog.Errorf("Remove nodes failed, clean manually: %v", err)
 	}
@@ -70,26 +72,28 @@ func preRemove(delNodes cluster.NodeList) (err error) {
 			klog.Warningf("Drain node[%s] failed: %v", node.Addr(), err)
 		}
 	}
-	action.KubeadmResetList(delNodes, true, false)
 	return nil
 }
 
-func removeNodes(delNodes cluster.NodeList) (err error) {
+func removeNodes(delNodes cluster.NodeList, onCloud bool) (err error) {
+	action.KubeadmResetList(delNodes, true, false)
 	err = module.AllUninstall(delNodes, false)
 	if nil != err {
 		return err
+	}
+	for _, node := range delNodes {
+		cluster.DelResetLocalHost(node)
 	}
 	delMasters := cluster.GetMasterFromList(delNodes)
 	isDelMaster := len(delMasters) > 0
 	if isDelMaster {
 		for _, node := range delMasters {
-			cluster.DelResetLocalHost(node)
 			err = action.EtcdMemberRemove(node.Hostname)
 			if nil != err {
 				klog.Warningf("Remove etcd member failed %v", err)
 			}
 		}
-		err = module.InstallNetwork()
+		err = module.InstallNetwork(true)
 		if nil != err {
 			klog.Warningf("Reinstall network failed %v", err)
 		}
@@ -103,6 +107,9 @@ func removeNodes(delNodes cluster.NodeList) (err error) {
 		if nil != err {
 			klog.Warningf("Delete node[%s] failed: %v", node.Addr(), err)
 		}
+	}
+	if onCloud {
+		cloud.DeleteRouterNow(delNodes)
 	}
 	return cluster.DelCompleteCluster(delNodes)
 }

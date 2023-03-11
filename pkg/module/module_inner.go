@@ -26,16 +26,22 @@ import (
 	"strings"
 )
 
-func InstallExtend() (err error) {
+func InstallExtend(isUpgrade bool) (err error) {
 	current := cluster.Current()
 	if current.UseNvidia && current.HasNvidia {
-		err = InstallInner(define.NvidiaRuntime)
+		err = InstallInner(define.NvidiaRuntime, isUpgrade)
 		if nil != err {
 			return err
 		}
 	}
 	if current.UseKata {
-		err = InstallInner(define.KataRuntime)
+		err = InstallInner(define.KataRuntime, isUpgrade)
+		if nil != err {
+			return err
+		}
+	}
+	if current.UseKruise {
+		err = InstallInner(define.KruisePlugin, isUpgrade)
 		if nil != err {
 			return err
 		}
@@ -43,19 +49,19 @@ func InstallExtend() (err error) {
 	return nil
 }
 
-func InstallNetwork() (err error) {
+func InstallNetwork(isUpgrade bool) (err error) {
 	current := cluster.Current()
 	switch current.NetworkMode {
 	case define.CalicoNetwork:
 		{
-			err = InstallInner(define.CalicoNetwork)
+			err = InstallInner(define.CalicoNetwork, isUpgrade)
 			if nil != err {
 				return err
 			}
 		}
 	case define.CiliumNetwork:
 		{
-			err = InstallInner(define.CiliumNetwork)
+			err = InstallInner(define.CiliumNetwork, isUpgrade)
 			if nil != err {
 				return err
 			}
@@ -64,12 +70,12 @@ func InstallNetwork() (err error) {
 	return nil
 }
 
-func InstallIngress() (err error) {
+func InstallIngress(isUpgrade bool) (err error) {
 	current := cluster.Current()
 	switch current.IngressMode {
 	case define.ContourIngress:
 		{
-			err = InstallInner(define.ContourIngress)
+			err = InstallInner(define.ContourIngress, isUpgrade)
 			if nil != err {
 				return err
 			}
@@ -77,11 +83,7 @@ func InstallIngress() (err error) {
 		}
 	case define.IstioIngress:
 		{
-			err = action.KubectlCreateNamespace(define.IstioNamespace)
-			if nil != err {
-				return err
-			}
-			err = InstallInner(define.IstioIngress)
+			err = InstallInner(define.IstioIngress, isUpgrade)
 			if nil != err {
 				return err
 			}
@@ -91,16 +93,40 @@ func InstallIngress() (err error) {
 	return nil
 }
 
-func InstallInner(moduleName string) (err error) {
-	bytes, err := ShowInner(moduleName)
-	if nil != err {
-		return err
+func InstallInner(moduleName string, isUpgrade bool) (err error) {
+	current := cluster.Current()
+	local := current.IsRealLocal()
+	switch moduleName {
+	case define.CiliumNetwork:
+		ciliumTpl := ciliumTemplate(current)
+		if isUpgrade {
+			err = release.UpgradeCilium(ciliumTpl, local)
+		} else {
+			err = release.InstallCilium(ciliumTpl, local)
+			if nil != err {
+				return err
+			}
+			err = release.InstallHubble(ciliumTpl, local)
+		}
+	case define.IstioIngress:
+		istioTpl := istioTemplate(current)
+		err = action.KubectlCreateNamespace(define.IstioNamespace)
+		if nil != err {
+			return err
+		}
+		err = release.InstallIstio(istioTpl, local)
+	default:
+		var bytes []byte
+		bytes, err = ShowInner(moduleName)
+		if nil != err {
+			return err
+		}
+		if nil != bytes {
+			klog.V(4).Infof("Install %s on cluster", moduleName)
+			err = action.KubectlApplyData(bytes)
+		}
 	}
-	if nil != bytes {
-		klog.V(4).Infof("Install %s on cluster", moduleName)
-		return action.KubectlApplyData(bytes)
-	}
-	return nil
+	return err
 }
 
 func DeleteInner(moduleName string) (err error) {
@@ -133,6 +159,7 @@ func ShowInner(moduleName string) ([]byte, error) {
 		return release.RenderKubeletTemplate(getKubeletTemplate(), current.Version.Full)
 	case define.CorednsPart:
 		return release.RenderCorednsTemplate(&release.CorednsTemplate{
+			CPVersion:    current.GetModuleVersion(define.CorednsPart),
 			MirrorUrl:    current.Mirror,
 			ClusterDnsIP: current.DnsIP,
 		}, local)
@@ -140,134 +167,35 @@ func ShowInner(moduleName string) ([]byte, error) {
 		if nil == current.CalicoConf {
 			return nil, errors.New("get calico config error")
 		}
-		calicoConf := current.CalicoConf
-		isSetInterface, defaultInterface := getInterface(current.NodeInterface)
-		backendMode, ipipMode, vxlanMode, vxlanv6Mode := calicoMode(calicoConf, current.EnableDual)
-		lbMode := calicoLBMode(calicoConf)
-		return release.RenderCalicoTemplate(&release.CalicoTemplate{
-			MirrorUrl:              current.Mirror,
-			IsSetInterface:         isSetInterface,
-			DefaultInterface:       defaultInterface,
-			BackendMode:            backendMode,
-			EnableBPF:              calicoConf.EnableBPF,
-			EnableWireGuard:        calicoConf.EnableWireGuard,
-			CalicoMTU:              calicoConf.CalicoMTU,
-			LBMode:                 lbMode,
-			EnableVXLAN:            calicoConf.EnableVXLAN,
-			IPIPMode:               ipipMode,
-			VXLANMode:              vxlanMode,
-			VXLANv6Mode:            vxlanv6Mode,
-			BPFHostConntrackBypass: calicoConf.BPFBypassConntrack,
-			ClusterEnableDual:      current.EnableDual,
-			ClusterLbDomain:        current.LbDomain,
-			ClusterLbPort:          current.LbPort,
-			ClusterPortRange:       current.PortRange,
-			ClusterNodeMaskSize:    current.NodeMaskSize,
-			ClusterNodeMaskSizeV6:  current.NodeMaskSizeV6,
-			ClusterPodCIDR:         current.PodCIDR,
-			ClusterPodCIDRV6:       current.PodV6CIDR,
-		}, local)
+		return release.RenderCalicoTemplate(calicoTemplate(current), local)
 	case define.CiliumNetwork:
 		if nil == current.CiliumConf {
 			return nil, errors.New("get cilium config error")
 		}
-		ciliumConf := current.CiliumConf
-		isSetInterface, defaultInterface := getInterface(current.NodeInterface)
-		ipv4Masq, ipv4NRCIDR, ipv6Masq, ipv6NRCIDR, tunnelMode, autoDirectNode := ciliumMode(ciliumConf, current.EnableDual)
-		lbMode, lbAcceleration, lbAlgorithm := ciliumLBMode(ciliumConf)
-		return release.RenderCiliumTemplate(&release.CiliumTemplate{
-			MirrorUrl:                       current.Mirror,
-			IsSetInterface:                  isSetInterface,
-			DefaultInterface:                defaultInterface,
-			EnableBGP:                       ciliumConf.EnableBGP,
-			EnableBM:                        ciliumConf.EnableBM,
-			EnableBBR:                       ciliumConf.EnableBBR,
-			EnableWireGuard:                 ciliumConf.EnableWireGuard,
-			EnableIPv4Masquerade:            ipv4Masq,
-			EnableIPv6Masquerade:            ipv6Masq,
-			NativeRoutingCIDR:               ipv4NRCIDR,
-			NativeRoutingCIDRV6:             ipv6NRCIDR,
-			EnableIPv6BigTCP:                ciliumConf.EnableIPv6BigTCP,
-			CiliumMTU:                       ciliumConf.CiliumMTU,
-			TunnelMode:                      tunnelMode,
-			PolicyMode:                      ciliumConf.PolicyMode,
-			LBMode:                          lbMode,
-			LBAcceleration:                  lbAcceleration,
-			LBAlgorithm:                     lbAlgorithm,
-			LBHostNamespaceOnly:             ciliumConf.BPFHostNamespaceOnly,
-			AutoDirectNodeRoutes:            autoDirectNode,
-			EnableLocalRedirect:             ciliumConf.EnableLocalRedirect,
-			AutoProtectPortRange:            ciliumConf.AutoProtectPortRange,
-			BPFMapDynamicSizeRatio:          ciliumConf.MapDynamicSizeRatio,
-			BPFLBMapMax:                     ciliumConf.LBMapMax,
-			BPFPolicyMapMax:                 ciliumConf.PolicyMapMax,
-			BPFLBExternalClusterIP:          ciliumConf.EnableExternalClusterIP,
-			BPFLBBypassFIBLookup:            ciliumConf.BPFBypassFIBLookup,
-			InstallIptablesRules:            ciliumConf.InstallIptablesRules,
-			InstallNoConntrackIptablesRules: ciliumConf.InstallNoConntrackIptablesRules,
-			MonitorAggregation:              ciliumConf.MonitorAggregation,
-			MonitorInterval:                 ciliumConf.MonitorInterval,
-			MonitorFlags:                    ciliumConf.MonitorFlags,
-			ClusterEnableDual:               current.EnableDual,
-			ClusterLbDomain:                 current.LbDomain,
-			ClusterLbPort:                   current.LbPort,
-			ClusterPortRange:                strings.ReplaceAll(current.PortRange, "-", ","),
-			ClusterNodeMaskSize:             current.NodeMaskSize,
-			ClusterNodeMaskSizeV6:           current.NodeMaskSizeV6,
-			ClusterPodCIDR:                  current.PodCIDR,
-			ClusterPodCIDRV6:                current.PodV6CIDR,
-		}, local)
+		return release.RenderCiliumTemplate(ciliumTemplate(current), local)
 	case define.ContourIngress:
 		if nil == current.ContourConf {
 			return nil, errors.New("get contour config error")
 		}
-		contourConf := current.ContourConf
-		return release.RenderContourTemplate(&release.ContourTemplate{
-			MirrorUrl:             current.Mirror,
-			DisableMergeSlashes:   contourConf.DisableMergeSlashes,
-			DisablePermitInsecure: contourConf.DisableInsecure,
-		}, local)
+		return release.RenderContourTemplate(contourTemplate(current), local)
 	case define.IstioIngress:
 		if nil == current.IstioConf {
-			return nil, errors.New("get contour config error")
+			return nil, errors.New("get istio config error")
 		}
-		istioConf := current.IstioConf
-		return release.RenderIstioTemplate(&release.IstioTemplate{
-			MirrorUrl:               current.Mirror,
-			ProxyClusterDomain:      current.DnsDomain,
-			EnableAutoInject:        istioConf.EnableAutoInject,
-			ServiceEntryExportTo:    istioConf.ServiceEntryExportTo,
-			VirtualServiceExportTo:  istioConf.VirtualServiceExportTo,
-			DestinationRuleExportTo: istioConf.DestinationRuleExportTo,
-			EnableAutoMTLS:          istioConf.EnableAutoMTLS,
-			EnableHttp2AutoUpgrade:  istioConf.EnableHttp2AutoUpgrade,
-			EnablePrometheusMerge:   istioConf.EnablePrometheusMerge,
-			EnableNetworkPlugin:     istioConf.EnableNetworkPlugin,
-			EnableIngressGateway:    istioConf.EnableIngressGateway,
-			IngressGatewayType:      istioConf.IngressGatewayType,
-			EnableEgressGateway:     istioConf.EnableEgressGateway,
-			EgressGatewayType:       istioConf.EgressGatewayType,
-			EnableSkywalking:        istioConf.EnableSkywalking,
-			EnableSkywalkingAll:     istioConf.EnableSkywalkingAll,
-			SkywalkingService:       istioConf.SkywalkingService,
-			SkywalkingPort:          istioConf.SkywalkingPort,
-			SkywalkingAccessToken:   istioConf.SkywalkingAccessToken,
-			EnableZipkin:            istioConf.EnableZipkin,
-			ZipkinService:           istioConf.ZipkinService,
-			ZipkinPort:              istioConf.ZipkinPort,
-			AccessLogServiceAddress: istioConf.AccessLogServiceAddress,
-			MetricsServiceAddress:   istioConf.MetricsServiceAddress,
-		}, local)
+		return release.RenderIstioTemplate(istioTemplate(current), local)
 	case define.NvidiaRuntime:
 		return release.RenderNvidiaTemplate(&release.NvidiaTemplate{
+			CPVersion: current.GetModuleVersion(define.NvidiaRuntime),
 			MirrorUrl: current.Mirror,
 		}, local)
 	case define.KataRuntime:
 		return release.RenderKataTemplate(&release.KataTemplate{
+			CPVersion: current.GetModuleVersion(define.KataRuntime),
 			MirrorUrl: current.Mirror,
 		}, local)
 	case define.KruisePlugin:
 		return release.RenderKruiseTemplate(&release.KruiseTemplate{
+			CPVersion: current.GetModuleVersion(define.KruisePlugin),
 			MirrorUrl: current.Mirror,
 		}, local)
 	case define.HealthzReader:
@@ -304,7 +232,38 @@ func getInterface(interfaces []string) (bool, string) {
 	return isSetInterface, defaultInterface
 }
 
-func calicoMode(conf *cluster.CalicoConf, dual bool) (string, string, string, string) {
+func calicoTemplate(current *cluster.Cluster) *release.CalicoTemplate {
+	calicoConf := current.CalicoConf
+	isSetInterface, defaultInterface := getInterface(current.NodeInterface)
+	backendMode, ipipMode, vxlanMode, vxlanv6Mode := calicoMode(current, calicoConf)
+	lbMode := calicoLBMode(calicoConf)
+	return &release.CalicoTemplate{
+		CPVersion:             current.GetModuleVersion(define.CalicoNetwork),
+		MirrorUrl:             current.Mirror,
+		IsSetInterface:        isSetInterface,
+		DefaultInterface:      defaultInterface,
+		BackendMode:           backendMode,
+		EnableBPF:             calicoConf.EnableBPF,
+		EnableWireGuard:       calicoConf.EnableWireGuard,
+		CalicoMTU:             calicoConf.CalicoMTU,
+		LBMode:                lbMode,
+		EnableVXLAN:           calicoConf.EnableVXLAN,
+		IPIPMode:              ipipMode,
+		VXLANMode:             vxlanMode,
+		VXLANv6Mode:           vxlanv6Mode,
+		EnablePassConntrack:   calicoConf.EnablePassConntrack,
+		ClusterEnableDual:     current.EnableDual,
+		ClusterLbDomain:       current.LbDomain,
+		ClusterLbPort:         current.LbPort,
+		ClusterPortRange:      current.PortRange,
+		ClusterNodeMaskSize:   current.NodeMaskSize,
+		ClusterNodeMaskSizeV6: current.NodeMaskSizeV6,
+		ClusterPodCIDR:        current.PodCIDR,
+		ClusterPodCIDRV6:      current.PodV6CIDR,
+	}
+}
+
+func calicoMode(current *cluster.Cluster, conf *cluster.CalicoConf) (string, string, string, string) {
 	backendMode := define.CalicoBackendBIRD
 	ipipMode := define.CalicoTunModeNever
 	vxlanMode := define.CalicoTunModeNever
@@ -320,7 +279,7 @@ func calicoMode(conf *cluster.CalicoConf, dual bool) (string, string, string, st
 		} else {
 			vxlanMode = define.CalicoTunModeAlways
 		}
-		if dual {
+		if current.EnableDual {
 			vxlanv6Mode = vxlanMode
 		}
 	} else {
@@ -341,7 +300,49 @@ func calicoLBMode(conf *cluster.CalicoConf) string {
 	return lbMode
 }
 
-func ciliumMode(conf *cluster.CiliumConf, dual bool) (bool, string, bool, string, string, bool) {
+func ciliumTemplate(current *cluster.Cluster) *release.CiliumTemplate {
+	ciliumConf := current.CiliumConf
+	isSetInterface, defaultInterface := getInterface(current.NodeInterface)
+	ipv4Masq, ipv4NRCIDR, ipv6Masq, ipv6NRCIDR, tunnelMode, autoDirectNode := ciliumMode(current, ciliumConf)
+	lbMode := ciliumLBMode(ciliumConf)
+	return &release.CiliumTemplate{
+		CPVersion:               current.GetModuleVersion(define.CiliumNetwork),
+		MirrorUrl:               current.Mirror,
+		IsSetInterface:          isSetInterface,
+		DefaultInterface:        defaultInterface,
+		EnableBGP:               ciliumConf.EnableBGP,
+		EnableBM:                ciliumConf.EnableBM,
+		EnableBBR:               ciliumConf.EnableBBR,
+		EnableWireGuard:         ciliumConf.EnableWireGuard,
+		EnableIPv4Masquerade:    ipv4Masq,
+		EnableIPv6Masquerade:    ipv6Masq,
+		NativeRoutingCIDR:       ipv4NRCIDR,
+		NativeRoutingCIDRV6:     ipv6NRCIDR,
+		CiliumMTU:               ciliumConf.CiliumMTU,
+		PolicyMode:              ciliumConf.PolicyMode,
+		TunnelMode:              tunnelMode,
+		LBMode:                  lbMode,
+		EnableEndpointRoutes:    ciliumConf.EnableEndpointRoutes,
+		EnableLocalRedirect:     ciliumConf.EnableLocalRedirect,
+		EnableHostnsOnly:        ciliumConf.EnableHostnsOnly,
+		AutoDirectNodeRoutes:    autoDirectNode,
+		EnableEndpointSlice:     ciliumConf.EnableEndpointSlice,
+		EnableExternalClusterIP: ciliumConf.EnableExternalClusterIP,
+		AutoProtectPortRange:    ciliumConf.AutoProtectPortRange,
+		HubbleVersion:           current.GetModuleVersion(define.CiliumHubble),
+		CustomConfigs:           ciliumConf.CustomConfigs,
+		ClusterEnableDual:       current.EnableDual,
+		ClusterLbDomain:         current.LbDomain,
+		ClusterLbPort:           current.LbPort,
+		ClusterPortRange:        strings.ReplaceAll(current.PortRange, "-", ","),
+		ClusterNodeMaskSize:     current.NodeMaskSize,
+		ClusterNodeMaskSizeV6:   current.NodeMaskSizeV6,
+		ClusterPodCIDR:          current.PodCIDR,
+		ClusterPodCIDRV6:        current.PodV6CIDR,
+	}
+}
+
+func ciliumMode(current *cluster.Cluster, conf *cluster.CiliumConf) (bool, string, bool, string, string, bool) {
 	ipv4NRCIDR := ""
 	ipv6NRCIDR := ""
 	tunnelMode := define.CiliumTunnelVXLAN
@@ -356,17 +357,28 @@ func ciliumMode(conf *cluster.CiliumConf, dual bool) (bool, string, bool, string
 		tunnelMode = define.CiliumTunnelGENEVE
 	}
 	if conf.EnableNR {
-		ipv4NRCIDR = conf.NativeRoutingCIDR
-		if dual {
-			ipv6NRCIDR = conf.NativeRoutingCIDRV6
+		if "" == conf.NativeRoutingCIDR {
+			ipv4NRCIDR = current.PodCIDR
+		} else {
+			ipv4NRCIDR = conf.NativeRoutingCIDR
+		}
+		if current.EnableDual {
+			if "" == conf.NativeRoutingCIDR {
+				ipv6NRCIDR = current.PodV6CIDR
+			} else {
+				ipv6NRCIDR = conf.NativeRoutingCIDRV6
+			}
 		}
 		tunnelMode = define.CiliumTunnelDisabled
 		autoDirectNode = true
 	}
-	return true, ipv4NRCIDR, dual, ipv6NRCIDR, tunnelMode, autoDirectNode
+	if !conf.AutoDirectNodeRoutes {
+		autoDirectNode = false
+	}
+	return conf.EnableIPv4Masquerade, ipv4NRCIDR, conf.EnableIPv6Masquerade, ipv6NRCIDR, tunnelMode, autoDirectNode
 }
 
-func ciliumLBMode(conf *cluster.CiliumConf) (string, string, string) {
+func ciliumLBMode(conf *cluster.CiliumConf) string {
 	lbMode := define.CiliumLBModeSNAT
 	if conf.EnableNR {
 		lbMode = define.CiliumLBModeHybrid
@@ -374,13 +386,32 @@ func ciliumLBMode(conf *cluster.CiliumConf) (string, string, string) {
 	if conf.EnableDSR {
 		lbMode = define.CiliumLBModeDSR
 	}
-	lbAcceleration := ""
-	if conf.LBNativeAcceleration {
-		lbAcceleration = define.CiliumLBAccelerationNative
+	return lbMode
+}
+
+func contourTemplate(current *cluster.Cluster) *release.ContourTemplate {
+	contourConf := current.ContourConf
+	return &release.ContourTemplate{
+		CPVersion:             current.GetModuleVersion(define.ContourIngress),
+		MirrorUrl:             current.Mirror,
+		DisableMergeSlashes:   contourConf.DisableMergeSlashes,
+		DisablePermitInsecure: contourConf.DisableInsecure,
 	}
-	lbAlgorithm := ""
-	if conf.LBMaglevAlgorithm {
-		lbAlgorithm = define.CiliumLBAlgorithmMaglev
+}
+
+func istioTemplate(current *cluster.Cluster) *release.IstioTemplate {
+	istioConf := current.IstioConf
+	return &release.IstioTemplate{
+		CPVersion:               current.GetModuleVersion(define.IstioIngress),
+		MirrorUrl:               current.Mirror,
+		EnableAutoInject:        istioConf.EnableAutoInject,
+		ServiceEntryExportTo:    istioConf.ServiceEntryExportTo,
+		VirtualServiceExportTo:  istioConf.VirtualServiceExportTo,
+		DestinationRuleExportTo: istioConf.DestinationRuleExportTo,
+		IngressGatewayType:      istioConf.IngressGatewayType,
+		EnableEgressGateway:     istioConf.EnableEgressGateway,
+		EgressGatewayType:       istioConf.EgressGatewayType,
+		CustomConfigs:           istioConf.CustomConfigs,
+		ProxyClusterDomain:      current.DnsDomain,
 	}
-	return lbMode, lbAcceleration, lbAlgorithm
 }

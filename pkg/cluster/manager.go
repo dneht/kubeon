@@ -23,6 +23,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"net"
+	"os"
+	"reflect"
 	"strings"
 )
 
@@ -91,10 +93,10 @@ func InitExistCluster() (*RunConfig, error) {
 
 func InitUpgradeCluster(version *define.StdVersion) error {
 	if current.Status != StatusUpgrading && version.LessEqual(current.Version) {
-		return errors.Errorf("Upgrade version [%s] is less than now version [%s]", version.Full, current.Version.Full)
+		return errors.Errorf("upgrade version [%s] is less than now version [%s]", version.Full, current.Version.Full)
 	}
 
-	current.ExistResourceVersion = current.LocalResource.InstallVersion
+	current.Version = version
 	current.LocalResource = release.InitResource(current.Version.Full,
 		current.RuntimeMode, current.NetworkMode, current.IngressMode,
 		current.IsBinary, current.IsOffline, current.HasNvidia, current.UseKata, current.UseKruise)
@@ -192,6 +194,19 @@ func InitDelNodes(selector string) (NodeList, error) {
 
 func initCurrent(cluster *Cluster) {
 	cluster.AllNodes = MergeNodeList(cluster.ControlPlanes, cluster.Workers)
+	extVersion := define.SupportComponentFull[cluster.Version.Full]
+	if nil != extVersion {
+		extVersionMap := make(map[string]string, 16)
+		extVersionTypes := reflect.TypeOf(*extVersion)
+		extVersionVals := reflect.ValueOf(*extVersion)
+		for i := 0; i < extVersionTypes.NumField(); i++ {
+			extVersionMap[strings.ToLower(extVersionTypes.Field(i).Name)] = extVersionVals.Field(i).String()
+		}
+		cluster.ExistResourceVersion = &extVersionMap
+	} else {
+		klog.Errorf("Init cluster component version resource not found")
+		os.Exit(1)
+	}
 }
 
 func parseCIDR(svcCIDR, podCIDR, lbIP, lbMode string) (error, string, string, bool, string) {
