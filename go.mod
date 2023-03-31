@@ -3,22 +3,22 @@ module github.com/dneht/kubeon
 go 1.19
 
 require (
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.190
-	github.com/google/go-containerregistry v0.13.0
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.253
+	github.com/google/go-containerregistry v0.14.0
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.5
 	github.com/spf13/cobra v1.6.1
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.603
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.0.603
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.624
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/vpc v1.0.624
 	github.com/vbauerster/mpb/v7 v7.5.3
-	golang.org/x/crypto v0.6.0
-	k8s.io/klog/v2 v2.90.0
+	golang.org/x/crypto v0.7.0
+	k8s.io/klog/v2 v2.90.1
 )
 
 require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
-	github.com/containerd/stargz-snapshotter/estargz v0.14.1 // indirect
+	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
 	github.com/docker/cli v23.0.1+incompatible // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v23.0.1+incompatible // indirect
@@ -27,7 +27,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.16.0 // indirect
+	github.com/klauspost/compress v1.16.3 // indirect
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -41,6 +41,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vbatts/tar-split v0.11.2 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )

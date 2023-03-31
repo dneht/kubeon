@@ -29,9 +29,9 @@ var (
 
 	AppTplDir = AppBaseDir + "/tpl"
 
-	AppPatchDir = AppBaseDir + "/patch"
-
 	AppScriptDir = AppBaseDir + "/script"
+
+	AppPatchDir = AppBaseDir + "/patch"
 
 	AppDistDir = AppBaseDir + "/dist"
 
