@@ -11,7 +11,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/dneht/kubeon/pkg/define"
-	"github.com/dneht/kubeon/pkg/execute"
 	"github.com/dneht/kubeon/pkg/onutil"
 	"github.com/dneht/kubeon/pkg/release/configset"
 	"github.com/pkg/errors"
@@ -214,7 +213,7 @@ func RenderCalicoTemplate(input *CalicoTemplate, local bool) ([]byte, error) {
 	}
 }
 
-func RenderCiliumTemplate(input *CiliumTemplate, local bool) ([]byte, error) {
+func RenderCiliumCommand(input *CiliumTemplate, local bool) ([]byte, error) {
 	ciliumArgs := buildCiliumInstallArgs(input, false, local)
 	hubbleArgs := buildHubbleInstallArgs(input, false, local)
 	return []byte(fmt.Sprintf("%s %s\n%s %s",
@@ -232,8 +231,8 @@ func RenderContourTemplate(input *ContourTemplate, local bool) ([]byte, error) {
 
 func RenderIstioTemplate(input *IstioTemplate, local bool) ([]byte, error) {
 	istioArgs := buildIstioInstallArgs(input, false, local)
-	istioCmd := execute.NewLocalCmd(define.IstioCommand, istioArgs...)
-	return istioCmd.RunAndBytes()
+	return []byte(fmt.Sprintf("%s %s",
+		define.IstioCommand, strings.Join(istioArgs, " "))), nil
 }
 
 func RenderNvidiaTemplate(input *NvidiaTemplate, local bool) ([]byte, error) {

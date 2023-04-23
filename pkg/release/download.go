@@ -31,6 +31,7 @@ const (
 	BinaryResource     = "kubeon/install-binary"
 	ImagesResource     = "kubeon/install-images"
 	PauseResource      = "kubeon/install-pause"
+	ScriptsResource    = "kubeon/install-scripts"
 	OfflineResource    = "kubeon/install-offline"
 	DockerResource     = "kubeon/runtime-docker"
 	ContainerdResource = "kubeon/runtime-containerd"
@@ -42,6 +43,7 @@ const (
 	ContourResource    = "kubeon/extend-contour"
 	IstioResource      = "kubeon/extend-istio"
 	KruiseResource     = "kubeon/extend-kruise"
+	ToolsResource      = "kubeon/extend-tools"
 )
 
 var (
@@ -65,7 +67,7 @@ func ProcessDownload(resource *ClusterResource, version, runtime, network, ingre
 		return errors.New("extend resource not exist, please enter newer version")
 	}
 
-	tasks := make([]*ProcessModule, 0, 16)
+	tasks := make([]*ProcessModule, 0, 24)
 	if isBinary {
 		if !onutil.PathExists(resource.BinaryPath) || execute.FileSum(resource.BinaryPath) != resource.BinarySum {
 			tasks = append(tasks, &ProcessModule{version, BinaryResource, define.BinaryModule})
@@ -75,6 +77,9 @@ func ProcessDownload(resource *ClusterResource, version, runtime, network, ingre
 			tasks = append(tasks, &ProcessModule{version, DefaultResource, define.KubeletModule})
 
 		}
+	}
+	if !onutil.PathExists(resource.ScriptsPath) || execute.FileSum(resource.ScriptsPath) != resource.ScriptsSum {
+		tasks = append(tasks, &ProcessModule{extVersion.Sharing(), ScriptsResource, define.ScriptsModule})
 	}
 	if define.DockerRuntime == runtime {
 		if !onutil.PathExists(resource.ContainerdPath) || execute.FileSum(resource.ContainerdPath) != resource.ContainerdSum {
@@ -92,7 +97,7 @@ func ProcessDownload(resource *ClusterResource, version, runtime, network, ingre
 		}
 	}
 	if !onutil.PathExists(resource.NetworkPath) || execute.FileSum(resource.NetworkPath) != resource.NetworkSum {
-		tasks = append(tasks, &ProcessModule{extVersion.RealNetwork(), NetworkResource, define.NetworkPlugin})
+		tasks = append(tasks, &ProcessModule{extVersion.Sharing(), NetworkResource, define.NetworkPlugin})
 	}
 	if isLocal {
 		if !onutil.PathExists(resource.ImagesPath) || execute.FileSum(resource.ImagesPath) != resource.ImagesSum {
@@ -152,6 +157,9 @@ func ProcessDownload(resource *ClusterResource, version, runtime, network, ingre
 		if !onutil.PathExists(resource.PausePath) || execute.FileSum(resource.PausePath) != resource.PauseSum {
 			tasks = append(tasks, &ProcessModule{version, PauseResource, define.PausePackage})
 		}
+	}
+	if !onutil.PathExists(resource.ToolsPath) || execute.FileSum(resource.ToolsPath) != resource.ToolsSum {
+		tasks = append(tasks, &ProcessModule{extVersion.Tools, ToolsResource, define.ToolsModule})
 	}
 
 	prog := mpb.New(mpb.WithWidth(80))

@@ -11,7 +11,6 @@ import (
 	"crypto/tls"
 	cluster "github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
-	"github.com/dneht/kubeon/pkg/execute"
 	"github.com/dneht/kubeon/pkg/release"
 	"github.com/pkg/errors"
 	"github.com/vbauerster/mpb/v7"
@@ -104,62 +103,54 @@ func doQueuedPackage(node *cluster.Node, prog *mpb.Progress) []*PrepareModule {
 	remoteRes := node.GetResource()
 	barQueue, copyQueue := make([]*mpb.Bar, 24), make([]*PrepareModule, 24)
 	doAppendPackage(0, node, prog, barQueue, copyQueue, define.KubeletModule, remoteRes.KubeletPath, localRes.KubeletPath, localRes.KubeletSum)
+	doAppendPackage(1, node, prog, barQueue, copyQueue, define.ScriptsModule, remoteRes.ScriptsPath, localRes.ScriptsPath, localRes.ScriptsSum)
 	if current.RuntimeMode == define.ContainerdRuntime {
-		doAppendPackage(1, node, prog, barQueue, copyQueue, define.ContainerdRuntime, remoteRes.ContainerdPath, localRes.ContainerdPath, localRes.ContainerdSum)
+		doAppendPackage(4, node, prog, barQueue, copyQueue, define.ContainerdRuntime, remoteRes.ContainerdPath, localRes.ContainerdPath, localRes.ContainerdSum)
 	} else {
-		doAppendPackage(1, node, prog, barQueue, copyQueue, define.DockerRuntime, remoteRes.DockerPath, localRes.DockerPath, localRes.DockerSum)
+		doAppendPackage(4, node, prog, barQueue, copyQueue, define.DockerRuntime, remoteRes.DockerPath, localRes.DockerPath, localRes.DockerSum)
 	}
-	doAppendPackage(2, node, prog, barQueue, copyQueue, define.NetworkPlugin, remoteRes.NetworkPath, localRes.NetworkPath, localRes.NetworkSum)
+	doAppendPackage(5, node, prog, barQueue, copyQueue, define.NetworkPlugin, remoteRes.NetworkPath, localRes.NetworkPath, localRes.NetworkSum)
 	if current.IsRealLocal() {
-		doAppendPackage(3, node, prog, barQueue, copyQueue, define.ImagesPackage, remoteRes.ImagesPath, localRes.ImagesPath, localRes.ImagesSum)
+		doAppendPackage(6, node, prog, barQueue, copyQueue, define.ImagesPackage, remoteRes.ImagesPath, localRes.ImagesPath, localRes.ImagesSum)
 		if current.IsOffline {
-			doAppendPackage(4, node, prog, barQueue, copyQueue, define.OfflineModule, remoteRes.OfflinePath, localRes.OfflinePath, localRes.OfflineSum)
+			doAppendPackage(7, node, prog, barQueue, copyQueue, define.OfflineModule, remoteRes.OfflinePath, localRes.OfflinePath, localRes.OfflineSum)
 		}
 		if current.UseNvidia && node.HasNvidia {
-			doAppendPackage(5, node, prog, barQueue, copyQueue, define.NvidiaRuntime, remoteRes.NvidiaPath, localRes.NvidiaPath, localRes.NvidiaSum)
+			doAppendPackage(8, node, prog, barQueue, copyQueue, define.NvidiaRuntime, remoteRes.NvidiaPath, localRes.NvidiaPath, localRes.NvidiaSum)
 		}
 		if current.UseKata {
-			doAppendPackage(6, node, prog, barQueue, copyQueue, define.KataRuntime, remoteRes.KataPath, localRes.KataPath, localRes.KataSum)
+			doAppendPackage(9, node, prog, barQueue, copyQueue, define.KataRuntime, remoteRes.KataPath, localRes.KataPath, localRes.KataSum)
 		}
 		switch current.NetworkMode {
 		case define.CalicoNetwork:
 			{
-				doAppendPackage(8, node, prog, barQueue, copyQueue, define.CalicoNetwork, remoteRes.CalicoPath, localRes.CalicoPath, localRes.CalicoSum)
+				doAppendPackage(14, node, prog, barQueue, copyQueue, define.CalicoNetwork, remoteRes.CalicoPath, localRes.CalicoPath, localRes.CalicoSum)
 				break
 			}
 		case define.CiliumNetwork:
 			{
-				doAppendPackage(9, node, prog, barQueue, copyQueue, define.CiliumNetwork, remoteRes.CiliumPath, localRes.CiliumPath, localRes.CiliumSum)
+				doAppendPackage(14, node, prog, barQueue, copyQueue, define.CiliumNetwork, remoteRes.CiliumPath, localRes.CiliumPath, localRes.CiliumSum)
 				break
 			}
 		}
 		switch current.IngressMode {
 		case define.ContourIngress:
 			{
-				doAppendPackage(12, node, prog, barQueue, copyQueue, define.ContourIngress, remoteRes.ContourPath, localRes.ContourPath, localRes.ContourSum)
+				doAppendPackage(16, node, prog, barQueue, copyQueue, define.ContourIngress, remoteRes.ContourPath, localRes.ContourPath, localRes.ContourSum)
 				break
 			}
 		case define.IstioIngress:
 			{
-				doAppendPackage(13, node, prog, barQueue, copyQueue, define.IstioIngress, remoteRes.IstioPath, localRes.IstioPath, localRes.IstioSum)
+				doAppendPackage(16, node, prog, barQueue, copyQueue, define.IstioIngress, remoteRes.IstioPath, localRes.IstioPath, localRes.IstioSum)
 				break
 			}
 		}
 		if current.UseKruise {
-			doAppendPackage(15, node, prog, barQueue, copyQueue, define.KruisePlugin, remoteRes.KruisePath, localRes.KruisePath, localRes.KruiseSum)
+			doAppendPackage(18, node, prog, barQueue, copyQueue, define.KruisePlugin, remoteRes.KruisePath, localRes.KruisePath, localRes.KruiseSum)
 		}
 	} else {
-		doAppendPackage(3, node, prog, barQueue, copyQueue, define.PausePackage, remoteRes.PausePath, localRes.PausePath, localRes.PauseSum)
+		doAppendPackage(6, node, prog, barQueue, copyQueue, define.PausePackage, remoteRes.PausePath, localRes.PausePath, localRes.PauseSum)
 	}
-
-	localScript, remoteScript := localRes.ClusterScript, remoteRes.ClusterScript
-	doAppendPackage(16, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.PreparePath, localScript.PreparePath, execute.FileSum(localScript.PreparePath))
-	doAppendPackage(17, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.PrepareCentosPath, localScript.PrepareCentosPath, execute.FileSum(localScript.PrepareCentosPath))
-	doAppendPackage(18, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.PrepareDebianPath, localScript.PrepareDebianPath, execute.FileSum(localScript.PrepareDebianPath))
-	doAppendPackage(19, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.PrepareUbuntuPath, localScript.PrepareUbuntuPath, execute.FileSum(localScript.PrepareUbuntuPath))
-	doAppendPackage(20, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.DiscoverPath, localScript.DiscoverPath, execute.FileSum(localScript.DiscoverPath))
-	doAppendPackage(21, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.DiscoverNvidiaPath, localScript.DiscoverNvidiaPath, execute.FileSum(localScript.DiscoverNvidiaPath))
-	doAppendPackage(22, node, prog, barQueue, copyQueue, define.InstallScript, remoteScript.SystemVersionPath, localScript.SystemVersionPath, execute.FileSum(localScript.SystemVersionPath))
 	return copyQueue
 }
 
@@ -207,6 +198,10 @@ func doInstallPackage(wait *sync.WaitGroup, node *cluster.Node, upgrade bool) {
 	klog.V(1).Infof("[package] start install [%s] on [%s]", define.KubeletModule, node.Addr())
 	if _, err := installOnNode(node, define.KubeletModule, remoteRes.KubeletPath); nil != err {
 		klog.Errorf("[package] install kubelet on [%s] failed: %v", node.Addr(), err)
+		os.Exit(1)
+	}
+	if _, err := installOnNode(node, define.ScriptsModule, remoteRes.ScriptsPath); nil != err {
+		klog.Errorf("[package] install scripts on [%s] failed: %v", node.Addr(), err)
 		os.Exit(1)
 	}
 	if !upgrade {

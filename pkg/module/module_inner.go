@@ -91,13 +91,13 @@ func InstallInner(moduleName string, isUpgrade bool) (err error) {
 	case define.CiliumNetwork:
 		ciliumTpl := ciliumTemplate(current)
 		if isUpgrade {
-			err = release.UpgradeCilium(ciliumTpl, local)
+			err = action.CiliumExecute(release.BuildCiliumUpgradeArgs(ciliumTpl, local))
 		} else {
-			err = release.InstallCilium(ciliumTpl, local)
+			err = action.CiliumExecute(release.BuildCiliumInstallArgs(ciliumTpl, local))
 			if nil != err {
 				return err
 			}
-			err = release.InstallHubble(ciliumTpl, local)
+			err = action.CiliumExecute(release.BuildHubbleInstallArgs(ciliumTpl, local))
 		}
 	case define.IstioIngress:
 		istioTpl := istioTemplate(current)
@@ -105,7 +105,7 @@ func InstallInner(moduleName string, isUpgrade bool) (err error) {
 		if nil != err {
 			return err
 		}
-		err = release.InstallIstio(istioTpl, local)
+		err = action.IstioExecute(release.BuildIstioInstallArgs(istioTpl, local))
 	default:
 		var bytes []byte
 		bytes, err = ShowInner(moduleName)
@@ -163,7 +163,7 @@ func ShowInner(moduleName string) ([]byte, error) {
 		if nil == current.CiliumConf {
 			return nil, errors.New("get cilium config error")
 		}
-		return release.RenderCiliumTemplate(ciliumTemplate(current), local)
+		return release.RenderCiliumCommand(ciliumTemplate(current), local)
 	case define.ContourIngress:
 		if nil == current.ContourConf {
 			return nil, errors.New("get contour config error")

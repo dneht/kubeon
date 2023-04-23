@@ -19,10 +19,11 @@ var (
 	K8S_1_20_x, _ = NewRngVersion("v1.20.15", "v1.20.15")
 	K8S_1_21_x, _ = NewRngVersion("v1.21.14", "v1.21.14")
 	K8S_1_22_x, _ = NewRngVersion("v1.22.15", "v1.22.17")
-	K8S_1_23_x, _ = NewRngVersion("v1.23.11", "v1.23.17")
-	K8S_1_24_x, _ = NewRngVersion("v1.24.1", "v1.24.11")
-	K8S_1_25_x, _ = NewRngVersion("v1.25.1", "v1.25.7")
-	K8S_1_26_x, _ = NewRngVersion("v1.26.1", "v1.26.2")
+	K8S_1_23_x, _ = NewRngVersion("v1.23.15", "v1.23.17")
+	K8S_1_24_x, _ = NewRngVersion("v1.24.10", "v1.24.13")
+	K8S_1_25_x, _ = NewRngVersion("v1.25.1", "v1.25.9")
+	K8S_1_26_x, _ = NewRngVersion("v1.26.1", "v1.26.4")
+	K8S_1_27_x, _ = NewRngVersion("v1.27.1", "v1.27.1")
 	ETCD_3_4_0, _ = NewStdVersion("3.4.0")
 )
 
@@ -55,6 +56,7 @@ const (
 const (
 	ImagesPackage = "images"
 	PausePackage  = "pause"
+	ScriptsModule = "scripts"
 )
 
 const (
@@ -63,6 +65,7 @@ const (
 	BinaryModule  = "binary"
 	OnlineModule  = "online"
 	OfflineModule = "offline"
+	ToolsModule   = "tools"
 )
 
 const (

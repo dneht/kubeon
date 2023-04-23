@@ -29,9 +29,10 @@ type ComponentVersion struct {
 	Haproxy    string `json:"haproxy,omitempty"`
 	Kruise     string `json:"kruise,omitempty"`
 	Offline    string `json:"offline"`
+	Tools      string `json:"tools"`
 }
 
-func (cv *ComponentVersion) RealNetwork() string {
+func (cv *ComponentVersion) Sharing() string {
 	if "" == cv.Kubernetes {
 		return ""
 	}

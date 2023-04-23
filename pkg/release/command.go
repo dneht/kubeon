@@ -10,33 +10,24 @@ package release
 import (
 	"fmt"
 	"github.com/dneht/kubeon/pkg/define"
-	"github.com/dneht/kubeon/pkg/execute"
 	"strconv"
 	"strings"
 )
 
-func InstallCilium(input *CiliumTemplate, local bool) error {
-	ciliumArgs := buildCiliumInstallArgs(input, true, local)
-	ciliumCmd := execute.NewLocalCmd(define.CiliumCommand, ciliumArgs...)
-	return ciliumCmd.RunWithEcho()
+func BuildCiliumInstallArgs(input *CiliumTemplate, local bool) []string {
+	return buildCiliumInstallArgs(input, true, local)
 }
 
-func UpgradeCilium(input *CiliumTemplate, local bool) error {
-	ciliumArgs := buildCiliumUpgradeArgs(input, true, local)
-	ciliumCmd := execute.NewLocalCmd(define.CiliumCommand, ciliumArgs...)
-	return ciliumCmd.RunWithEcho()
+func BuildCiliumUpgradeArgs(input *CiliumTemplate, local bool) []string {
+	return buildCiliumUpgradeArgs(input, true, local)
 }
 
-func InstallHubble(input *CiliumTemplate, local bool) error {
-	ciliumArgs := buildHubbleInstallArgs(input, true, local)
-	ciliumCmd := execute.NewLocalCmd(define.CiliumCommand, ciliumArgs...)
-	return ciliumCmd.RunWithEcho()
+func BuildHubbleInstallArgs(input *CiliumTemplate, local bool) []string {
+	return buildHubbleInstallArgs(input, true, local)
 }
 
-func InstallIstio(input *IstioTemplate, local bool) error {
-	istioArgs := buildIstioInstallArgs(input, true, local)
-	istioCmd := execute.NewLocalCmd(define.IstioCommand, istioArgs...)
-	return istioCmd.RunWithEcho()
+func BuildIstioInstallArgs(input *IstioTemplate, local bool) []string {
+	return buildIstioInstallArgs(input, true, local)
 }
 
 func buildCiliumInstallArgs(input *CiliumTemplate, install, local bool) []string {
@@ -210,7 +201,7 @@ func buildHubbleInstallArgs(input *CiliumTemplate, install, local bool) []string
 		"--helm-set", "k8sServiceHost="+input.ClusterLbDomain,
 		"--helm-set", "k8sServicePort="+strconv.FormatUint(uint64(input.ClusterLbPort), 10),
 		"--helm-set", "tunnel="+input.TunnelMode,
-		"--helm-set", "hubble.relay.enabled=true", "--helm-set-string", "hubble.ui.enabled=true",
+		"--helm-set", "hubble.relay.enabled=true", "--helm-set", "hubble.ui.enabled=true",
 		"--helm-set", "hubble.metrics.serviceMonitor.enabled=true")
 	return ciliumArgs
 }

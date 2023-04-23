@@ -11,39 +11,41 @@ v1.19.16
 v1.20.15
 v1.21.14
 v1.22.15-v1.22.17
-v1.23.11-v1.23.17
-v1.24.1-v1.24.11
-v1.25.1-v1.25.7
-v1.26.1-v1.26.2
+v1.23.15-v1.23.17
+v1.24.10-v1.24.13
+v1.25.1-v1.25.9
+v1.26.1-v1.26.4
+v1.27.1
 ```
 
-PS. Some versions(like: v1.20.1..v1.20.14, v1.23.1..v1.23.10) are too old and no longer maintained
+PS. Some versions(like: v1.20.1..v1.20.14, v1.23.1..v1.23.14) are too old and no longer maintained
 
 ## Component
 
-> kubeon view component v1.26.2
+> kubeon view component v1.27.1
 
 ```json
 {
-  "kubernetes": "v1.26.2",
+  "kubernetes": "v1.27.1",
   "pause": "3.9",
-  "etcd": "3.5.6",
-  "coredns": "1.9.4",
-  "crictl": "v1.26.0",
-  "runc": "v1.1.4",
-  "containerd": "1.6.19",
-  "docker": "20.10.23",
-  "nvidia": "v3.12.0",
-  "kata": "3.0.2",
+  "etcd": "3.5.7",
+  "coredns": "1.10.1",
+  "crictl": "v1.27.0",
+  "runc": "v1.1.6",
+  "containerd": "1.6.20",
+  "docker": "20.10.24",
+  "nvidia": "v3.13.0",
+  "kata": "3.1.0",
   "cni": "v1.2.0",
-  "calico": "v3.24.5",
-  "cilium": "v1.12.7",
-  "hubble": "v0.10.0",
-  "contour": "v1.24.1",
-  "istio": "1.16.3",
-  "haproxy": "2.6.9",
-  "kruise": "v1.3.0",
-  "offline": "20230308"
+  "calico": "v3.25.1",
+  "cilium": "v1.13.2",
+  "hubble": "v0.11.0",
+  "contour": "v1.24.3",
+  "istio": "1.16.4",
+  "haproxy": "2.6.12",
+  "kruise": "v1.4.0",
+  "offline": "20230421",
+  "tools": "20230421"
 }
 ```
 

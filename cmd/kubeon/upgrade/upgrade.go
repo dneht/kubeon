@@ -126,6 +126,11 @@ func preUpgrade(current *cluster.Cluster, mirror string) (err error) {
 }
 
 func upgradeCluster(current *cluster.Cluster) (err error) {
+	err = module.InstallNetwork(true)
+	if nil != err {
+		klog.Warningf("Reinstall network failed %v", err)
+		return err
+	}
 	err = module.SetupUpgradeKubeadm()
 	if nil != err {
 		return err
@@ -147,10 +152,6 @@ func upgradeCluster(current *cluster.Cluster) (err error) {
 		if nil != err {
 			return err
 		}
-	}
-	err = module.InstallNetwork(true)
-	if nil != err {
-		klog.Warningf("Reinstall network failed %v", err)
 	}
 	err = module.InstallExtend(true)
 	if nil != err {
