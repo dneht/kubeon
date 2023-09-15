@@ -18,3 +18,11 @@ func KubectlDeleteNode(name string) error {
 		"--kubeconfig="+cluster.Current().AdminConfigPath,
 	).RunWithEcho()
 }
+
+func KubectlDeleteNodeForce(name string) error {
+	return execute.NewLocalCmd("kubectl",
+		"delete", "nodes", name,
+		"--kubeconfig="+cluster.Current().AdminConfigPath,
+		"--force",
+	).RunWithEcho()
+}

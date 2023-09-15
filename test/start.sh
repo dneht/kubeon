@@ -1,5 +1,5 @@
 num=$1
-ver=v1.23.12
+ver=v1.28.1
 pwd=123456
 echo "start node ${num} with password: ${pwd}"
 sudo echo root:${pwd} | chpasswd
@@ -24,7 +24,7 @@ sudo systemctl start chrony
 sudo sh -c "$(wget https://back.pub/kubeon/install.sh -q -O -)"
 if [ $num = 5 ]; then
   kubeon create test ${ver} \
-      --mirror docker.io \
+      --cilium-enable-dsr \
       -m 192.168.60.21 \
       -m 192.168.60.22 \
       -m 192.168.60.23 \
@@ -34,9 +34,11 @@ if [ $num = 5 ]; then
       -w 192.168.60.24 \
       --worker-name test40 \
       --default-passwd ${pwd} \
-      --calico-enable-dsr \
-      --ic istio \
       --interface enp0s8 \
+      --ic contour \
+      --with-kata \
+      --with-kruise \
+      --offline \
       --v 6
   sleep 2s
   kubeon display test

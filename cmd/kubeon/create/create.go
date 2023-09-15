@@ -803,7 +803,7 @@ func initCluster(current *cluster.Cluster) (err error) {
 	if nil != err {
 		return err
 	}
-	err = module.InstallExtend(false)
+	err = module.InstallDevice(false)
 	if nil != err {
 		return err
 	}
@@ -828,6 +828,10 @@ func initCluster(current *cluster.Cluster) (err error) {
 	err = module.InstallIngress(false)
 	if nil != err {
 		klog.V(1).Info("Cluster has been installed, but the ingress installation failed, please use `kubeon view conf` to generate a configuration file to retry")
+	}
+	err = module.InstallExtend(false)
+	if nil != err {
+		return err
 	}
 	return cluster.CreateCompleteCluster()
 }

@@ -99,6 +99,10 @@ func ProcessDownload(resource *ClusterResource, version, runtime, network, ingre
 	if !onutil.PathExists(resource.NetworkPath) || execute.FileSum(resource.NetworkPath) != resource.NetworkSum {
 		tasks = append(tasks, &ProcessModule{extVersion.Sharing(), NetworkResource, define.NetworkPlugin})
 	}
+	if !onutil.PathExists(resource.PausePath) || execute.FileSum(resource.PausePath) != resource.PauseSum {
+		IsUpdateRuntime = true
+		tasks = append(tasks, &ProcessModule{version, PauseResource, define.PausePackage})
+	}
 	if isLocal {
 		if !onutil.PathExists(resource.ImagesPath) || execute.FileSum(resource.ImagesPath) != resource.ImagesSum {
 			tasks = append(tasks, &ProcessModule{version, ImagesResource, define.ImagesPackage})
@@ -152,10 +156,6 @@ func ProcessDownload(resource *ClusterResource, version, runtime, network, ingre
 			if !onutil.PathExists(resource.KruisePath) || execute.FileSum(resource.KruisePath) != resource.KruiseSum {
 				tasks = append(tasks, &ProcessModule{extVersion.Kruise, KruiseResource, define.KruisePlugin})
 			}
-		}
-	} else {
-		if !onutil.PathExists(resource.PausePath) || execute.FileSum(resource.PausePath) != resource.PauseSum {
-			tasks = append(tasks, &ProcessModule{version, PauseResource, define.PausePackage})
 		}
 	}
 	if !onutil.PathExists(resource.ToolsPath) || execute.FileSum(resource.ToolsPath) != resource.ToolsSum {

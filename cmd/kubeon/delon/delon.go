@@ -93,12 +93,6 @@ func removeNodes(delNodes cluster.NodeList, onCloud bool) (err error) {
 	if nil != err {
 		return err
 	}
-	for _, node := range delNodes {
-		err = action.KubectlDeleteNode(node.Hostname)
-		if nil != err {
-			klog.Warningf("Delete node[%s] failed: %v", node.Addr(), err)
-		}
-	}
 	if onCloud {
 		cloud.DeleteRouterNow(delNodes)
 	}

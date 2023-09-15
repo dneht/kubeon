@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-func InstallExtend(isUpgrade bool) (err error) {
+func InstallDevice(isUpgrade bool) (err error) {
 	current := cluster.Current()
 	if current.UseNvidia && current.HasNvidia {
 		err = InstallInner(define.NvidiaRuntime, isUpgrade)
@@ -25,6 +25,11 @@ func InstallExtend(isUpgrade bool) (err error) {
 			return err
 		}
 	}
+	return nil
+}
+
+func InstallExtend(isUpgrade bool) (err error) {
+	current := cluster.Current()
 	if current.UseKata {
 		err = InstallInner(define.KataRuntime, isUpgrade)
 		if nil != err {

@@ -207,6 +207,18 @@ func PrepareLocal(resource *ClusterResource) (use bool, err error) {
 	}
 	onutil.RmDir(cniTmpDir)
 
+	tplTmpDir := define.AppTmpDir + "/scripts"
+	onutil.MkDir(tplTmpDir)
+	err = execute.UnpackTar(resource.ScriptsPath, tplTmpDir)
+	if nil != err {
+		return false, err
+	}
+	err = execute.NewLocalCmd("bash", tplTmpDir+"/install.sh").Run()
+	if nil != err {
+		return false, err
+	}
+	onutil.RmDir(tplTmpDir)
+
 	toolTmpDir := define.AppTmpDir + "/tools"
 	onutil.MkDir(toolTmpDir)
 	err = execute.UnpackTar(resource.ToolsPath, toolTmpDir)
@@ -266,9 +278,6 @@ func AddLocalAutoCompletion() {
 	if !onutil.PathExists(kubeAutoPath) {
 		if err := execute.NewLocalCmd("sh", "-c", "echo 'source <(kubectl completion bash)' >"+kubeAutoPath).Run(); nil != err {
 			klog.Warningf("Set local kubectl completion failed")
-		}
-		if err := execute.NewLocalCmd("sh", "-c", "echo 'source <(crictl completion bash)' >>"+kubeAutoPath).Run(); nil != err {
-			klog.Warningf("Set local crictl completion failed")
 		}
 	}
 	kubeonAutoPath := "/etc/profile.d/kubeon.sh"

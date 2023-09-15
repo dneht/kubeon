@@ -43,7 +43,7 @@ func KubeadmResetOne(node *cluster.Node, delete, force bool) {
 		klog.Warningf("Please clean the iptables rules yourself")
 	}
 	if delete {
-		err = KubectlDeleteNode(node.Hostname)
+		err = KubectlDeleteNodeForce(node.Hostname)
 		if nil != err {
 			klog.Warningf("Delete node[%s] failed: %v", node.Addr(), err)
 		}

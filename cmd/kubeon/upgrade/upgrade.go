@@ -153,9 +153,9 @@ func upgradeCluster(current *cluster.Cluster) (err error) {
 			return err
 		}
 	}
-	err = module.InstallExtend(true)
+	err = module.InstallDevice(true)
 	if nil != err {
-		klog.Warningf("Reinstall extend failed %v", err)
+		klog.Warningf("Reinstall device failed %v", err)
 	}
 	err = module.UpgradeLoadBalance()
 	if nil != err {
@@ -164,6 +164,10 @@ func upgradeCluster(current *cluster.Cluster) (err error) {
 	err = module.InstallIngress(true)
 	if nil != err {
 		klog.Warningf("Reinstall ingress failed %v", err)
+	}
+	err = module.InstallExtend(true)
+	if nil != err {
+		klog.Warningf("Reinstall extend failed %v", err)
 	}
 	return cluster.UpgradeCompleteCluster()
 }

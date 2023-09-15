@@ -219,9 +219,9 @@ func joinNodes(newNodes cluster.NodeList, onCloud bool) (err error) {
 			klog.Warningf("reinstall network failed %v", err)
 		}
 	}
-	err = module.InstallExtend(false)
+	err = module.InstallDevice(false)
 	if nil != err {
-		klog.Warningf("reinstall extend failed %v", err)
+		klog.Warningf("reinstall device failed %v", err)
 	}
 	err = module.ChangeLoadBalance(isNewMaster, newNodes)
 	if nil != err {
@@ -231,6 +231,10 @@ func joinNodes(newNodes cluster.NodeList, onCloud bool) (err error) {
 	err = module.InstallIngress(false)
 	if nil != err {
 		klog.Warningf("reinstall ingress failed %v", err)
+	}
+	err = module.InstallExtend(false)
+	if nil != err {
+		klog.Warningf("reinstall extend failed %v", err)
 	}
 	return cluster.AddCompleteCluster()
 }
