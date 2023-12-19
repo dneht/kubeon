@@ -96,9 +96,9 @@ func InstallInner(moduleName string, isUpgrade bool) (err error) {
 	case define.CiliumNetwork:
 		ciliumTpl := ciliumTemplate(current)
 		if isUpgrade {
-			err = action.CiliumExecute(release.BuildCiliumUpgradeArgs(ciliumTpl, local))
+			err = action.CiliumExecute(release.BuildCiliumUpgradeArgs(ciliumTpl, local, len(cluster.CurrentNodes())))
 		} else {
-			err = action.CiliumExecute(release.BuildCiliumInstallArgs(ciliumTpl, local))
+			err = action.CiliumExecute(release.BuildCiliumInstallArgs(ciliumTpl, local, len(cluster.CurrentNodes())))
 			if nil != err {
 				return err
 			}
@@ -168,7 +168,7 @@ func ShowInner(moduleName string) ([]byte, error) {
 		if nil == current.CiliumConf {
 			return nil, errors.New("get cilium config error")
 		}
-		return release.RenderCiliumCommand(ciliumTemplate(current), local)
+		return release.RenderCiliumCommand(ciliumTemplate(current), local, len(cluster.CurrentNodes()))
 	case define.ContourIngress:
 		if nil == current.ContourConf {
 			return nil, errors.New("get contour config error")
@@ -181,8 +181,10 @@ func ShowInner(moduleName string) ([]byte, error) {
 		return release.RenderIstioTemplate(istioTemplate(current), local)
 	case define.NvidiaRuntime:
 		return release.RenderNvidiaTemplate(&release.NvidiaTemplate{
-			CPVersion: current.GetModuleVersion(define.NvidiaRuntime),
-			MirrorUrl: current.Mirror,
+			CPVersion:  current.GetModuleVersion(define.NvidiaRuntime),
+			MirrorUrl:  current.Mirror,
+			Elevated:   current.NvidiaConf.Elevated,
+			DriverRoot: current.NvidiaConf.DriverRoot,
 		}, local)
 	case define.KataRuntime:
 		return release.RenderKataTemplate(&release.KataTemplate{

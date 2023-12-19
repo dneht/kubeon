@@ -94,6 +94,8 @@ type flagpole struct {
 	IstioEnableEgressGateway              bool
 	IstioEgressGatewayType                string
 	IstioConfig                           string
+	NvidiaElevated                        bool
+	NvidiaDriverRoot                      string
 	KruiseFeatureGates                    string
 	CloudProvider                         string
 	CloudEndpoint                         string
@@ -451,6 +453,16 @@ func NewCommand() *cobra.Command {
 		"",
 		"Set IstioOperator value { key=value[,key=value,..] }",
 	)
+	cmd.Flags().BoolVar(
+		&flags.NvidiaElevated, "nvidia-elevated",
+		false,
+		"Deploy the nvidia daemonset with elevated privileges",
+	)
+	cmd.Flags().StringVar(
+		&flags.NvidiaDriverRoot, "nvidia-driver-root",
+		"/",
+		"Nvidia driver root",
+	)
 	cmd.Flags().StringVar(
 		&flags.KruiseFeatureGates, "kruise-feature-gates",
 		"",
@@ -687,6 +699,10 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 			CustomConfigs:           checkConfigs(flags.IstioConfig),
 		},
 		UseNvidia: flags.WithNvidia,
+		NvidiaConf: &cluster.NvidiaConf{
+			Elevated:   flags.NvidiaElevated,
+			DriverRoot: flags.NvidiaDriverRoot,
+		},
 		UseKata:   flags.WithKata,
 		UseKruise: flags.WithKruise,
 		KruiseConf: &cluster.KruiseConf{
@@ -708,7 +724,7 @@ func preFlags(flags *flagpole, version *define.StdVersion) bool {
 	if "" == flags.NetworkSVCCIDRV6 || "" == flags.NetworkPodCIDRV6 {
 		flags.EnableIPv6 = false
 	}
-	flags.WithNvidia = flags.WithNvidia && flags.InputCRIMode == define.ContainerdRuntime && version.IsSupportNvidia()
+	flags.WithNvidia = (flags.WithNvidia || flags.NvidiaElevated) && flags.InputCRIMode == define.ContainerdRuntime && version.IsSupportNvidia()
 	flags.WithKata = flags.WithKata && version.IsSupportKata()
 
 	proxyReplace := false

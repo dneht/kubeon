@@ -31,7 +31,7 @@ func GetRemoteSumRetry(version, moduleName string, retry int) string {
 
 	baseDlUrl := "https://gitee.com/dneht/kubeon/raw/version/"
 	if retry > 1 {
-		baseDlUrl = "https://dl.back.pub/"
+		baseDlUrl = "https://dl.back.pub/on/"
 	}
 	response, err := http.Get(baseDlUrl + moduleName + "/" + version + ".sum")
 	if nil != err {

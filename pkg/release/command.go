@@ -14,12 +14,12 @@ import (
 	"strings"
 )
 
-func BuildCiliumInstallArgs(input *CiliumTemplate, local bool) []string {
-	return buildCiliumInstallArgs(input, true, local)
+func BuildCiliumInstallArgs(input *CiliumTemplate, local bool, size int) []string {
+	return buildCiliumInstallArgs(input, true, local, size)
 }
 
-func BuildCiliumUpgradeArgs(input *CiliumTemplate, local bool) []string {
-	return buildCiliumUpgradeArgs(input, true, local)
+func BuildCiliumUpgradeArgs(input *CiliumTemplate, local bool, size int) []string {
+	return buildCiliumUpgradeArgs(input, true, local, size)
 }
 
 func BuildHubbleInstallArgs(input *CiliumTemplate, local bool) []string {
@@ -30,7 +30,7 @@ func BuildIstioInstallArgs(input *IstioTemplate, local bool) []string {
 	return buildIstioInstallArgs(input, true, local)
 }
 
-func buildCiliumInstallArgs(input *CiliumTemplate, install, local bool) []string {
+func buildCiliumInstallArgs(input *CiliumTemplate, install, local bool, size int) []string {
 	imageHub := input.MirrorUrl + define.CiliumMirrorImagePrefix
 	ciliumOperatorImage := define.CiliumOperatorMirrorImage
 	if local {
@@ -43,7 +43,12 @@ func buildCiliumInstallArgs(input *CiliumTemplate, install, local bool) []string
 	} else {
 		ciliumArgs = append(ciliumArgs, "install")
 	}
+	waitTime := 30 * int64(size)
+	if waitTime < 300 {
+		waitTime = 300
+	}
 	ciliumArgs = append(ciliumArgs, "--version", input.CPVersion,
+		"--wait-duration", strconv.FormatInt(waitTime, 10)+"s",
 		"--agent-image", imageHub+"/"+define.CiliumAgentImage+":"+input.CPVersion,
 		"--operator-image", imageHub+"/"+ciliumOperatorImage+":"+input.CPVersion)
 	if input.EnableWireGuard {
@@ -161,7 +166,7 @@ func buildCiliumInstallArgs(input *CiliumTemplate, install, local bool) []string
 	return ciliumArgs
 }
 
-func buildCiliumUpgradeArgs(input *CiliumTemplate, install, local bool) []string {
+func buildCiliumUpgradeArgs(input *CiliumTemplate, install, local bool, size int) []string {
 	imageHub := input.MirrorUrl + define.CiliumMirrorImagePrefix
 	ciliumOperatorImage := define.CiliumOperatorMirrorImage
 	if local {
@@ -174,7 +179,12 @@ func buildCiliumUpgradeArgs(input *CiliumTemplate, install, local bool) []string
 	} else {
 		ciliumArgs = append(ciliumArgs, "upgrade")
 	}
+	waitTime := 30 * int64(size)
+	if waitTime < 300 {
+		waitTime = 300
+	}
 	ciliumArgs = append(ciliumArgs, "--version", input.CPVersion,
+		"--wait-duration", strconv.FormatInt(waitTime, 10)+"s",
 		"--agent-image", imageHub+"/"+define.CiliumAgentImage+":"+input.CPVersion,
 		"--operator-image", imageHub+"/"+ciliumOperatorImage+":"+input.CPVersion,
 		"--hubble-relay-image", imageHub+"/"+define.HubbleRelayImage+":"+input.CPVersion)

@@ -144,8 +144,10 @@ type CiliumTemplate struct {
 }
 
 type NvidiaTemplate struct {
-	CPVersion string
-	MirrorUrl string
+	CPVersion  string
+	MirrorUrl  string
+	Elevated   bool
+	DriverRoot string
 }
 
 type KataTemplate struct {
@@ -213,8 +215,8 @@ func RenderCalicoTemplate(input *CalicoTemplate, local bool) ([]byte, error) {
 	}
 }
 
-func RenderCiliumCommand(input *CiliumTemplate, local bool) ([]byte, error) {
-	ciliumArgs := buildCiliumInstallArgs(input, false, local)
+func RenderCiliumCommand(input *CiliumTemplate, local bool, size int) ([]byte, error) {
+	ciliumArgs := buildCiliumInstallArgs(input, false, local, size)
 	hubbleArgs := buildHubbleInstallArgs(input, false, local)
 	return []byte(fmt.Sprintf("%s %s\n%s %s",
 		define.CiliumCommand, strings.Join(ciliumArgs, " "),

@@ -91,6 +91,7 @@ func preRunE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	}
 	current.UseNvidia = (current.UseNvidia || flags.WithNvidia) && current.RuntimeMode == define.ContainerdRuntime
 	current.UseKata = current.UseKata || flags.WithKata
+	klog.V(1).Info("Ready to check & prepare host, please wait a moment...")
 	return cluster.InitUpgradeCluster(inputVersion)
 }
 
@@ -100,7 +101,6 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		return errors.New("cluster create error")
 	}
 
-	klog.V(1).Info("Ready to check & prepare host, please wait a moment...")
 	err = preUpgrade(current, current.Mirror)
 	if nil != err {
 		return err

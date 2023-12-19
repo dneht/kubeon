@@ -21,6 +21,8 @@ import (
 	"time"
 )
 
+const copyParallel = 6
+
 type PrepareModule struct {
 	RemotePath string
 	LocalPath  string
@@ -86,15 +88,26 @@ func prepareLocal() (err error) {
 func sendPackage(prog *mpb.Progress, nodes cluster.NodeList, isUpgrade bool) {
 	copyQueues := make(map[*cluster.Node][]*PrepareModule)
 	klog.V(1).Info("Start copy resource to remote node")
-	for _, node := range nodes {
+	for i, node := range nodes {
 		copyQueues[node] = doQueuedPackage(node, prog)
+		if (i+1)%copyParallel == 0 {
+			doSendPackage(copyQueues, isUpgrade)
+			copyQueues = make(map[*cluster.Node][]*PrepareModule)
+		}
 	}
+	if len(copyQueues) > 0 {
+		doSendPackage(copyQueues, isUpgrade)
+	}
+}
 
-	lch := make(chan struct{}, 6)
+func doSendPackage(copyQueues map[*cluster.Node][]*PrepareModule, isUpgrade bool) {
+	wg, lch := sync.WaitGroup{}, make(chan struct{}, copyParallel)
 	for node, queue := range copyQueues {
 		lch <- struct{}{}
-		go doTransPackage(node, queue, lch)
+		wg.Add(1)
+		go doTransPackage(node, queue, &wg, lch)
 	}
+	wg.Wait()
 }
 
 func doQueuedPackage(node *cluster.Node, prog *mpb.Progress) []*PrepareModule {
@@ -171,7 +184,8 @@ func doAppendPackage(idx int, node *cluster.Node, prog *mpb.Progress, barQueue [
 	}
 }
 
-func doTransPackage(node *cluster.Node, queue []*PrepareModule, lch chan struct{}) {
+func doTransPackage(node *cluster.Node, queue []*PrepareModule, wg *sync.WaitGroup, lch chan struct{}) {
+	defer wg.Done()
 	for _, task := range queue {
 		if nil != task {
 			node.CopyToWithBar(task.LocalPath, task.RemotePath, task.LocalSum, task.CopyBar)

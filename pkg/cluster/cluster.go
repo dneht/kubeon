@@ -56,6 +56,7 @@ type Cluster struct {
 	ContourConf          *ContourConf             `json:"contourConf,omitempty"`
 	IstioConf            *IstioConf               `json:"istioConf,omitempty"`
 	UseNvidia            bool                     `json:"useNvidia"`
+	NvidiaConf           *NvidiaConf              `json:"nvidiaConf,omitempty"`
 	HasNvidia            bool                     `json:"hasNvidia"`
 	UseKata              bool                     `json:"useKata"`
 	UseKruise            bool                     `json:"useKruise"`
@@ -124,6 +125,11 @@ type IstioConf struct {
 	EnableEgressGateway     bool     `json:"enableEgressGateway"`
 	EgressGatewayType       string   `json:"egressGatewayType"`
 	CustomConfigs           []string `json:"customConfigs"`
+}
+
+type NvidiaConf struct {
+	Elevated   bool   `json:"elevated"`
+	DriverRoot string `json:"driverRoot"`
 }
 
 type KruiseConf struct {
