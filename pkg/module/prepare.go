@@ -56,8 +56,8 @@ func AfterUpgrade(node *cluster.Node, isBootstrap bool) (err error) {
 		client := &http.Client{Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}}
-		for i := 0; i < 15; i++ {
-			time.Sleep(5 * time.Second)
+		for i := 0; i < 30; i++ {
+			time.Sleep(4 * time.Second)
 			_, err = client.Get(node.Healthz())
 			if nil == err {
 				klog.V(4).Infof("Bootstrap node is ready, continue")

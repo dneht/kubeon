@@ -58,7 +58,7 @@ func runE(cmd *cobra.Command, args []string) error {
 
 func preRemove(delNodes cluster.NodeList) (err error) {
 	for _, node := range delNodes {
-		err = action.KubectlDrainNodeForce(node.Hostname, cluster.Current().Version)
+		err = action.KubectlDrainNodeForce(node.Hostname, cluster.Current().Version, 60)
 		if nil != err {
 			klog.Warningf("Drain node[%s] failed: %v", node.Addr(), err)
 		}

@@ -139,10 +139,11 @@ func DeleteInner(moduleName string) (err error) {
 func getKubeletTemplate() *release.KubeletTemplate {
 	current := cluster.Current()
 	return &release.KubeletTemplate{
-		APIVersion:       current.GetKubeletAPIVersion(),
-		ClusterDnsIP:     current.DnsIP,
-		ClusterDnsDomain: current.DnsDomain,
-		ClusterMaxPods:   current.MaxPods,
+		APIVersion:               current.GetKubeletAPIVersion(),
+		ClusterDnsIP:             current.DnsIP,
+		ClusterDnsDomain:         current.DnsDomain,
+		ClusterMaxPods:           current.MaxPods,
+		ContainerRuntimeEndpoint: current.GetContainerRuntimeEndpoint(),
 	}
 }
 

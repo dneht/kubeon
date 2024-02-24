@@ -19,10 +19,11 @@ import (
 )
 
 type KubeletTemplate struct {
-	APIVersion       string
-	ClusterDnsIP     string
-	ClusterDnsDomain string
-	ClusterMaxPods   uint32
+	APIVersion               string
+	ClusterDnsIP             string
+	ClusterDnsDomain         string
+	ClusterMaxPods           uint32
+	ContainerRuntimeEndpoint string
 }
 
 type KubeadmTemplate struct {

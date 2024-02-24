@@ -13,29 +13,17 @@ import (
 )
 
 func KubectlRemoveMasterTaint(name string) {
+	masterLabel := cluster.Current().GetKubernetesMasterTaint()
 	_ = execute.NewLocalCmd("kubectl",
-		"taint", "nodes", name,
-		"node-role.kubernetes.io/master-",
+		"taint", "nodes", name, masterLabel+"-",
 		"--kubeconfig="+cluster.Current().AdminConfigPath,
-	).Run()
-	_ = execute.NewLocalCmd("kubectl",
-		"taint", "nodes", name,
-		"node-role.kubernetes.io/control-plane-",
-		"--kubeconfig="+cluster.Current().AdminConfigPath,
-	).Run()
+	).Quiet().RunWithEcho()
 }
 
 func KubectlRemoveAllMasterTaint() {
+	masterLabel := cluster.Current().GetKubernetesMasterTaint()
 	_ = execute.NewLocalCmd("kubectl",
-		"taint", "nodes",
-		"node-role.kubernetes.io/master-",
-		"--all",
-		"--kubeconfig="+cluster.Current().AdminConfigPath,
-	).Run()
-	_ = execute.NewLocalCmd("kubectl",
-		"taint", "nodes",
-		"node-role.kubernetes.io/control-plane-",
-		"--all",
-		"--kubeconfig="+cluster.Current().AdminConfigPath,
-	).Run()
+		"taint", "nodes", masterLabel+"-",
+		"--all", "--kubeconfig="+cluster.Current().AdminConfigPath,
+	).Quiet().RunWithEcho()
 }

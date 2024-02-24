@@ -22,6 +22,8 @@ import (
 type flagpole struct {
 	MirrorHost string
 	SetOffline string
+	WaitTime   int
+	SkipEvict  bool
 	WithNvidia bool
 	WithKata   bool
 }
@@ -43,11 +45,19 @@ func NewCommand() *cobra.Command {
 	}
 	cmd.Flags().StringVar(
 		&flags.MirrorHost, "mirror",
-		"yes", "download use mirror, if in cn please keep true",
+		"yes", "Download use mirror, if in cn please keep true",
 	)
 	cmd.Flags().StringVar(
 		&flags.SetOffline, "set-offline",
-		"", "modify upgrade offline mode",
+		"", "Modify upgrade offline mode",
+	)
+	cmd.Flags().IntVar(
+		&flags.WaitTime, "wait-time",
+		0, "Wait for pod delete timeout, second",
+	)
+	cmd.Flags().BoolVar(
+		&flags.SkipEvict, "skip-evict",
+		false, "Upgrade skip pod evict",
 	)
 	cmd.Flags().BoolVar(
 		&flags.WithNvidia, "with-nvidia",
@@ -105,7 +115,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 	if nil != err {
 		return err
 	}
-	err = upgradeCluster(current)
+	err = upgradeCluster(current, flags.WaitTime, flags.SkipEvict)
 	if nil != err {
 		return err
 	}
@@ -125,7 +135,8 @@ func preUpgrade(current *cluster.Cluster, mirror string) (err error) {
 	return nil
 }
 
-func upgradeCluster(current *cluster.Cluster) (err error) {
+func upgradeCluster(current *cluster.Cluster, wait int, skip bool) (err error) {
+	klog.V(1).Info("Preparing to upgrade the network, please wait a moment...")
 	err = module.InstallNetwork(true)
 	if nil != err {
 		klog.Warningf("Reinstall network failed %v", err)
@@ -136,9 +147,11 @@ func upgradeCluster(current *cluster.Cluster) (err error) {
 		return err
 	}
 	for _, node := range cluster.CurrentNodes() {
-		err = action.KubectlDrainNode(node.Hostname, current.Version)
-		if nil != err {
-			return err
+		if !skip {
+			err = action.KubectlDrainNode(node.Hostname, current.Version, wait)
+			if nil != err {
+				return err
+			}
 		}
 		err = action.KubeadmUpgrade(node, false)
 		if err != nil {
@@ -148,9 +161,11 @@ func upgradeCluster(current *cluster.Cluster) (err error) {
 		if nil != err {
 			return err
 		}
-		err = action.KubectlUncordonNode(node.Hostname)
-		if nil != err {
-			return err
+		if !skip {
+			err = action.KubectlUncordonNode(node.Hostname)
+			if nil != err {
+				return err
+			}
 		}
 	}
 	err = module.InstallDevice(true)

@@ -338,3 +338,27 @@ func (c *Cluster) GetKubeadmSigningDuration() string {
 		return "cluster-signing-duration: \"876000h\""
 	}
 }
+
+func (c *Cluster) ResetKubeadmEnvironmentFlags() {
+	if c.Version.LessThen(define.K8S_1_27_0) {
+	}
+}
+
+func (c *Cluster) GetKubernetesMasterTaint() string {
+	if c.Version.LessThen(define.K8S_1_24_0) {
+		return "node-role.kubernetes.io/master"
+	} else {
+		return "node-role.kubernetes.io/control-plane"
+	}
+}
+
+func (c *Cluster) GetContainerRuntimeEndpoint() string {
+	switch c.RuntimeMode {
+	case define.DockerRuntime:
+		return "unix:///var/run/docker.sock"
+	case define.ContainerdRuntime:
+		return "unix:///var/run/containerd/containerd.sock"
+	default:
+		return ""
+	}
+}

@@ -11,6 +11,7 @@ import (
 	"github.com/dneht/kubeon/pkg/cluster"
 	"github.com/dneht/kubeon/pkg/define"
 	"github.com/dneht/kubeon/pkg/execute"
+	"strconv"
 )
 
 func deleteLocalFlag(version *define.StdVersion) string {
@@ -21,18 +22,21 @@ func deleteLocalFlag(version *define.StdVersion) string {
 	}
 }
 
-func KubectlDrainNode(name string, version *define.StdVersion) (err error) {
+func KubectlDrainNode(name string, version *define.StdVersion, wait int) (err error) {
 	return execute.NewLocalCmd("kubectl",
 		"drain", name,
 		"--kubeconfig="+cluster.Current().AdminConfigPath,
+		"--skip-wait-for-delete-timeout="+strconv.FormatInt(int64(wait), 10),
 		"--ignore-daemonsets", deleteLocalFlag(version)).RunWithEcho()
 }
 
-func KubectlDrainNodeForce(name string, version *define.StdVersion) (err error) {
+func KubectlDrainNodeForce(name string, version *define.StdVersion, wait int) (err error) {
 	return execute.NewLocalCmd("kubectl",
 		"drain", name,
 		"--kubeconfig="+cluster.Current().AdminConfigPath,
-		"--force", "--ignore-daemonsets", deleteLocalFlag(version)).RunWithEcho()
+		"--force",
+		"--skip-wait-for-delete-timeout="+strconv.FormatInt(int64(wait), 10),
+		"--ignore-daemonsets", deleteLocalFlag(version)).RunWithEcho()
 }
 
 func KubectlUncordonNode(name string) (err error) {

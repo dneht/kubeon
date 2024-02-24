@@ -13,38 +13,39 @@ v1.21.14
 v1.22.16-v1.22.17
 v1.23.17
 v1.24.17
-v1.25.10-v1.25.16
-v1.26.10-v1.26.12
-v1.27.1-v1.27.9
-v1.28.1-v1.28.5
+v1.25.14-v1.25.16
+v1.26.14
+v1.27.9-v1.27.11
+v1.28.5-v1.28.7
+v1.29.1-v1.29.2
 ```
 
 ## Component
 
-> kubeon view cp v1.28.5
+> kubeon view cp v1.29.2
 
 ```json
 {
-  "kubernetes": "v1.28.5",
+  "kubernetes": "v1.29.2",
   "pause": "3.9",
-  "etcd": "3.5.9",
-  "coredns": "1.10.1",
-  "crictl": "v1.28.0",
-  "runc": "v1.1.10",
-  "containerd": "1.7.11",
-  "docker": "24.0.7",
+  "etcd": "3.5.10",
+  "coredns": "1.11.1",
+  "crictl": "v1.29.0",
+  "runc": "v1.1.12",
+  "containerd": "1.7.13",
+  "docker": "25.0.3",
   "nvidia": "v3.14.0",
   "kata": "3.2.0",
   "cni": "v1.4.0",
   "calico": "v3.26.4",
-  "cilium": "v1.13.10",
-  "hubble": "v0.12.2",
-  "contour": "v1.27.0",
-  "istio": "1.19.5",
-  "haproxy": "2.8.5",
-  "kruise": "v1.5.1",
-  "offline": "20231221",
-  "tools": "20231221"
+  "cilium": "v1.14.7",
+  "hubble": "v0.13.0",
+  "contour": "v1.28.1",
+  "istio": "1.19.7",
+  "haproxy": "2.8.6",
+  "kruise": "v1.5.2",
+  "offline": "20240222",
+  "tools": "20240222"
 }
 ```
 

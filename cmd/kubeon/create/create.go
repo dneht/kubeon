@@ -815,6 +815,7 @@ func initCluster(current *cluster.Cluster) (err error) {
 	if nil != err {
 		return err
 	}
+	klog.V(1).Info("Preparing to initialize the network, please wait a moment...")
 	err = module.InstallNetwork(false)
 	if nil != err {
 		return err

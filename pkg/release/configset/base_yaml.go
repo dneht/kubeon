@@ -30,6 +30,7 @@ clusterDomain: {{.ClusterDnsDomain}}
 configMapAndSecretChangeDetectionStrategy: Watch
 containerLogMaxFiles: 5
 containerLogMaxSize: 10Mi
+containerRuntimeEndpoint: {{.ContainerRuntimeEndpoint}}
 enforceNodeAllocatable:
   - pods
 allowedUnsafeSysctls:
